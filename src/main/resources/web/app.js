@@ -25,8 +25,10 @@ $('backtest').addEventListener('submit',async e=>{
 });
 function showError(msg){$('status').className='error';$('status').textContent=msg;}
 function render(r){
- $('report-title').textContent=r.symbol+' / SMA '+r.fast+' × '+r.slow;
+ $('report-title').textContent=r.symbol+' / SMA '+r.fast+' days × '+r.slow+' days';
  $('report-meta').textContent=r.start+' → '+r.end+' · USD · '+r.source;
+ $('fast-legend').textContent='Fast SMA · '+r.fast+' days';
+ $('slow-legend').textContent='Slow SMA · '+r.slow+' days';
  const values=[['Net profit / loss',usd(r.pnl)],['Total return',pct(r.totalReturn)],['Maximum drawdown',pct(r.maxDrawdown)],['Final portfolio value',usd(r.finalNav)],['Annualized volatility',r.annualizedVolatility==null?'N/A':pct(r.annualizedVolatility)],['Sharpe · risk-free rate 0',r.sharpe==null?'N/A':r.sharpe.toFixed(2)]];
  $('metrics').replaceChildren(...values.map(([title,value])=>{const d=document.createElement('div');d.className='metric';const p=document.createElement('p');p.textContent=title;const s=document.createElement('strong');s.textContent=value;d.append(p,s);return d;}));
  chart('prices',r.series,['close','fast','slow'],['#344a52','#188663','#cf9647']);

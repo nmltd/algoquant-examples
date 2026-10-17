@@ -108,6 +108,37 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   assert.equal(await page.locator('#comparison-panel').isVisible(),false);
   assert.equal(await page.locator('#report-link').getAttribute('href'),'/sma2/reports/00000000000000000000000000000001');
   await page.goto('http://sma2.test'+report.reportPath);await page.locator('#report').waitFor({state:'visible'});
+  await page.locator('#measure-filter').fill('Sortino');
+  await page.evaluate(()=>{
+   window.print=()=>{
+    window.dispatchEvent(new Event('beforeprint'));
+    window.__pdfCheck={
+     filter:document.getElementById('measure-filter').value,
+     closed:document.querySelectorAll('#report details:not([open])').length,
+     url:document.getElementById('pdf-report-url').textContent
+    };
+    window.dispatchEvent(new Event('afterprint'));
+   };
+  });
+  await page.locator('#export-pdf').click();
+  const printCheck=await page.evaluate(()=>window.__pdfCheck);
+  assert.equal(printCheck.filter,'');assert.equal(printCheck.closed,0);assert.match(printCheck.url,new RegExp(report.reportId));
+  assert.equal(await page.locator('#measure-filter').inputValue(),'Sortino');
+  await page.locator('#clear-search').click();
+  await page.emulateMedia({media:'print'});
+  await page.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
+  const printLayout=await page.evaluate(()=>({
+   bounded:[...document.querySelectorAll('.measure-group .table-wrap')].some(e=>getComputedStyle(e).maxHeight!=='none'),
+   libraryBottom:document.querySelector('.library-panel').getBoundingClientRect().bottom,
+   executionTop:document.querySelector('.execution-panel').getBoundingClientRect().top,
+   legend:getComputedStyle(document.querySelector('.comparison-legend button')).display
+  }));
+  assert.equal(printLayout.bounded,false);assert.ok(printLayout.executionTop>=printLayout.libraryBottom);
+  assert.notEqual(printLayout.legend,'none');
+  await page.evaluate(()=>window.dispatchEvent(new Event('afterprint')));
+  await page.emulateMedia({media:null});
+  const pdf=await page.pdf({path:'target/web-reports/report.pdf',format:'A4',landscape:true,printBackground:true});
+  assert.equal(pdf.subarray(0,4).toString(),'%PDF');assert.ok(pdf.length>10000);
   assert.deepEqual(errors,[]);
   await page.screenshot({path:'target/web-reports/browser.png',fullPage:true});
   console.log('Browser checks passed: zoom, synchronized windows, hover, legend, pan, reset, report controls and refresh without rerun.');

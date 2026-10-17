@@ -13,7 +13,7 @@ gcloud run deploy sma2-web --project="$GCP_PROJECT_ID" --region="$region" --imag
   --port=8080 --cpu=1 --memory=1Gi --concurrency=1 --min-instances=0 --max-instances=2 \
   --timeout=180 --set-env-vars=SMA2_DATA_MODE=live --set-secrets=/secrets/nm.lic=sma2-nm-license:latest --quiet
 url="$(gcloud run services describe sma2-web --project="$GCP_PROJECT_ID" --region="$region" --format='value(status.url)')"
-curl --fail --retry 5 --retry-delay 3 "$url/healthz"
+printf 'Service URL: %s\\n' "$url"\ncurl --fail --show-error --max-time 30 --retry 8 --retry-all-errors --retry-delay 5 "$url/healthz"
 printf '\nDeployed: %s\n' "$url"
 
 # Verify the deployed service with the runtime license and real Yahoo data, not just process health.

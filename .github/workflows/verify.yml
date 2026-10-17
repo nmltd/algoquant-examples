@@ -37,7 +37,8 @@ jobs:
       - name: Run every example with synthetic data and no desktop or market-data service
         run: bash scripts/run-offline.sh
       - name: Check browser JavaScript syntax
-        run: node --check src/main/resources/web/sma2/app.js
+        run: |
+          node --check src/main/resources/web/sma2/app.js
           node --check src/main/resources/web/shared/report.js
           node --check src/main/resources/web/performance/app.js
       - name: Verify the SMA2 web API offline

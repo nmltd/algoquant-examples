@@ -56,9 +56,9 @@ public final class AllPerformanceMeasures {
         this.benchmark = benchmark; this.benchmarkError = benchmarkError; this.daily = daily.clone();
     }
 
-    private boolean navOnly;
+    private boolean navOnly,invalidImportedNav;
     /** Imported NAV contains no execution, fee or position records. */
-    public void computeForNavSeries(){navOnly=true;compute(false);}
+    public void computeForNavSeries(){navOnly=true;for(TimedEntry<Double> point:nav)if(point.data()<=0)invalidImportedNav=true;compute(false);}
     public void compute() { compute(true); }
 
     /** Scalar comparisons can omit long period tables while using the same calculations. */
@@ -191,6 +191,9 @@ public final class AllPerformanceMeasures {
     }
     private void number(String group,String label,String source,String unit,String note,DoubleSupplier calc) {
         Metric m=new Metric();m.group=group;m.label=label;m.sourceClass=source;m.unit=unit;m.detail=note;
+        if(invalidImportedNav&&!Arrays.asList("StartBalance","EndBalance","ProfitLoss","MaxDrawdown","MaxDrawdownPercentage","MaxDrawdownDuration").contains(source)){
+            m.status="not_applicable";m.display="N/A";m.detail+=" Return-based statistics are not meaningful for a NAV path containing zero or negative values. Correct the source or choose a valid period.";metrics.add(m);return;
+        }
         try {
             double v=calc.getAsDouble();
             m.status=Double.isFinite(v)?"ok":"undefined";

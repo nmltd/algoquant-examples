@@ -6,7 +6,7 @@ Import a **public Google Sheet or direct HTTPS CSV** of daily NAV/price levels. 
 
 ## Input
 
-The first column must be `Date`, with ISO `YYYY-MM-DD` values. Remaining columns contain **positive finite NAV or price levels**, not percentage returns. Use distinct column names. Quoted thousands separators are supported.
+The first column must be `Date`, with ISO `YYYY-MM-DD` values. Remaining columns contain **finite NAV or price levels** (the first common value must be positive), not percentage returns. Use distinct column names. Quoted thousands separators are supported.
 
 ```csv
 Date,My portfolio,S&P 500
@@ -24,7 +24,7 @@ Recognized benchmark headers include `S&P 500`, `SP500`, `SPX` and `^GSPC`. Only
 
 Each series is normalized to **10,000 units at the first common observation**. Absolute-value statistics therefore describe a normalized account, not the source currency balance. Original values remain available in the report and Excel Daily data tab.
 
-**Use unitized or cash-flow-adjusted NAV.** Deposits, withdrawals, corporate-action unit changes and other funding changes are not inferred or removed. A change exceeding 30% is flagged for review but is not altered. A total account balance that includes external cash flows is not a cash-flow-adjusted investment return.
+**Use unitized or cash-flow-adjusted NAV.** Deposits, withdrawals, corporate-action unit changes and other funding changes are not inferred or removed. A change exceeding 30% is flagged for review but is not altered. Zero/negative observations are retained and flagged; return-based statistics are marked not applicable for those series, while balance/P&L/drawdown measures remain available. A total account balance that includes external cash flows is not a cash-flow-adjusted investment return.
 
 All accounts use the shared AlgoQuant scalar catalog in NAV-only mode. Returns, drawdowns, periodic ratios, CAPM, rolling statistics and applicable risk measures are computed from NAV. Trades, fees, exposures and other execution-dependent measures are marked not applicable when they cannot be inferred from levels. No trade or zero fee is invented.
 

@@ -80,7 +80,7 @@ See [the web README](web/README.md) for environment variables, API routes, testi
 
 ## Performance Analyzer
 
-Open [Performance Analyzer](https://tools.nmfin.tech/performance/) or see [its input format, assumptions and API](web/performance/README.md). Supply a public Google Sheet or direct HTTPS CSV with `Date` followed by one or more positive NAV/price columns. An S&P 500 column is reused; otherwise Yahoo `^GSPC` is downloaded and simulated. The report aligns common dates and rebases each account to 10,000 normalized units. It does not infer trades or remove deposits/withdrawals. Shared classes support both apps, including AlgoQuant statistics, snapshot storage, CSV/Excel exports and report components.
+Open [Performance Analyzer](https://tools.nmfin.tech/performance/) or see [its input format, assumptions and API](web/performance/README.md). Supply a public Google Sheet or direct HTTPS CSV with `Date` followed by one or more NAV/price columns. An S&P 500 column is reused; otherwise Yahoo `^GSPC` is downloaded and simulated. The report aligns common dates and rebases each account to 10,000 normalized units. It does not infer trades or remove deposits/withdrawals. Shared classes support both apps, including AlgoQuant statistics, snapshot storage, CSV/Excel exports and report components.
 
 ## Six command-line technical examples
 

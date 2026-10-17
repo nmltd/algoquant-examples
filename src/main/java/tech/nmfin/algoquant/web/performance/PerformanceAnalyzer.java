@@ -78,16 +78,18 @@ public final class PerformanceAnalyzer {
   for(int i=0;i<columns.size();i++){
    Account account=new Account();account.name=names.get(i+1);account.benchmark=i==benchmark;
    account.source=account.benchmark?result.benchmarkSource:"Input NAV/price column";
-   account.initialValue=columns.get(i).get(aligned.first());List<String> dates=new ArrayList<>();List<Double> navs=new ArrayList<>();
+   account.initialValue=columns.get(i).get(aligned.first());if(account.initialValue<=0)throw new IllegalArgumentException("The first common value must be positive for "+account.name+".");List<String> dates=new ArrayList<>();List<Double> navs=new ArrayList<>();
    double previous=account.initialValue;int large=0;
    for(LocalDate date:aligned){
     double value=columns.get(i).get(date),nav=BASE*value/account.initialValue;
-    if(!Double.isFinite(nav)||nav<=0)throw new IllegalArgumentException("Series cannot be normalized: "+account.name);
+    if(!Double.isFinite(nav))throw new IllegalArgumentException("Series cannot be normalized: "+account.name);
     Point point=new Point();point.date=date.toString();point.value=value;point.nav=nav;account.series.add(point);
     dates.add(point.date);navs.add(nav);
     if(Math.abs(value/previous-1)>.3&&large++<3)result.warnings.add(account.name+" changes by more than 30% on "+date+". Check for deposits, withdrawals, unit changes or input errors; the value has not been altered.");
     previous=value;
    }
+   long nonpositive=account.series.stream().filter(p->p.value<=0).count();
+   if(nonpositive>0)result.warnings.add(account.name+" contains "+nonpositive+" zero/negative NAV observations. Return, CAGR and risk-adjusted statistics are unavailable. Source values have not been changed.");
    account.statistics=PerformanceStatistics.compute(dates,navs,BASE,new PerformanceStatistics.Values());
    account.performanceMeasures=NavSeriesAnalysis.metrics(dates,navs,BASE,lookup);result.accounts.add(account);
   }
@@ -98,8 +100,8 @@ public final class PerformanceAnalyzer {
  private static Double number(String text){
   if(text==null||text.trim().isEmpty()||"N/A".equalsIgnoreCase(text.trim())||"NA".equalsIgnoreCase(text.trim()))return null;
   String raw=text.trim();if(raw.startsWith("$"))raw=raw.substring(1).trim();
-  if(raw.contains(",")&&!raw.matches("[+]?[0-9]{1,3}(,[0-9]{3})+(\\.[0-9]+)?"))throw new IllegalArgumentException("Invalid thousands separators in numeric value.");
-  try{double value=Double.parseDouble(raw.replace(",",""));if(!Double.isFinite(value)||value<=0)throw new NumberFormatException();return value;}
-  catch(NumberFormatException ex){throw new IllegalArgumentException("NAV/price values must be positive finite numbers; daily return percentages are not supported.");}
+  if(raw.contains(",")&&!raw.matches("[+-]?[0-9]{1,3}(,[0-9]{3})+(\\.[0-9]+)?"))throw new IllegalArgumentException("Invalid thousands separators in numeric value.");
+  try{double value=Double.parseDouble(raw.replace(",",""));if(!Double.isFinite(value))throw new NumberFormatException();return value;}
+  catch(NumberFormatException ex){throw new IllegalArgumentException("NAV/price levels must be finite numbers; daily return percentages are not supported.");}
  }
 }

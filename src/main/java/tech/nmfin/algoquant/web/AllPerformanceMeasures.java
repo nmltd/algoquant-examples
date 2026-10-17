@@ -1,4 +1,4 @@
-package tech.nmfin.algoquant.web.sma2;
+package tech.nmfin.algoquant.web;
 
 import java.time.*;
 import java.util.*;
@@ -146,18 +146,18 @@ public final class AllPerformanceMeasures {
         unavailable("Custom measure builders","Linear combination of measures","LinearlyCombinedPerformanceMeasure",
             "Not applicable: user-defined measures and weights are required; there is no unique standalone statistic.");
 
-        g="SPY benchmark and CAPM";
+        g="S&P 500 benchmark and CAPM";
         if(benchmark==null) {
             for(String name:new String[]{"AlphaCAPM","BetaCAPM","RSquaredCAPM","BenchmarkCorrelation","TreynorRatio"})
                 unavailable(g,name,name,benchmarkError);
             for(Metric m:metrics) if(m.group.equals(g)) m.status="unavailable";
         } else {
-            String note="SPY adjusted-close benchmark; monthly simple returns; risk-free rate = 0. "+PERIOD_NOTE;
+            String note="S&P 500 adjusted-close benchmark; monthly simple returns; risk-free rate = 0. "+PERIOD_NOTE;
             measure(g,"CAPM alpha / monthly","fraction",note,new AlphaCAPM(interval,Period.ofMonths(1),benchmark,ReturnsCalculators.SIMPLE));
             measure(g,"CAPM beta","ratio",note,new BetaCAPM(interval,Period.ofMonths(1),benchmark,ReturnsCalculators.SIMPLE));
             measure(g,"CAPM R-squared","ratio",note,new RSquaredCAPM(interval,Period.ofMonths(1),benchmark,ReturnsCalculators.SIMPLE));
-            measure(g,"Portfolio / benchmark level correlation","ratio","Correlation of sampled NAV and SPY price levels, not return correlation.",new BenchmarkCorrelation(benchmark,Period.ofDays(1)));
-            measure(g,"Treynor ratio / annual samples","ratio","SPY benchmark; risk-free rate = 0; library annual sampling convention.",new TreynorRatio(t->0.,benchmark,ReturnsCalculators.SIMPLE,yearly));
+            measure(g,"Portfolio / benchmark level correlation","ratio","Correlation of sampled NAV and S&P 500 price levels, not return correlation.",new BenchmarkCorrelation(benchmark,Period.ofDays(1)));
+            measure(g,"Treynor ratio / annual samples","ratio","S&P 500 benchmark; risk-free rate = 0; library annual sampling convention.",new TreynorRatio(t->0.,benchmark,ReturnsCalculators.SIMPLE,yearly));
         }
         g="Value at risk and expected shortfall";
         for(double alpha:new double[]{.05,.01}) {
@@ -172,8 +172,8 @@ public final class AllPerformanceMeasures {
             periodTable(prefix+" returns","fraction",w,p,new PeriodByPeriodReturns(capital,ReturnsCalculators.SIMPLE));
             periodTable(prefix+" trading volume","USD",w,p,new PeriodByPeriodTradingVolume());
             periodTable(prefix+" information ratio","ratio",w,p,new PeriodByPeriodInformationRatio(capital,Period.ofDays(1),ReturnsCalculators.SIMPLE,0));
-            if(benchmark!=null) periodTable(prefix+" excess returns vs SPY","fraction",w,p,new PeriodByPeriodExcessReturns(capital,benchmark,ReturnsCalculators.SIMPLE));
-            else { PeriodTable table=new PeriodTable();table.label=prefix+" excess returns vs SPY";table.sourceClass="PeriodByPeriodExcessReturns";table.status="unavailable";table.detail=benchmarkError;periods.add(table); }
+            if(benchmark!=null) periodTable(prefix+" excess returns vs S&P 500","fraction",w,p,new PeriodByPeriodExcessReturns(capital,benchmark,ReturnsCalculators.SIMPLE));
+            else { PeriodTable table=new PeriodTable();table.label=prefix+" excess returns vs S&P 500";table.sourceClass="PeriodByPeriodExcessReturns";table.status="unavailable";table.detail=benchmarkError;periods.add(table); }
         }
     }
 

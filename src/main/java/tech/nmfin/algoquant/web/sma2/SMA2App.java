@@ -1,6 +1,8 @@
 package tech.nmfin.algoquant.web.sma2;
 
 import java.time.*;
+import tech.nmfin.algoquant.web.AllPerformanceMeasures;
+import tech.nmfin.algoquant.web.BuyAndHoldBenchmark;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import dev.nm.misc.datastructure.time.LocalDateTimeInterval;
@@ -64,7 +66,8 @@ public final class SMA2App {
     public static final class Result {
         public String symbol, start, end, source, generatedAt;
         public String reportId, reportPath, appRevision;
-        public int reportSchemaVersion = 3;
+        public int reportSchemaVersion = 4;
+        public BuyAndHoldBenchmark.Result sp500;
         public StrategyStatistics sma2Statistics, buyHoldStatistics;
         public List<AllPerformanceMeasures.Metric> buyHoldPerformanceMeasures;
         public List<Fill> buyHoldExecutions = new ArrayList<>();
@@ -176,22 +179,12 @@ public final class SMA2App {
         measureNav.add(measureInterval.start(),CAPITAL);
         for(TimedEntry<Double> entry:report.navCache()) measureNav.add(entry.time(),entry.data());
         measureNav.add(measureInterval.end(),out.finalNav);
-        BenchmarkLookup benchmark = null;
-        String benchmarkError = null;
-        try {
-            NavigableMap<LocalDateTime,Double> market = new TreeMap<>();
-            for(TimedEntry<StockEOD> b:prices(USDStock.newInstance("SPY",Exchange.NEW_YORK),from,req.end))
-                if(Double.isFinite(b.data().adjClose()) && b.data().adjClose()>0) market.put(b.time(),b.data().adjClose());
-            if(market.size()<2) throw new IllegalArgumentException("Insufficient benchmark history");
-            benchmark = time -> {
-                Map.Entry<LocalDateTime,Double> entry = market.floorEntry(time);
-                return entry==null?market.firstEntry().getValue():entry.getValue();
-            };
-            out.benchmarkSource = synthetic?"SYNTHETIC SPY — offline verification":"SPY adjusted close from Yahoo; monthly CAPM returns; zero risk-free rate.";
-        } catch(RuntimeException ex) {
-            benchmarkError = "SPY benchmark data unavailable; benchmark-dependent measures cannot be computed.";
-            out.benchmarkSource = benchmarkError;
-        }
+        // This independent account is mandatory for every new report; a failed benchmark fails the run.
+        out.sp500=new BuyAndHoldBenchmark(this::prices).run(req.start,req.end,CAPITAL);
+        if(synthetic)out.sp500.source="SYNTHETIC ^GSPC — offline verification only; not real index data.";
+        BenchmarkLookup benchmark=out.sp500.lookup;
+        String benchmarkError=null;
+        out.benchmarkSource=out.sp500.source+" Monthly CAPM returns; zero risk-free rate.";
         AllPerformanceMeasures measures = new AllPerformanceMeasures(measureInterval,CAPITAL,measureNav,
             report.tradeBlotter().allExecutions(),new OrderBookCaches(stock,books),benchmark,benchmarkError,
             returns.stream().mapToDouble(Double::doubleValue).toArray());
@@ -220,12 +213,7 @@ public final class SMA2App {
             buyHoldReport.tradeBlotter().allExecutions(),new OrderBookCaches(stock,books),benchmark,benchmarkError,
             holdReturns.stream().mapToDouble(Double::doubleValue).toArray());
         holdMeasures.compute(false);
-        for(AllPerformanceMeasures.Metric metric:holdMeasures.metrics) {
-            if(!"ok".equals(metric.status) && (metric.group.equals("Per-trade distribution statistics")||metric.group.equals("Trade return ratios")||metric.sourceClass.startsWith("WinLoss"))) {
-                metric.status="not_applicable";metric.display="N/A";metric.value=null;
-                metric.detail="Buy-and-hold has one open position and no completed round-trip trades. "+metric.detail;
-            }
-        }
+        BuyAndHoldBenchmark.markOpenPositionMeasures(holdMeasures.metrics);
         out.buyHoldPerformanceMeasures=holdMeasures.metrics;
         for(Execution execution:buyHoldReport.tradeBlotter().allExecutions()) {
             Fill fill=new Fill();fill.date=execution.time().toString();fill.side=execution.side().toString();
@@ -263,7 +251,7 @@ public final class SMA2App {
             for (LocalDate d = from; !d.isAfter(end); d = d.plusDays(1)) {
                 if (d.getDayOfWeek().getValue() > 5) continue;
                 long t = ChronoUnit.DAYS.between(LocalDate.of(2000, 1, 1), d);
-                double p = 100 + .005 * t + 10 * Math.sin(t / 9.0);
+                double p = "^GSPC".equals(stock.symbol())?3500+.1*t+100*Math.sin(t/20.0):100 + .005 * t + 10 * Math.sin(t / 9.0);
                 result.add(new TimedEntry<>(d.atTime(16, 0), new StockEOD(p, p + 1, p - 1, p, 1000000, p)));
             }
         } else {

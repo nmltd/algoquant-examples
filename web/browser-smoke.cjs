@@ -18,7 +18,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
      return route.fulfill({body:fs.readFileSync('target/web-reports/'+name+'.csv'),contentType:'text/csv'});
     }
     if(path.endsWith('00000000000000000000000000000001')){
-     const legacy=JSON.parse(JSON.stringify(report));delete legacy.sizingModel;delete legacy.benchmarkTotalReturn;legacy.reportSchemaVersion=1;delete legacy.buyHoldStatistics;delete legacy.sma2Statistics;delete legacy.buyHoldPerformanceMeasures;legacy.reportId='00000000000000000000000000000001';legacy.reportPath='/reports/'+legacy.reportId;
+     const legacy=JSON.parse(JSON.stringify(report));delete legacy.sizingModel;delete legacy.benchmarkTotalReturn;legacy.reportSchemaVersion=1;delete legacy.sp500;delete legacy.buyHoldStatistics;delete legacy.sma2Statistics;delete legacy.buyHoldPerformanceMeasures;legacy.reportId='00000000000000000000000000000001';legacy.reportPath='/reports/'+legacy.reportId;
      legacy.series.forEach(p=>p.benchmark=10000+p.close-legacy.series[0].close);
      return route.fulfill({json:legacy});
     }
@@ -58,7 +58,10 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   assert.match(await page.locator('#report-sizing-note').textContent(),/Full-equity sizing/);
   assert.match(await page.locator('#benchmark-legend').textContent(),/fully invested/);
   assert.equal(await page.locator('.comparison-chart').count(),4);
-  assert.match(await page.locator('.paired-metric').first().textContent(),/Buy & hold/);
+  assert.match(await page.locator('.paired-metric').first().textContent(),/buy & hold/);
+  assert.match(await page.locator('.paired-metric').first().textContent(),/S&P 500/);
+  assert.equal(await page.locator('.comparison-chart').first().locator('.comparison-legend button').count(),3);
+  assert.equal(await page.locator('.comparison-chart').first().locator('rect').count(),6);
   assert.equal(await page.locator('#period-measures').isVisible(),false);
   const bar=page.locator('.comparison-chart rect').first();await bar.focus();
   assert.match(await page.locator('.comparison-hover').first().textContent(),/SMA2/);

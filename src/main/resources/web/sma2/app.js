@@ -184,8 +184,8 @@ function readableMeasureValue(m){
 }
 function element(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;}
 function renderLibrary(r){
- $('measure-benchmark').textContent=r.benchmarkSource+' Summary measures use the same conventions for both strategies; open buy-and-hold positions have no completed-trade statistics.';
- const query=$('measure-filter').value.trim().toLowerCase(),groups=new Map(),hold=new Map((r.buyHoldPerformanceMeasures||[]).map(m=>[metricKey(m),m]));
+ $('measure-benchmark').textContent=r.benchmarkSource+' Summary measures use the same conventions for all strategies; open buy-and-hold positions have no completed-trade statistics.';
+ const query=$('measure-filter').value.trim().toLowerCase(),groups=new Map(),hold=new Map((r.buyHoldPerformanceMeasures||[]).map(m=>[metricKey(m),m])),market=new Map((r.sp500?.performanceMeasures||[]).map(m=>[metricKey(m),m]));
  $('clear-search').disabled=!$('measure-filter').value;
  const measures=r.performanceMeasures||[];
  for(const m of measures){
@@ -198,15 +198,18 @@ function renderLibrary(r){
   const details=element('details',null,'measure-group');details.append(element('summary',group+' ('+rows.length+')'));
   details.open=!!query||allGroupsOpen===true;
   const wrap=element('div',null,'table-wrap'),table=element('table',null,'measure-table comparison-table'),head=element('thead'),tr=element('tr');
-  for(const name of ['Measure','SMA2','Buy & hold','Difference','Unit / parameters'])tr.append(element('th',name));
+  for(const name of ['Measure','SMA2',r.symbol+' buy & hold','S&P 500','SMA2 − underlying','SMA2 − S&P 500','Unit / parameters'])tr.append(element('th',name));
   head.append(tr);table.append(head);const body=element('tbody');
   for(const m of rows){
-   const b=hold.get(metricKey(m)),row=element('tr');row.append(element('td',m.label),element('td',readableMeasureValue(m)),element('td',b?readableMeasureValue(b):'Not saved'));
+   const b=hold.get(metricKey(m)),s=market.get(metricKey(m)),row=element('tr');row.append(element('td',m.label),element('td',readableMeasureValue(m)),element('td',b?readableMeasureValue(b):'Not saved'),element('td',s?readableMeasureValue(s):'Not saved'));
    const diff=m.status==='ok'&&b?.status==='ok'&&Number.isFinite(m.value)&&Number.isFinite(b.value)?(m.unit==='fraction'?decimal((m.value-b.value)*100)+' pp':pairedValue(m.value-b.value,m.unit)):'—';
    row.append(element('td',diff));
+   const marketDiff=m.status==='ok'&&s?.status==='ok'&&Number.isFinite(m.value)&&Number.isFinite(s.value)?(m.unit==='fraction'?decimal((m.value-s.value)*100)+' pp':pairedValue(m.value-s.value,m.unit)):'—';
+   row.append(element('td',marketDiff));
    const note=element('td');note.append(element('code',m.sourceClass+' · '+m.unit),element('p',m.detail||'','hint'));
    if(m.status!=='ok')note.append(element('p','SMA2: '+m.status.replaceAll('_',' '),'hint'));
    if(b&&b.status!=='ok')note.append(element('p','Buy & hold: '+b.status.replaceAll('_',' ')+'. '+(b.detail||''),'hint'));
+   if(s&&s.status!=='ok')note.append(element('p','S&P 500: '+s.status.replaceAll('_',' ')+'. '+(s.detail||''),'hint'));
    row.append(note);body.append(row);
   }
   table.append(body);wrap.append(table);details.append(wrap);content.push(details);
@@ -264,36 +267,43 @@ function renderComparison(r){
  const available=!!(r.sma2Statistics&&r.buyHoldStatistics&&r.buyHoldPerformanceMeasures);
  $('comparison-panel').hidden=!available;
  $('comparison-note').textContent=available
-  ? 'Same stock, dates, $10,000 starting equity, adjusted prices and zero costs. Difference means SMA2 minus buy & hold; it does not automatically mean better.'
-  : 'This saved report predates the two-strategy comparison. Run a new backtest to calculate and save both sets of statistics.';
+  ? (r.sp500?'Three independently funded accounts; same requested dates, $10,000 starting equity and zero costs. S&P 500 is Yahoo ^GSPC, a price index without reinvested dividends.':'This saved report has no S&P 500 simulation. Run a new backtest for the three-way comparison.')
+  : 'This saved report predates strategy comparisons. Run a new backtest to calculate and save all statistics.';
  if(!available)return;
- const a=r.sma2Statistics,b=r.buyHoldStatistics;
+ const portfolios=[
+  {name:'SMA2',stats:r.sma2Statistics,measures:r.performanceMeasures,cls:'strategy-a'},
+  {name:r.symbol+' buy & hold',stats:r.buyHoldStatistics,measures:r.buyHoldPerformanceMeasures,cls:'strategy-b'}
+ ];
+ if(r.sp500)portfolios.push({name:'S&P 500',stats:r.sp500.statistics,measures:r.sp500.performanceMeasures,cls:'strategy-c'});
  const cards=[['Total return','totalReturn','fraction'],['Annualized growth (CAGR)','cagr','fraction'],['Maximum drawdown','maxDrawdown','fraction'],['Annualized volatility','annualizedVolatility','fraction'],['Sharpe ratio','sharpe','ratio'],['Final portfolio value','finalNav','USD'],['Net profit / loss','pnl','USD']];
  $('metrics').replaceChildren(...cards.map(([label,key,unit])=>{
   const card=element('div',null,'metric paired-metric');card.append(element('p',label));
-  for(const [name,stats,cls]of [['SMA2',a,'strategy-a'],['Buy & hold',b,'strategy-b']]){
-   const row=element('div',null,'paired-line');row.append(element('span',name,cls),element('strong',pairedValue(stats[key],unit)));card.append(row);
+  for(const p of portfolios){
+   const row=element('div',null,'paired-line');row.append(element('span',p.name,p.cls),element('strong',pairedValue(p.stats[key],unit)));card.append(row);
   }
   return card;
  }));
- const metric=(list,source)=>list.find(m=>m.sourceClass===source&&m.status==='ok')?.value;
+ const metric=(p,source)=>p.measures.find(m=>m.sourceClass===source&&m.status==='ok')?.value;
+ const stat=(label,key)=>[label,...portfolios.map(p=>p.stats[key])];
+ const measure=(label,key)=>[label,...portfolios.map(p=>metric(p,key))];
  const charts=[
-  ['Growth and return','fraction',[['Total return',a.totalReturn,b.totalReturn],['CAGR',a.cagr,b.cagr]]],
-  ['Risk','fraction',[['Maximum drawdown',a.maxDrawdown,b.maxDrawdown],['Annualized volatility',a.annualizedVolatility,b.annualizedVolatility]]],
-  ['Risk-adjusted ratios','ratio',[['Sharpe · daily × √252',a.sharpe,b.sharpe],['Sortino · monthly, annualized',metric(r.performanceMeasures,'SortinoRatioMonthlyAnnualized'),metric(r.buyHoldPerformanceMeasures,'SortinoRatioMonthlyAnnualized')],['Calmar · library annual return',metric(r.performanceMeasures,'CalmarRatio'),metric(r.buyHoldPerformanceMeasures,'CalmarRatio')]]],
-  ['Portfolio and profit','USD',[['Final value',a.finalNav,b.finalNav],['Profit / loss',a.pnl,b.pnl]]]
+  ['Growth and return','fraction',[stat('Total return','totalReturn'),stat('CAGR','cagr')]],
+  ['Risk','fraction',[stat('Maximum drawdown','maxDrawdown'),stat('Annualized volatility','annualizedVolatility')]],
+  ['Risk-adjusted ratios','ratio',[stat('Sharpe · daily × √252','sharpe'),measure('Sortino · monthly, annualized','SortinoRatioMonthlyAnnualized'),measure('Calmar · library annual return','CalmarRatio')]],
+  ['Portfolio and profit','USD',[stat('Final value','finalNav'),stat('Profit / loss','pnl')]]
  ];
- $('comparison-charts').replaceChildren(...charts.map(([title,unit,rows])=>comparisonChart(title,unit,rows)));
+ $('comparison-charts').replaceChildren(...charts.map(([title,unit,rows])=>comparisonChart(title,unit,rows,portfolios.map(p=>p.name))));
 }
-function comparisonChart(title,unit,rows){
+function comparisonChart(title,unit,rows,names){
  const panel=element('section',null,'comparison-chart'),heading=element('h3',title),legend=element('div',null,'comparison-legend'),hidden=new Set();
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),output=element('output','Hover or focus a bar for its value.','comparison-hover');
- svg.setAttribute('viewBox','0 0 520 '+(rows.length*112+35));svg.setAttribute('role','img');svg.setAttribute('aria-label',title+' comparison: SMA2 and buy & hold');
- const colors=['#188663','#cf9647'],names=['SMA2','Buy & hold'],buttons=[];
+ const height=42+names.length*29;
+ svg.setAttribute('viewBox','0 0 520 '+(rows.length*height+25));svg.setAttribute('role','img');svg.setAttribute('aria-label',title+' comparison: '+names.join(', '));
+ const colors=['#188663','#cf9647','#426db4'];
  names.forEach((name,k)=>{
-  const button=element('button',name,k===0?'strategy-a':'strategy-b');button.type='button';button.setAttribute('aria-pressed','true');
+  const button=element('button',name,['strategy-a','strategy-b','strategy-c'][k]);button.type='button';button.setAttribute('aria-pressed','true');
   button.onclick=()=>{hidden.has(k)?hidden.delete(k):hidden.add(k);button.setAttribute('aria-pressed',String(!hidden.has(k)));draw();};
-  buttons.push(button);legend.append(button);
+  legend.append(button);
  });
  panel.append(heading,legend,svg,output);
  function draw(){
@@ -302,10 +312,10 @@ function comparisonChart(title,unit,rows){
   let low=Math.min(0,...finite),high=Math.max(0,...finite);if(high===low)high=low+1;
   const x=v=>28+(v-low)/(high-low)*310;
   const add=(tag,attrs,text)=>{const node=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value]of Object.entries(attrs))node.setAttribute(key,value);if(text!=null)node.textContent=text;svg.append(node);return node;};
-  rows.forEach(([label,a,b],i)=>{
-   const top=i*112;add('text',{x:28,y:top+18,class:'bar-label'},label+' · '+(unit==='fraction'?'%':unit));
-   add('line',{x1:x(0),x2:x(0),y1:top+28,y2:top+90,stroke:'#b6c8c0'});
-   [a,b].forEach((value,k)=>{
+  rows.forEach(([label,...values],i)=>{
+   const top=i*height;add('text',{x:28,y:top+18,class:'bar-label'},label+' · '+(unit==='fraction'?'%':unit));
+   add('line',{x1:x(0),x2:x(0),y1:top+28,y2:top+height-10,stroke:'#b6c8c0'});
+   values.forEach((value,k)=>{
     if(hidden.has(k))return;
     const y=top+32+k*29,valid=Number.isFinite(value);
     if(!valid){add('text',{x:28,y:y+16,fill:colors[k]},names[k]+': N/A');return;}

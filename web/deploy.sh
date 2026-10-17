@@ -50,8 +50,17 @@ with urllib.request.urlopen(sys.argv[2]+"/sma2/api/reports/"+r["reportId"]+"/rep
     with zipfile.ZipFile(io.BytesIO(excel.read())) as workbook:
         ns={"s":"http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
         names=[s.attrib["name"] for s in ET.fromstring(workbook.read("xl/workbook.xml")).findall("s:sheets/s:sheet",ns)]
-        assert names==["SMA2 statistics","Buy and hold statistics","Daily data"]
-print("LIVE EXCEL WORKBOOK VERIFIED: three tabs")
+        assert names==["SMA2 statistics","Buy and hold statistics","S&P 500 statistics","Daily data"]
+sp=r["sp500"]
+assert sp["symbol"]=="^GSPC" and "Yahoo Finance ^GSPC" in sp["source"]
+assert sp["start"]==r["start"] and sp["end"]==r["end"]
+assert len(sp["executions"])==1 and len(sp["performanceMeasures"])==len(r["performanceMeasures"])
+assert abs(sp["executions"][0]["quantity"]*sp["executions"][0]["price"]-r["initialCapital"])<1e-7
+for point in sp["series"]:
+    assert abs(point["nav"]/r["initialCapital"]-point["close"]/sp["series"][0]["close"])<1e-10
+assert abs(sp["statistics"]["totalReturn"]-(sp["series"][-1]["close"]/sp["series"][0]["close"]-1))<1e-10
+print("S&P 500 INDEPENDENT SIMULATION VERIFIED:",sp["statistics"]["totalReturn"])
+print("LIVE EXCEL WORKBOOK VERIFIED: four tabs")
 print("SAVED REPORT VERIFIED:", sys.argv[2]+r["reportPath"])
 assert len(r["buyHoldPerformanceMeasures"])==len(measures)
 assert len(r["buyHoldExecutions"])==1

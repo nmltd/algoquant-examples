@@ -1,16 +1,14 @@
 package tech.nmfin.algoquant.web;
 
-import java.io.File;
 import java.time.*;
 import java.util.*;
-import dev.nm.misc.license.License;
 import tech.nmfin.algoquant.data.cache.TimedEntry;
 import tech.nmfin.algoquant.execution.datatype.StockEOD;
 import org.junit.*;
 import static org.junit.Assert.*;
 
 public class BuyAndHoldBenchmarkTest {
-    @BeforeClass public static void license(){License.setLicenseFile(new File(System.getenv().getOrDefault("NM_LICENSE_FILE","license/nm.lic")));}
+    @BeforeClass public static void license(){TestLicense.load();}
     @Test public void independentAccountInvestsAllCapitalAndTracksIndex() {
         BuyAndHoldBenchmark benchmark=new BuyAndHoldBenchmark((stock,start,end)->{
             assertEquals("^GSPC",stock.symbol());

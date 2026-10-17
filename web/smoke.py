@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the real HTTP app. Default: deterministic offline prices; --live: Yahoo."""
-import csv, io, math, json, os, subprocess, sys, time, tempfile, shutil, urllib.request, urllib.parse, urllib.error
+import zipfile, xml.etree.ElementTree as ET, datetime, csv, io, math, json, os, subprocess, sys, time, tempfile, shutil, urllib.request, urllib.parse, urllib.error
 live = '--live' in sys.argv
 port = '18081' if live else '18080'
 report_dir=tempfile.mkdtemp(prefix='sma2-smoke-reports-')
@@ -77,6 +77,36 @@ try:
                 assert math.isclose(value,metric['value'],rel_tol=1e-12,abs_tol=1e-12)
             else: assert math.isnan(value)
         csv_bytes[name]=body
+    status,headers,xlsx=request('/sma2/api/reports/'+r['reportId']+'/report.xlsx')
+    assert status==200 and headers.get_content_type()=='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ns={'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+    with zipfile.ZipFile(io.BytesIO(xlsx)) as z:
+        shared=[''.join(si.itertext()) for si in ET.fromstring(z.read('xl/sharedStrings.xml'))]
+        sheets=ET.fromstring(z.read('xl/workbook.xml')).findall('s:sheets/s:sheet',ns)
+        assert [s.attrib['name'] for s in sheets]==['SMA2 statistics','Buy and hold statistics','Daily data']
+        def cells(index):
+            root=ET.fromstring(z.read('xl/worksheets/sheet'+str(index)+'.xml'))
+            assert root.find('s:sheetViews/s:sheetView/s:pane',ns).attrib['state']=='frozen'
+            assert root.find('s:autoFilter',ns) is not None
+            result={}
+            for cell in root.findall('.//s:sheetData/s:row/s:c',ns):
+                v=cell.find('s:v',ns)
+                if v is not None:result[cell.attrib['r']]=shared[int(v.text)] if cell.attrib.get('t')=='s' else float(v.text)
+            return result
+        for sheet,key in [(1,'performanceMeasures'),(2,'buyHoldPerformanceMeasures')]:
+            values=cells(sheet)
+            for index,m in enumerate(r[key],2):
+                assert values['A'+str(index)]==m['label']
+                expected=m.get('value') if m['status']=='ok' else None
+                actual=values['B'+str(index)]
+                assert (actual=='N/A' if expected is None else math.isclose(actual,expected,rel_tol=1e-12,abs_tol=1e-12))
+        daily=cells(3)
+        assert [daily[c+'1'] for c in 'ABCDEF']==['date','adjusted_close','fast_sma','slow_sma','sma2_nav','fully_invested_buy_hold_nav']
+        for index,p in enumerate(r['series'],2):
+            assert daily['A'+str(index)]==(datetime.date.fromisoformat(p['date'])-datetime.date(1899,12,30)).days
+            for col,key in zip('BCDEF',['close','fast','slow','nav','benchmark']):
+                actual=daily.get(col+str(index));expected=p.get(key)
+                assert (actual is None if expected is None else math.isclose(actual,expected,rel_tol=1e-12,abs_tol=1e-12))
     # Restart the actual HTTP process; the original snapshot must still load unchanged.
     command=proc.args
     proc.terminate();proc.wait(timeout=5)
@@ -90,10 +120,12 @@ try:
     status,_,saved=request('/sma2/api/reports/'+r['reportId'])
     assert status==200 and json.loads(saved)==r
     assert request(r['reportPath'])[0]==200
+    assert request('/sma2/api/reports/'+r['reportId']+'/report.xlsx')[0]==200
     for name,original in csv_bytes.items():
         assert request('/sma2/api/reports/'+r['reportId']+'/'+name+'.csv')[2]==original
     print('Saved report survived server restart:',r['reportPath'])
     os.makedirs('target/web-reports',exist_ok=True)
+    with open('target/web-reports/report.xlsx','wb') as f:f.write(xlsx)
     for name,content in csv_bytes.items():
         with open('target/web-reports/'+name+'.csv','wb') as f:f.write(content)
     with open('target/web-reports/'+('live' if live else 'offline')+'.json','w') as f: json.dump(r,f,indent=2)

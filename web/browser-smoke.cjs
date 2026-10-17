@@ -12,6 +12,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
    const path=incoming.startsWith('/sma2/')?incoming.slice('/sma2'.length):incoming;
    if(path==='/api/stocks')return route.fulfill({json:['AAPL','MSFT']});
    if(path.startsWith('/api/reports/')){
+    if(path.endsWith('/report.xlsx'))return route.fulfill({body:fs.readFileSync('target/web-reports/report.xlsx'),contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     if(path.endsWith('.csv')){
      const name=path.endsWith('/buy-hold.csv')?'buy-hold':'sma2';
      return route.fulfill({body:fs.readFileSync('target/web-reports/'+name+'.csv'),contentType:'text/csv'});
@@ -42,11 +43,17 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   assert.equal(await page.locator('#end').inputValue(),await page.evaluate(()=>previousBusinessDay()));
   await page.goto('http://sma2.test'+report.reportPath);
   await page.locator('#report').waitFor({state:'visible'});
-  for(const [id,name]of [['download','sma2'],['download-measures','buy-hold']]){
+  for(const [id,name]of [['download-sma2-csv','sma2'],['download-measures','buy-hold']]){
    const waiting=page.waitForEvent('download');await page.locator('#'+id).click();const download=await waiting;
    assert.equal(download.suggestedFilename(),report.symbol+'-'+name+'-performance.csv');
    const stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);
    assert.equal(Buffer.concat(chunks).toString(),fs.readFileSync('target/web-reports/'+name+'.csv','utf8'));
+  }
+  {
+   const waiting=page.waitForEvent('download');await page.locator('#download').click();const download=await waiting;
+   assert.equal(download.suggestedFilename(),report.symbol+'-sma2-backtest.xlsx');
+   const stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);
+   assert.deepEqual(Buffer.concat(chunks),fs.readFileSync('target/web-reports/report.xlsx'));
   }
   assert.match(await page.locator('#report-sizing-note').textContent(),/Full-equity sizing/);
   assert.match(await page.locator('#benchmark-legend').textContent(),/fully invested/);

@@ -24,7 +24,7 @@ curl --fail --show-error --max-time 150 --retry 2 --retry-delay 2 \
   -X POST -d 'symbol=AAPL&start=2016-01-01&end=2020-12-31&fast=5&slow=20' \
   "$url/sma2/api/backtest" -o "$report"
 python3 - "$report" "$url" <<'PY'
-import json, sys, urllib.request
+import json, sys, urllib.request, zipfile, io, xml.etree.ElementTree as ET
 r = json.load(open(sys.argv[1]))
 assert r["reportPath"].startswith("/sma2/reports/")
 assert r["source"] == "Yahoo Finance daily adjusted close"
@@ -46,6 +46,12 @@ with urllib.request.urlopen(sys.argv[2]+"/sma2/api/reports/"+r["reportId"],timeo
     assert json.load(saved) == r
 with urllib.request.urlopen(sys.argv[2]+r["reportPath"],timeout=30) as page:
     assert page.status == 200
+with urllib.request.urlopen(sys.argv[2]+"/sma2/api/reports/"+r["reportId"]+"/report.xlsx",timeout=60) as excel:
+    with zipfile.ZipFile(io.BytesIO(excel.read())) as workbook:
+        ns={"s":"http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+        names=[s.attrib["name"] for s in ET.fromstring(workbook.read("xl/workbook.xml")).findall("s:sheets/s:sheet",ns)]
+        assert names==["SMA2 statistics","Buy and hold statistics","Daily data"]
+print("LIVE EXCEL WORKBOOK VERIFIED: three tabs")
 print("SAVED REPORT VERIFIED:", sys.argv[2]+r["reportPath"])
 assert len(r["buyHoldPerformanceMeasures"])==len(measures)
 assert len(r["buyHoldExecutions"])==1

@@ -81,7 +81,7 @@ try:
     assert status==200 and headers.get_content_type()=='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ns={'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
     with zipfile.ZipFile(io.BytesIO(xlsx)) as z:
-        shared=[''.join(si.itertext()) for si in ET.fromstring(z.read('xl/sharedStrings.xml'))]
+        shared=[''.join(si.itertext()) for si in ET.fromstring(z.read('xl/sharedStrings.xml'))] if 'xl/sharedStrings.xml' in z.namelist() else []
         sheets=ET.fromstring(z.read('xl/workbook.xml')).findall('s:sheets/s:sheet',ns)
         assert [s.attrib['name'] for s in sheets]==['SMA2 statistics','Buy and hold statistics','Daily data']
         def cells(index):
@@ -91,7 +91,8 @@ try:
             result={}
             for cell in root.findall('.//s:sheetData/s:row/s:c',ns):
                 v=cell.find('s:v',ns)
-                if v is not None:result[cell.attrib['r']]=shared[int(v.text)] if cell.attrib.get('t')=='s' else float(v.text)
+                if cell.attrib.get('t')=='inlineStr':result[cell.attrib['r']]=''.join(cell.find('s:is',ns).itertext())
+                elif v is not None:result[cell.attrib['r']]=shared[int(v.text)] if cell.attrib.get('t')=='s' else float(v.text)
             return result
         for sheet,key in [(1,'performanceMeasures'),(2,'buyHoldPerformanceMeasures')]:
             values=cells(sheet)

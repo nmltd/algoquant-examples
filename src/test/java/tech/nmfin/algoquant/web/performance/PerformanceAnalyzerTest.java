@@ -42,7 +42,7 @@ public class PerformanceAnalyzerTest {
   assertEquals(54./50-1,r.accounts.get(0).statistics.totalReturn,1e-10);
  }
  @Test public void nonpositiveNavIsPreservedAndNotReportedAsValidReturns()throws Exception {
-  PerformanceAnalyzer.Result r=analyzer("Date,Fund,S&P 500\\n2020-01-01,100,3000\\n2020-01-02,-20,3001\\n2020-01-03,110,3002\\n").analyze("https://example.com/nav.csv","","");
+  PerformanceAnalyzer.Result r=analyzer("Date,Fund,S&P 500\n2020-01-01,100,3000\n2020-01-02,-20,3001\n2020-01-03,110,3002\n").analyze("https://example.com/nav.csv","","");
   assertEquals(-2000,r.accounts.get(0).series.get(1).nav,1e-8);
   assertNull(r.accounts.get(0).statistics.totalReturn);assertNull(r.accounts.get(0).statistics.sharpe);
   assertTrue(r.warnings.stream().anyMatch(w->w.contains("zero/negative")));

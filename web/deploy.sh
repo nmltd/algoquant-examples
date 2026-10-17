@@ -21,13 +21,20 @@ printf '\nDeployed: %s\n' "$url"
 report="$(mktemp)"
 trap 'rm -f "$report"' EXIT
 curl --fail --show-error --max-time 150 --retry 2 --retry-delay 2 \
-  -X POST -d 'symbol=AAPL&start=2020-01-01&end=2020-12-31&fast=5&slow=20' \
+  -X POST -d 'symbol=AAPL&start=2016-01-01&end=2020-12-31&fast=5&slow=20' \
   "$url/api/backtest" -o "$report"
 python3 - "$report" <<'PY'
 import json, sys
 r = json.load(open(sys.argv[1]))
 assert r["source"] == "Yahoo Finance daily adjusted close"
-assert len(r["series"]) > 200 and len(r["executions"]) > 0
+assert len(r["series"]) > 1000 and len(r["executions"]) > 0
 assert abs(r["finalNav"] - 10000 - r["pnl"]) < 1e-7
+measures = r["performanceMeasures"]
+assert len(measures) > 150 and len(r["periodMeasures"]) == 12
+for m in measures:
+    assert m["status"] != "unavailable", (m["label"], m["detail"])
+    if m["sourceClass"].startswith("RollingAnnualReturn") or m["sourceClass"] == "TreynorRatio":
+        assert m["status"] == "ok", (m["label"], m["detail"])
+print("LIBRARY MEASURES VERIFIED:", len(measures), "scalar results;", len(r["periodMeasures"]), "period tables")
 print("LIVE DEPLOYMENT VERIFIED:", r["symbol"], len(r["series"]), "NAV observations;", len(r["executions"]), "executions")
 PY

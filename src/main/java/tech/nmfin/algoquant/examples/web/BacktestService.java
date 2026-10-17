@@ -16,6 +16,7 @@ import tech.nmfin.algoquant.execution.datatype.orderbook.cache.OrderBookCaches;
 import tech.nmfin.algoquant.execution.datatype.product.stock.*;
 import tech.nmfin.algoquant.execution.datatype.product.stock.usa.USDStock;
 import tech.nmfin.algoquant.execution.performance.report.PerformanceReport;
+import tech.nmfin.algoquant.execution.performance.measure.BenchmarkLookup;
 import tech.nmfin.algoquant.execution.strategy.Strategy;
 import tech.nmfin.algoquant.model.signal.technical.crossover.sma2.SMA2;
 
@@ -64,6 +65,9 @@ public final class BacktestService {
         public int fast, slow; public double initialCapital = CAPITAL, finalNav, pnl, totalReturn, maxDrawdown;
         public Double annualizedVolatility, sharpe;
         public List<Point> series = new ArrayList<>(); public List<Fill> executions = new ArrayList<>();
+        public List<AllPerformanceMeasures.Metric> performanceMeasures;
+        public List<AllPerformanceMeasures.PeriodTable> periodMeasures;
+        public String benchmarkSource;
     }
 
     public Result run(Request req) {
@@ -133,6 +137,34 @@ public final class BacktestService {
             Fill f = new Fill(); f.date = e.time().toString(); f.side = e.side().toString(); f.quantity = e.quantity(); f.price = e.price();
             out.executions.add(f);
         }
+        // Evaluate each library measure independently so one undefined statistic cannot lose the report.
+        BufferCache<Double> measureNav = new BufferCache<>();
+        LocalDateTimeInterval measureInterval = LocalDateTimeInterval.of(req.start.atStartOfDay(),req.end.plusDays(1).atStartOfDay());
+        measureNav.add(measureInterval.start(),CAPITAL);
+        for(TimedEntry<Double> entry:report.navCache()) measureNav.add(entry.time(),entry.data());
+        measureNav.add(measureInterval.end(),out.finalNav);
+        BenchmarkLookup benchmark = null;
+        String benchmarkError = null;
+        try {
+            NavigableMap<LocalDateTime,Double> market = new TreeMap<>();
+            for(TimedEntry<StockEOD> b:prices(USDStock.newInstance("SPY",Exchange.NEW_YORK),from,req.end))
+                if(Double.isFinite(b.data().adjClose()) && b.data().adjClose()>0) market.put(b.time(),b.data().adjClose());
+            if(market.size()<2) throw new IllegalArgumentException("Insufficient benchmark history");
+            benchmark = time -> {
+                Map.Entry<LocalDateTime,Double> entry = market.floorEntry(time);
+                return entry==null?market.firstEntry().getValue():entry.getValue();
+            };
+            out.benchmarkSource = synthetic?"SYNTHETIC SPY — offline verification":"SPY adjusted close from Yahoo; monthly CAPM returns; zero risk-free rate.";
+        } catch(RuntimeException ex) {
+            benchmarkError = "SPY benchmark data unavailable; benchmark-dependent measures cannot be computed.";
+            out.benchmarkSource = benchmarkError;
+        }
+        AllPerformanceMeasures measures = new AllPerformanceMeasures(measureInterval,CAPITAL,measureNav,
+            report.tradeBlotter().allExecutions(),new OrderBookCaches(stock,books),benchmark,benchmarkError,
+            returns.stream().mapToDouble(Double::doubleValue).toArray());
+        measures.compute();
+        out.performanceMeasures = measures.metrics;
+        out.periodMeasures = measures.periods;
         return out;
     }
     private static double average(List<Double> values, int lag) {

@@ -31,6 +31,7 @@ function render(r){
  $('slow-legend').textContent='Slow SMA · '+r.slow+' days';
  const values=[['Net profit / loss',usd(r.pnl)],['Total return',pct(r.totalReturn)],['Maximum drawdown',pct(r.maxDrawdown)],['Final portfolio value',usd(r.finalNav)],['Annualized volatility',r.annualizedVolatility==null?'N/A':pct(r.annualizedVolatility)],['Sharpe · risk-free rate 0',r.sharpe==null?'N/A':r.sharpe.toFixed(2)]];
  $('metrics').replaceChildren(...values.map(([title,value])=>{const d=document.createElement('div');d.className='metric';const p=document.createElement('p');p.textContent=title;const s=document.createElement('strong');s.textContent=value;d.append(p,s);return d;}));
+ renderLibrary(r);
  chart('prices',r.series,['close','fast','slow'],['#344a52','#188663','#cf9647']);
  chart('nav',r.series,['nav','benchmark'],['#188663','#cf9647']);
  $('fill-count').textContent='('+r.executions.length+')';
@@ -55,4 +56,53 @@ $('download').addEventListener('click',()=>{
  r.series.forEach(p=>lines.push([p.date,p.close,p.fast,p.slow,p.nav,p.benchmark].join(',')));
  const url=URL.createObjectURL(new Blob([lines.join('\r\n')],{type:'text/csv'}));
  const a=document.createElement('a');a.href=url;a.download=r.symbol+'-sma2-'+r.fast+'-'+r.slow+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+
+function readableMeasureValue(m){
+ if(m.status!=='ok'||!Number.isFinite(m.value))return m.display||'N/A';
+ if(m.unit==='fraction')return (m.value*100).toLocaleString('en-US',{maximumFractionDigits:6})+'%';
+ return m.value.toLocaleString('en-US',{maximumFractionDigits:8});
+}
+function element(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;}
+function renderLibrary(r){
+ $('measure-benchmark').textContent=r.benchmarkSource+' The chart benchmark remains one share of the selected stock.';
+ const query=$('measure-filter').value.trim().toLowerCase(),groups=new Map();
+ const measures=r.performanceMeasures||[];
+ for(const m of measures){
+  if(query&&!((m.group+' '+m.label+' '+m.sourceClass+' '+m.unit).toLowerCase().includes(query)))continue;
+  if(!groups.has(m.group))groups.set(m.group,[]);groups.get(m.group).push(m);
+ }
+ $('measure-count').textContent=measures.length+' configured scalar results · '+measures.filter(m=>m.status==='ok').length+' finite · '+measures.filter(m=>m.status==='not_applicable').length+' not applicable. Expand a group for details.';
+ const content=[];
+ for(const [group,rows] of groups){
+  const details=element('details',null,'measure-group'),summary=element('summary',group+' ('+rows.length+')');details.append(summary);
+  if(query||group==='Balances and profit')details.open=true;
+  const wrap=element('div',null,'table-wrap'),table=element('table',null,'measure-table'),head=element('thead'),tr=element('tr');
+  for(const text of ['Measure','Value','Unit','Library class / parameters'])tr.append(element('th',text));
+  head.append(tr);table.append(head);const body=element('tbody');
+  for(const m of rows){const row=element('tr');row.append(element('td',m.label),element('td',readableMeasureValue(m)),element('td',m.unit));const note=element('td');note.append(element('code',m.sourceClass),element('p',m.detail||'', 'hint'));if(m.status!=='ok')note.append(element('span',m.status.replaceAll('_',' '),'measure-status'));row.append(note);body.append(row);}
+  table.append(body);wrap.append(table);details.append(wrap);content.push(details);
+ }
+ $('library-measures').replaceChildren(...content);
+ const tables=[];
+ for(const t of r.periodMeasures||[]){
+  const details=element('details',null,'measure-group');details.append(element('summary',t.label+' ('+t.values.length+' periods)'));
+  details.append(element('p',t.sourceClass+' · '+t.unit+' · '+t.detail,'hint'));
+  const wrap=element('div',null,'table-wrap'),table=element('table'),head=element('thead'),tr=element('tr');
+  for(const name of ['Start','End (excluded)','Value'])tr.append(element('th',name));head.append(tr);table.append(head);
+  const body=element('tbody');for(const p of t.values.slice(0,200)){const row=element('tr');row.append(element('td',p.start.replace('T',' ')),element('td',p.end.replace('T',' ')),element('td',readableMeasureValue({...p,unit:t.unit})));body.append(row);}
+  table.append(body);wrap.append(table);details.append(wrap);tables.push(details);
+ }
+ $('period-measures').replaceChildren(...tables);
+}
+$('measure-filter').addEventListener('input',()=>{if(current)renderLibrary(current);});
+function saveFile(name,content,type){const u=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+$('download-report').addEventListener('click',()=>{if(current)saveFile(current.symbol+'-sma2-report.json',JSON.stringify(current,null,2),'application/json');});
+$('download-measures').addEventListener('click',()=>{
+ if(!current)return;
+ const rows=[['kind','group','measure','library_class','unit','status','value','display','parameters_or_reason','start','end']];
+ for(const m of current.performanceMeasures)rows.push(['scalar',m.group,m.label,m.sourceClass,m.unit,m.status,m.value??'',m.display,m.detail,'','']);
+ for(const t of current.periodMeasures)for(const p of t.values)rows.push(['period',t.label,t.label,t.sourceClass,t.unit,p.status,p.value??'',p.display,t.detail,p.start,p.end]);
+ const csv=rows.map(row=>row.map(v=>{let text=String(v??'');if(/^[=+@]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';}).join(',')).join('\r\n');
+ saveFile(current.symbol+'-sma2-all-measures.csv',csv,'text/csv');
 });

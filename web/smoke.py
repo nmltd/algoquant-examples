@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the real HTTP app. Default: deterministic offline prices; --live: Yahoo."""
-import json, os, subprocess, sys, time, tempfile, shutil, urllib.request, urllib.parse, urllib.error
+import csv, io, math, json, os, subprocess, sys, time, tempfile, shutil, urllib.request, urllib.parse, urllib.error
 live = '--live' in sys.argv
 port = '18081' if live else '18080'
 report_dir=tempfile.mkdtemp(prefix='sma2-smoke-reports-')
@@ -61,6 +61,22 @@ try:
     assert json.loads(request('/sma2/api/reports/'+r['reportId'])[2]) == r
     assert request('/sma2/api/reports/00000000000000000000000000000000')[0] == 404
     assert request('/sma2/api/reports/invalid-id')[0] == 400
+    # CSVs must contain the exact saved library values for both funded accounts.
+    csv_bytes={}
+    for name,key in [('sma2','performanceMeasures'),('buy-hold','buyHoldPerformanceMeasures')]:
+        status,headers,body=request('/sma2/api/reports/'+r['reportId']+'/'+name+'.csv')
+        assert status==200 and headers.get_content_type()=='text/csv'
+        assert 'attachment;' in headers['Content-Disposition']
+        rows=list(csv.reader(io.StringIO(body.decode())))
+        assert len(rows)==2 and rows[0][0]=='Product' and rows[1][0]=='Total'
+        assert len(rows[0])==len(r[key])+1
+        for index,metric in enumerate(r[key],1):
+            assert metric['label'] in rows[0][index] and 'status='+metric['status'] in rows[0][index]
+            value=float(rows[1][index])
+            if metric['status']=='ok' and metric.get('value') is not None:
+                assert math.isclose(value,metric['value'],rel_tol=1e-12,abs_tol=1e-12)
+            else: assert math.isnan(value)
+        csv_bytes[name]=body
     # Restart the actual HTTP process; the original snapshot must still load unchanged.
     command=proc.args
     proc.terminate();proc.wait(timeout=5)
@@ -74,8 +90,12 @@ try:
     status,_,saved=request('/sma2/api/reports/'+r['reportId'])
     assert status==200 and json.loads(saved)==r
     assert request(r['reportPath'])[0]==200
+    for name,original in csv_bytes.items():
+        assert request('/sma2/api/reports/'+r['reportId']+'/'+name+'.csv')[2]==original
     print('Saved report survived server restart:',r['reportPath'])
     os.makedirs('target/web-reports',exist_ok=True)
+    for name,content in csv_bytes.items():
+        with open('target/web-reports/'+name+'.csv','wb') as f:f.write(content)
     with open('target/web-reports/'+('live' if live else 'offline')+'.json','w') as f: json.dump(r,f,indent=2)
     print('HTTP smoke passed:',r['source'],len(r['series']),'NAV observations;',len(r['executions']),'executions')
 finally:

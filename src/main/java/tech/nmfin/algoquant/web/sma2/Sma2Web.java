@@ -64,12 +64,24 @@ public final class Sma2Web {
                     catch (Exception ex) { System.err.println("Backtest failed: " + ex.getClass().getSimpleName()); send(e, 502, error("The data provider or simulation could not complete this run. Try another period or retry later.")); }
                     finally { running.release(); }
                 } else if (path.startsWith("/api/reports/") && "GET".equals(e.getRequestMethod())) {
-                    String id=path.substring("/api/reports/".length());
+                    String requested=path.substring("/api/reports/".length());
+                    String[] parts=requested.split("/",-1);
+                    String id=parts[0];
+                    String format=parts.length==2?parts[1]:null;
+                    if(parts.length>2 || (format!=null && !Arrays.asList("sma2.csv","buy-hold.csv").contains(format))) {
+                        send(e,404,error("Not found."));return;
+                    }
                     ReportStore.validateId(id);
                     try {
                         String snapshot=reports.read(id);
                         if(snapshot==null)send(e,404,error("Saved report not found."));
-                        else send(e,200,snapshot);
+                        else if(format==null)send(e,200,snapshot);
+                        else {
+                            SMA2App.Result saved=JSON.fromJson(snapshot,SMA2App.Result.class);
+                            String csv=PerformanceCsv.export("sma2.csv".equals(format)?saved.performanceMeasures:saved.buyHoldPerformanceMeasures);
+                            e.getResponseHeaders().set("Content-Disposition","attachment; filename=\""+id+"-"+format+"\"");
+                            respond(e,200,"text/csv",csv.getBytes(StandardCharsets.UTF_8));
+                        }
                     } catch(IOException ex) { send(e,503,error("Saved report storage is temporarily unavailable. Please retry.")); }
                 } else if ("/api/health".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,"{\"status\":\"ok\"}");
                 else if ("/api/stocks".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,JSON.toJson(SMA2App.SYMBOLS));

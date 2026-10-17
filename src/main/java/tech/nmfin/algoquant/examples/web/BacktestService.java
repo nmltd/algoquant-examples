@@ -7,6 +7,7 @@ import dev.nm.misc.datastructure.time.LocalDateTimeInterval;
 import tech.nmfin.algoquant.data.cache.*;
 import tech.nmfin.algoquant.data.historicaldata.yahoo.YahooEODWebDownloader;
 import tech.nmfin.algoquant.execution.component.simulator.*;
+import tech.nmfin.algoquant.execution.component.context.TraderContext;
 import tech.nmfin.algoquant.execution.component.simulator.event.Event;
 import tech.nmfin.algoquant.execution.datatype.StockEOD;
 import tech.nmfin.algoquant.execution.datatype.execution.Execution;
@@ -90,10 +91,12 @@ public final class BacktestService {
         final OrderBook[] previous = {warm.get(warm.size() - 1).data()};
         // Decide using the previous session's close; execute at the current session's adjusted close.
         // This deliberate one-bar delay avoids using today's closing signal for a same-close fill.
-        Strategy delayed = (ctx, evt) -> {
+        Strategy delayed = new Strategy() {
+            @Override public void onEvent(TraderContext ctx, Event evt) {
             if (evt instanceof OrderBook) {
                 sma.onOrderBookUpdate(ctx.now(), previous[0], ctx.marketCondition(), ctx.tradeBlotter(), ctx.broker());
                 previous[0] = (OrderBook) evt;
+            }
             }
         };
         PerformanceReport report = new SimpleSimulatorBuilder()

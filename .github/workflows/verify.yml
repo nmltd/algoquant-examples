@@ -38,6 +38,9 @@ jobs:
         run: bash scripts/run-offline.sh
       - name: Verify the SMA2 web API offline
         run: python3 web/smoke.py
+      - name: Verify Yahoo-backed web backtest on an explicit manual run
+        if: github.event_name == 'workflow_dispatch'
+        run: python3 web/smoke.py --live
       - name: Build the Cloud Run container and check its health endpoint
         run: |
           mkdir -p web/build

@@ -22,18 +22,20 @@ try:
     for _ in range(100):
         if proc.poll() is not None: raise RuntimeError('Server exited')
         try:
-            if request('/api/health')[0]==200: break
+            if request('/sma2/api/health')[0]==200: break
         except OSError: pass
         time.sleep(.1)
     else: raise RuntimeError('Server did not start')
-    for path in ['/','/style.css','/app.js','/api/stocks']:
+    for path in ['/','/sma2','/sma2/','/sma2/style.css','/sma2/app.js','/sma2/api/stocks']:
         status,headers,body=request(path); assert status==200 and body,path
         assert 'nosniff'==headers.get('X-Content-Type-Options')
-    assert request('/api/backtest')[0]==405
+    assert b'Open SMA2' in request('/')[2]
+    assert b'id="backtest"' in request('/sma2/')[2]
+    assert request('/sma2/api/backtest')[0]==405
     fields=dict(symbol='AAPL',start='2020-01-01',end='2020-12-31',fast=5,slow=20)
-    assert request('/api/backtest',dict(fields,fast=30))[0]==400
-    assert request('/api/backtest',dict(fields,symbol='../../etc/passwd'))[0]==400
-    status,_,body=request('/api/backtest',fields)
+    assert request('/sma2/api/backtest',dict(fields,fast=30))[0]==400
+    assert request('/sma2/api/backtest',dict(fields,symbol='../../etc/passwd'))[0]==400
+    status,_,body=request('/sma2/api/backtest',fields)
     assert status==200,(status,body)
     r=json.loads(body)
     assert r['sizingModel']=='FULL_EQUITY_V1'
@@ -47,24 +49,26 @@ try:
     assert any(m['sourceClass']=='HistoricalVaR' for m in r['performanceMeasures'])
     assert any(m['sourceClass']=='SortinoRatio' for m in r['performanceMeasures'])
     assert all(p['date']>='2020-01-01' and p['date']<='2020-12-31' for p in r['series'])
-    status,_,body=request('/api/backtest',fields)
+    status,_,body=request('/sma2/api/backtest',fields)
     assert status==200 and json.loads(body)['series']==r['series']
     assert json.loads(body)['reportId'] != r['reportId']
+    assert r['reportPath'].startswith('/sma2/reports/')
+    assert request('/reports/'+r['reportId'])[0]==200
     assert request(r['reportPath'])[0] == 200
-    assert json.loads(request('/api/reports/'+r['reportId'])[2]) == r
-    assert request('/api/reports/00000000000000000000000000000000')[0] == 404
-    assert request('/api/reports/invalid-id')[0] == 400
+    assert json.loads(request('/sma2/api/reports/'+r['reportId'])[2]) == r
+    assert request('/sma2/api/reports/00000000000000000000000000000000')[0] == 404
+    assert request('/sma2/api/reports/invalid-id')[0] == 400
     # Restart the actual HTTP process; the original snapshot must still load unchanged.
     command=proc.args
     proc.terminate();proc.wait(timeout=5)
     proc=subprocess.Popen(command,env=env)
     for _ in range(100):
         try:
-            if request('/api/health')[0]==200:break
+            if request('/sma2/api/health')[0]==200:break
         except OSError:pass
         time.sleep(.1)
     else:raise RuntimeError('Server did not restart')
-    status,_,saved=request('/api/reports/'+r['reportId'])
+    status,_,saved=request('/sma2/api/reports/'+r['reportId'])
     assert status==200 and json.loads(saved)==r
     assert request(r['reportPath'])[0]==200
     print('Saved report survived server restart:',r['reportPath'])

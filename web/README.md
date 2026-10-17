@@ -13,7 +13,7 @@ mvn clean verify
 java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.examples.web.Sma2Web
 ```
 
-Open http://localhost:8080. `PORT` overrides the port and `NM_LICENSE_FILE` overrides `license/nm.lic`. Production defaults to Yahoo downloads. `SMA2_DATA_MODE=synthetic` is explicitly for offline verification and labels every report SYNTHETIC. There is no automatic synthetic fallback when Yahoo fails.
+Open http://localhost:8080 for the tools directory, or http://localhost:8080/sma2 for SMA2. `PORT` overrides the port and `NM_LICENSE_FILE` overrides `license/nm.lic`. Production defaults to Yahoo downloads. `SMA2_DATA_MODE=synthetic` is explicitly for offline verification and labels every report SYNTHETIC. There is no automatic synthetic fallback when Yahoo fails.
 
 `python3 web/smoke.py` tests offline HTTP behavior; `python3 web/smoke.py --live` tests the Yahoo path. Both write JSON reports under `target/web-reports/`. Unit tests check invalid input, invariance to future data, and NAV against an independent execution ledger.
 
@@ -30,7 +30,7 @@ Open http://localhost:8080. `PORT` overrides the port and `NM_LICENSE_FILE` over
 
 ## Cloud Run deployment
 
-Live application: **https://optim.nmfin.tech**.
+Live application: **https://tools.nmfin.tech**.
 
 The manual GitHub workflow `.github/workflows/sma2-cloud-run.yml` builds/tests the app, builds a Docker image, pushes to Artifact Registry, and deploys `sma2-web` in `us-central1`. It uses GitHub OIDC Workload Identity Federation; no Google private key is required. Runtime license is mounted from Secret Manager, never copied into the container or public source.
 
@@ -51,7 +51,7 @@ The script creates Artifact Registry, the runtime/deployer service accounts, a S
 4. Run **Deploy SMA2 web to Cloud Run** on `main` in GitHub Actions. Defaults: one CPU, 1 GiB, zero minimum instances, two maximum instances, one concurrent request per instance, 180-second request timeout. Registry storage, Secret Manager and usage may incur charges. The service is publicly invokable; cold starts are possible.
 5. Verify the returned `run.app` URL and run a real-data backtest.
 
-### optim.nmfin.tech
+### tools.nmfin.tech
 
 After verifying ownership of `nmfin.tech` in Google Search Console, map the hostname in Cloud Run's domain-mapping UI in `us-central1`, selecting service `sma2-web`. Apply **the exact DNS records Google returns** at your DNS provider. Do not guess an IP address or overwrite other domain records. Wait for managed TLS and mapping readiness, then check HTTPS and the live backtest. Direct Cloud Run domain mappings have preview/production limitations; use an external Application Load Balancer if production-grade domain features are required.
 
@@ -81,7 +81,7 @@ Tests enforce representation of every concrete measure class, consistency of lib
 
 ## Saved report pages
 
-Every successful POST /api/backtest writes an immutable JSON snapshot and returns reportId and reportPath. The browser moves to /reports/<32-hex-id>. Refreshing or sharing that URL fetches the saved JSON from GET /api/reports/<id>, without market-data downloads or simulation. New runs always get independent IDs, even with identical inputs. Use Copy report link, Open saved report, or New backtest. Anyone with the URL can read a report; report IDs are random and there is no public listing.
+Every successful POST /sma2/api/backtest writes an immutable JSON snapshot and returns reportId and reportPath. The browser moves to /sma2/reports/<32-hex-id>. Refreshing or sharing that URL fetches the saved JSON from GET /sma2/api/sma2/reports/<id>, without market-data downloads or simulation. New runs always get independent IDs, even with identical inputs. Use Copy report link, Open saved report, or New backtest. Anyone with the URL can read a report; report IDs are random and there is no public listing.
 
 The snapshot retains input parameters, generation time, application revision, schema version, prices, NAV, executions, all scalar measures and all period rows. Rendering uses the current page assets; the underlying saved numbers are not recomputed.
 
@@ -98,3 +98,9 @@ Both charts share a date window. Hover/tap shows exact session values with a cro
 ## Position-sizing version
 
 New reports use reportSchemaVersion 2 and sizingModel FULL_EQUITY_V1. The app uses the library moving-average signal and simulator with the app's full-equity allocation, replacing the library demo's fixed ±1-share allocation. Order quantities are determined at the simulated fill close; this idealized fractional-share model has no costs or borrow/margin constraints. There is no claim that these fills can be achieved live. Legacy stored snapshots without sizingModel remain byte-for-byte unchanged and the page labels them as one-share results; rerun to obtain a new full-equity report. New snapshots include benchmarkTotalReturn and a bankrupt flag.
+
+## Tools directory and application routes
+
+The root / lists available applications; SMA2 lives at /sma2 (redirects to /sma2/). Assets and app APIs are under /sma2/, and saved pages use /sma2/reports/<id>. New tools can add their own route and directory entry. Existing /reports/<id> links redirect to /sma2/reports/<id>; old stored JSON remains unchanged and the browser builds the new canonical link from reportId. Root /api aliases remain available for compatibility and /api/health for infrastructure probes. The storage bucket is unchanged.
+
+To add the hostname, create a Cloud Run mapping for tools.nmfin.tech to the existing sma2-web service in servers-227017/us-central1, apply the DNS records returned by Google and wait for TLS. Keep optim.nmfin.tech mapped if old shared links should continue to work.

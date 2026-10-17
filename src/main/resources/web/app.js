@@ -1,4 +1,6 @@
 'use strict';
+const BASE='/sma2';
+const reportPath = r => BASE+'/reports/'+r.reportId;
 const $ = id => document.getElementById(id);
 const usd = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
 const decimal = n => n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -8,10 +10,10 @@ let allGroupsOpen = null;
 const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
 $('end').max = yesterday.toISOString().slice(0,10);
 $('start').max = $('end').max;
-fetch('/api/stocks').then(r=>{if(!r.ok)throw Error('Stock list unavailable.');return r.json();}).then(stocks=>{
+fetch(BASE+'/api/stocks').then(r=>{if(!r.ok)throw Error('Stock list unavailable.');return r.json();}).then(stocks=>{
  $('symbol').replaceChildren(...stocks.map(s=>new Option(s,s)));
  $('run').disabled=false;
- if(location.pathname.startsWith('/reports/'))return loadSavedReport();
+ if(location.pathname.startsWith(BASE+'/reports/'))return loadSavedReport();
  $('status').textContent='Ready. Historical prices are downloaded when you run.';
 }).catch(e=>{$('status').textContent=e.message; $('status').className='error';});
 $('backtest').addEventListener('submit',async e=>{
@@ -21,9 +23,9 @@ $('backtest').addEventListener('submit',async e=>{
  $('report').hidden=true; $('empty').hidden=false;
  const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),150000);
  try{
-  const r=await fetch('/api/backtest',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(new FormData($('backtest'))),signal:controller.signal});
+  const r=await fetch(BASE+'/api/backtest',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(new FormData($('backtest'))),signal:controller.signal});
   const data=await r.json(); if(!r.ok)throw Error(data.error||'Backtest failed.');
-  history.pushState(null,'',data.reportPath);
+  history.pushState(null,'',reportPath(data));
   current=data; render(data); $('status').textContent='Complete · '+data.series.length+' trading observations.';
  }catch(err){showError(err.name==='AbortError'?'The request timed out. Please retry with a shorter period.':err.message);}
  finally{clearTimeout(timer);$('run').disabled=false;}
@@ -42,7 +44,7 @@ function render(r){
  $('benchmark-convention').textContent=full
   ? 'Both start with $10,000. Buy & hold invests all capital at the first selected adjusted close and holds fractional shares. Its account return equals the stock’s adjusted-price return.'
   : 'Legacy benchmark buys one share at the first selected close; remaining cash stays idle.';
- $('report-link').href=r.reportPath;
+ $('report-link').href=reportPath(r);
  $('saved-report-note').textContent='Saved '+r.generatedAt+' · Report '+r.reportId;
  $('report-title').textContent=r.symbol+' / SMA '+r.fast+' days × '+r.slow+' days';
  $('report-meta').textContent=r.start+' → '+r.end+' · USD · '+r.source;
@@ -221,9 +223,9 @@ $('clear-search').addEventListener('click',()=>{
 async function loadSavedReport(){
  $('run').disabled=true;$('status').className='';$('status').textContent='Loading saved report…';
  try{
-  const id=location.pathname.split('/')[2];
+  const id=location.pathname.split('/')[3];
   if(!/^[a-f0-9]{32}$/.test(id))throw Error('Invalid report link.');
-  const response=await fetch('/api/reports/'+id);
+  const response=await fetch(BASE+'/api/reports/'+id);
   const report=await response.json();if(!response.ok)throw Error(report.error||'Saved report unavailable.');
   current=report;
   for(const field of ['start','end','fast','slow'])$(field).value=report[field];
@@ -233,12 +235,12 @@ async function loadSavedReport(){
  finally{$('run').disabled=false;}
 }
 window.addEventListener('popstate',()=>{
- if(location.pathname.startsWith('/reports/'))loadSavedReport();
+ if(location.pathname.startsWith(BASE+'/reports/'))loadSavedReport();
  else{current=null;$('report').hidden=true;$('empty').hidden=false;$('status').textContent='Ready for a new backtest.';}
 });
 $('copy-report-link').addEventListener('click',async()=>{
  if(!current)return;
- const link=new URL(current.reportPath,location.origin).href;
+ const link=new URL(reportPath(current),location.origin).href;
  try{await navigator.clipboard.writeText(link);$('status').className='';$('status').textContent='Saved report link copied.';}
  catch(e){$('status').textContent='Copy the saved report link: '+link;}
 });

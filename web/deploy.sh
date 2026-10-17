@@ -22,10 +22,11 @@ report="$(mktemp)"
 trap 'rm -f "$report"' EXIT
 curl --fail --show-error --max-time 150 --retry 2 --retry-delay 2 \
   -X POST -d 'symbol=AAPL&start=2016-01-01&end=2020-12-31&fast=5&slow=20' \
-  "$url/api/backtest" -o "$report"
+  "$url/sma2/api/backtest" -o "$report"
 python3 - "$report" "$url" <<'PY'
 import json, sys, urllib.request
 r = json.load(open(sys.argv[1]))
+assert r["reportPath"].startswith("/sma2/reports/")
 assert r["source"] == "Yahoo Finance daily adjusted close"
 assert r["sizingModel"] == "FULL_EQUITY_V1"
 first=r["series"][0]["close"]
@@ -41,7 +42,7 @@ for m in measures:
     assert m["status"] != "unavailable", (m["label"], m["detail"])
     if m["sourceClass"].startswith("RollingAnnualReturn") or m["sourceClass"] == "TreynorRatio":
         assert m["status"] == "ok", (m["label"], m["detail"])
-with urllib.request.urlopen(sys.argv[2]+"/api/reports/"+r["reportId"],timeout=30) as saved:
+with urllib.request.urlopen(sys.argv[2]+"/sma2/api/reports/"+r["reportId"],timeout=30) as saved:
     assert json.load(saved) == r
 with urllib.request.urlopen(sys.argv[2]+r["reportPath"],timeout=30) as page:
     assert page.status == 200

@@ -1,6 +1,8 @@
-# SMA2 web application
+# Web tools and SMA2 application
 
 **[Open SMA2](https://tools.nmfin.tech/sma2/)** · **[Tools directory](https://tools.nmfin.tech/)** · **[Repository setup](../README.md)**
+
+[Performance Analyzer](https://tools.nmfin.tech/performance/) is also hosted by this service; see [its documentation](performance/README.md). Both applications share statistics, snapshot storage, CSV/Excel exports, comparison components, styling and print preparation under the shared `web` package/resources.
 
 SMA2 is a Java 8 web application built on AlgoQuant. Choose one of twenty supported US stocks, an inclusive period and two SMA periods in **trading days**. Each successful backtest compares three independently funded $10,000 accounts:
 

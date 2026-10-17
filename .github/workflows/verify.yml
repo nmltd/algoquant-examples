@@ -46,7 +46,7 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/sma2-browser" --no-save --ignore-scripts playwright@1.62.1
           NODE_PATH="$RUNNER_TEMP/sma2-browser/node_modules" CHROME_BIN="$(command -v google-chrome)" node web/browser-smoke.cjs
-          node web/performance-browser.cjs
+          NODE_PATH="$RUNNER_TEMP/sma2-browser/node_modules" CHROME_BIN="$(command -v google-chrome)" node web/performance-browser.cjs
       - name: Verify Yahoo-backed web backtest on an explicit manual run
         if: github.event_name == 'workflow_dispatch'
         run: python3 web/smoke.py --live

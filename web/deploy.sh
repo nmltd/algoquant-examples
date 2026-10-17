@@ -69,3 +69,25 @@ print("BUY-AND-HOLD COMPARISON VERIFIED:", len(r["buyHoldPerformanceMeasures"]),
 print("LIBRARY MEASURES VERIFIED:", len(measures), "scalar results;", len(r["periodMeasures"]), "period tables")
 print("LIVE DEPLOYMENT VERIFIED:", r["symbol"], len(r["series"]), "NAV observations;", len(r["executions"]), "executions")
 PY
+
+# Verify the user-supplied public Google Sheet end to end, including benchmark reuse and durable exports.
+performance_report="$(mktemp)"
+curl --fail --show-error --max-time 160 --retry 1 \
+  -X POST --data-urlencode 'url=https://docs.google.com/spreadsheets/d/1pODA-aiWNfXLEGmscO8MB6zkKSrjmnXq0dAtJITXrDs/edit?gid=0#gid=0' \
+  "$url/performance/api/analyze" -o "$performance_report"
+python3 - "$performance_report" "$url" <<'PY'
+import json,sys,urllib.request,zipfile,io
+r=json.load(open(sys.argv[1]))
+assert r["app"]=="performance" and not r["benchmarkAdded"]
+assert [a["name"] for a in r["accounts"]]==["SDC","S&P 500"]
+assert r["duplicateRows"]>=3 and len(r["accounts"][0]["series"])>900
+for account in r["accounts"]:
+    assert abs(account["series"][0]["nav"]-10000)<1e-7
+    assert len(account["performanceMeasures"])==187
+    assert any(m["sourceClass"]=="ExecutionCount" and m["status"]=="not_applicable" for m in account["performanceMeasures"])
+with urllib.request.urlopen(sys.argv[2]+"/performance/api/reports/"+r["reportId"],timeout=30) as saved:assert json.load(saved)==r
+with urllib.request.urlopen(sys.argv[2]+"/performance/api/reports/"+r["reportId"]+"/report.xlsx",timeout=60) as exported:
+    with zipfile.ZipFile(io.BytesIO(exported.read())) as workbook:assert "xl/workbook.xml" in workbook.namelist()
+print("LIVE PERFORMANCE ANALYZER VERIFIED:",sys.argv[2]+r["reportPath"],len(r["accounts"][0]["series"]),"common observations")
+PY
+rm -f "$performance_report"

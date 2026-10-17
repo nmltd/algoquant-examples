@@ -25,7 +25,7 @@
  .report-heading{display:block}.report-heading h2{font-size:22px}
  .measure-tools,.chart-controls,.chart-hover,.comparison-hover,#measure-count{display:none!important}
  #report button,#report a.secondary{display:none!important}
- .comparison-legend button,.legend button{display:inline-block!important;cursor:default;border:0;background:transparent;padding:0 8px 0 0}
+ #report .comparison-legend button,#report .legend button{display:inline-block!important;cursor:default;border:0;background:transparent;padding:0 8px 0 0}
  .panel{box-shadow:none;padding:12px;border-radius:4px;margin-bottom:12px}
  .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
  .metric{break-inside:avoid}.paired-metric strong{font-size:15px}

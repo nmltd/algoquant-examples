@@ -45,7 +45,10 @@ try:
     assert len(r['series'])>200 and len(r['executions'])>0
     assert ('SYNTHETIC' in r['source']) != live
     assert abs(r['finalNav']-10000-r['pnl'])<1e-7
-    assert len(r['performanceMeasures'])>150 and len(r['periodMeasures'])==12
+    assert len(r['performanceMeasures'])>150 and len(r['periodMeasures'])==0
+    assert len(r['buyHoldPerformanceMeasures'])==len(r['performanceMeasures'])
+    assert len(r['buyHoldExecutions'])==1
+    assert abs(r['buyHoldStatistics']['totalReturn']-r['benchmarkTotalReturn'])<1e-10
     assert any(m['sourceClass']=='HistoricalVaR' for m in r['performanceMeasures'])
     assert any(m['sourceClass']=='SortinoRatio' for m in r['performanceMeasures'])
     assert all(p['date']>='2020-01-01' and p['date']<='2020-12-31' for p in r['series'])

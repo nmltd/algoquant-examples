@@ -25,12 +25,12 @@ Open http://localhost:8080. `PORT` overrides the port and `NM_LICENSE_FILE` over
 - Zero commissions, spread, slippage, financing and short-borrow costs. No forced terminal liquidation. Adjusted prices are used without separate dividend cash payments.
 - NAV is marked to market; P&L includes unrealized changes. Account returns use initial $10,000. Daily sample standard deviation and mean/std Sharpe use sqrt(252); undefined Sharpe is shown as N/A.
 - Benchmark holds one share bought at the first selected close, with remaining cash idle. This is not a fully invested benchmark.
-- Yahoo availability, revisions and adjustments affect results. Cached responses are bounded to 32 intervals per process, volatile across restarts, and not shared across instances. No database is required.
+- Yahoo availability, revisions and adjustments affect results. Cached responses are bounded to 32 intervals per process, volatile across restarts, and not shared across instances. Market-data caching is separate from the durable saved-report store.
 - At most one simulation runs at a time per process; a busy service responds 429. The stock allowlist and request/date/lag limits bound public work. For heavier use, add a queue, shared cache and edge rate limits.
 
 ## Cloud Run deployment
 
-Deployment target: **optim.nmfin.tech**. This hostname is not live until cloud authorization, deployment and DNS mapping complete.
+Live application: **https://optim.nmfin.tech**.
 
 The manual GitHub workflow `.github/workflows/sma2-cloud-run.yml` builds/tests the app, builds a Docker image, pushes to Artifact Registry, and deploys `sma2-web` in `us-central1`. It uses GitHub OIDC Workload Identity Federation; no Google private key is required. Runtime license is mounted from Secret Manager, never copied into the container or public source.
 
@@ -47,8 +47,9 @@ bash web/bootstrap-cloud.sh
 
 The script creates Artifact Registry, the runtime/deployer service accounts, a Secret Manager license version and a WIF provider restricted to this repository's numeric ID, owner ID, main branch and deployment workflow. It sets four GitHub Actions repository variables. Review the script before running against an existing project; billing must already be enabled. Remove your temporary Cloud Shell license copy afterward.
 
-3. Run **Deploy SMA2 web to Cloud Run** on `main` in GitHub Actions. Defaults: one CPU, 1 GiB, zero minimum instances, two maximum instances, one concurrent request per instance, 180-second request timeout. Registry storage, Secret Manager and usage may incur charges. The service is publicly invokable; cold starts are possible.
-4. Verify the returned `run.app` URL and run a real-data backtest.
+3. Create the private report bucket with \`bash web/setup-report-storage.sh\` (same project-owner Cloud Shell session; no license required for this step).
+4. Run **Deploy SMA2 web to Cloud Run** on `main` in GitHub Actions. Defaults: one CPU, 1 GiB, zero minimum instances, two maximum instances, one concurrent request per instance, 180-second request timeout. Registry storage, Secret Manager and usage may incur charges. The service is publicly invokable; cold starts are possible.
+5. Verify the returned `run.app` URL and run a real-data backtest.
 
 ### optim.nmfin.tech
 
@@ -77,3 +78,19 @@ Not-applicable rows are retained for DividendAdjustedProfitLoss (separate divide
 The library rolling annual-return implementation was corrected to append results to its output list, handle insufficient history and include an exact anniversary endpoint. Source/obfuscated tests validate that fix before the updated public SNAPSHOT is used.
 
 Tests enforce representation of every concrete measure class, consistency of library P&L/balances/execution counts with the simulation, safe JSON for short/undefined samples, and unchanged trade timing/NAV. This is an educational report, not a claim of realistic execution costs or statistically significant strategy performance.
+
+## Saved report pages
+
+Every successful POST /api/backtest writes an immutable JSON snapshot and returns reportId and reportPath. The browser moves to /reports/<32-hex-id>. Refreshing or sharing that URL fetches the saved JSON from GET /api/reports/<id>, without market-data downloads or simulation. New runs always get independent IDs, even with identical inputs. Use Copy report link, Open saved report, or New backtest. Anyone with the URL can read a report; report IDs are random and there is no public listing.
+
+The snapshot retains input parameters, generation time, application revision, schema version, prices, NAV, executions, all scalar measures and all period rows. Rendering uses the current page assets; the underlying saved numbers are not recomputed.
+
+Cloud Run uses the private bucket <project>-sma2-reports through its attached runtime identity. Run web/setup-report-storage.sh once in Cloud Shell with GCP_PROJECT_ID set before deploying this feature. The runtime receives bucket-scoped objectCreator and objectViewer only. No service-account key or public bucket access is needed; there is no automatic report-expiry policy. Storage/read costs follow Cloud Storage usage. Cloud Run refuses to use local disk when SMA2_REPORT_BUCKET is missing.
+
+Local runs use reports/ (gitignored); SMA2_REPORT_DIRECTORY can choose another persistent local directory. Container smoke tests use /tmp/sma2-reports explicitly; that is testing storage, not production persistence. Tests verify snapshot identity after store/server recreation, independent IDs, invalid/missing IDs, GCS create-only upload and authenticated retrieval, and write-failure handling.
+
+The application implementation is [SMA2App.java](../src/main/java/tech/nmfin/algoquant/examples/web/SMA2App.java).
+
+## Interactive charts
+
+Both charts share a date window. Hover/tap shows exact session values with a crosshair; use zoom buttons or Ctrl/Command+wheel, drag horizontally to pan, and Reset view or double-click to return to full history. Focus a chart and use +/−, left/right arrows or Home. Click legend buttons to hide/show individual series. Y axes rescale to visible data; chart navigation changes only the view, never the saved results or exports.

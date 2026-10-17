@@ -6,3 +6,5 @@ license/*.lic
 
 web/build/
 gha-creds-*.json
+
+reports/

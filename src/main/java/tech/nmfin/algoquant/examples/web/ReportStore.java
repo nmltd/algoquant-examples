@@ -36,7 +36,7 @@ final class ReportStore {
     }
     String save(SMA2App.Result report) throws IOException {
         String id=UUID.randomUUID().toString().replace("-","");
-        report.reportId=id;report.reportPath="/reports/"+id;
+        report.reportId=id;report.reportPath="/sma2/reports/"+id;
         report.appRevision=System.getenv().getOrDefault("SMA2_APP_REVISION","local");
         String body=JSON.toJson(report);
         byte[] bytes=body.getBytes(StandardCharsets.UTF_8);

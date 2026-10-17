@@ -32,7 +32,13 @@ public final class Sma2Web {
             new ThreadPoolExecutor.CallerRunsPolicy()));
         server.createContext("/", e -> {
             try {
-                String path = e.getRequestURI().getPath();
+                String incoming = e.getRequestURI().getPath();
+                if("GET".equals(e.getRequestMethod()) && ("/sma2".equals(incoming)||incoming.matches("/reports/[a-f0-9]{32}"))) {
+                    e.getResponseHeaders().set("Location","/sma2".equals(incoming)?"/sma2/":"/sma2"+incoming);
+                    e.sendResponseHeaders(308,-1);return;
+                }
+                boolean sma2Path=incoming.startsWith("/sma2/");
+                String path=sma2Path?incoming.substring("/sma2".length()):incoming;
                 if ("/api/backtest".equals(path)) {
                     if (!"POST".equals(e.getRequestMethod())) { e.getResponseHeaders().set("Allow", "POST"); send(e, 405, error("Use POST.")); return; }
                     String type = e.getRequestHeaders().getFirst("Content-Type");
@@ -68,7 +74,7 @@ public final class Sma2Web {
                 } else if ("/api/health".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,"{\"status\":\"ok\"}");
                 else if ("/api/stocks".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,JSON.toJson(SMA2App.SYMBOLS));
                 else if ((Arrays.asList("/", "/app.js", "/style.css").contains(path) || path.matches("/reports/[a-f0-9]{32}")) && "GET".equals(e.getRequestMethod())) {
-                    String file = ("/".equals(path) || path.startsWith("/reports/")) ? "index.html" : path.substring(1);
+                    String file = "/".equals(path) ? (sma2Path ? "index.html" : "tools.html") : path.startsWith("/reports/") ? "index.html" : path.substring(1);
                     try (InputStream in = Sma2Web.class.getResourceAsStream("/web/" + file)) {
                         if (in == null) { send(e,404,error("Not found.")); return; }
                         ByteArrayOutputStream body = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n;

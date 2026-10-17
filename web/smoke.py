@@ -110,8 +110,13 @@ try:
                 actual=values['B'+str(index)]
                 assert (actual=='N/A' if expected is None else math.isclose(actual,expected,rel_tol=1e-12,abs_tol=1e-12))
         daily=cells(4)
-        assert [daily[c+'1'] for c in 'ABCDEF']==['date','adjusted_close','fast_sma','slow_sma','sma2_nav','fully_invested_buy_hold_nav']
+        assert [daily[c+'1'] for c in 'ABCDEFGH']==['date','adjusted_close','fast_sma','slow_sma','sma2_nav','fully_invested_buy_hold_nav','sp500_close','sp500_nav']
+        market_by_date={p['date']:p for p in sp['series']}
         for index,p in enumerate(r['series'],2):
+            benchmark=market_by_date.get(p['date'])
+            for col,key in [('G','close'),('H','nav')]:
+                actual=daily.get(col+str(index))
+                assert (actual is None if benchmark is None else math.isclose(actual,benchmark[key],rel_tol=1e-12,abs_tol=1e-12))
             assert daily['A'+str(index)]==(datetime.date.fromisoformat(p['date'])-datetime.date(1899,12,30)).days
             for col,key in zip('BCDEF',['close','fast','slow','nav','benchmark']):
                 actual=daily.get(col+str(index));expected=p.get(key)

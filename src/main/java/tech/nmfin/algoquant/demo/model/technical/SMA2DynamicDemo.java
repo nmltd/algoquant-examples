@@ -54,7 +54,12 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 import tech.nmfin.returns.ReturnsCalculators;
 
 /**
- * A dynamically calibrated SMA2Crossover strategy.
+ * Runs a dynamically calibrated SMA crossover over rebalance/data-window combinations.
+ * Each combination has an independent simulator and performance measures.
+ * The strategy periodically recalibrates using a trailing data window.
+ * {@code --quick} reduces both the date range and parameter grid for a smoke run.
+ * Defaults to synthetic data; {@code --live} enables Yahoo downloads.
+ * Performance, execution and trade CSV files are written by SimulationResultsExporter.
  */
 @Demo
 public class SMA2DynamicDemo {
@@ -64,6 +69,7 @@ public class SMA2DynamicDemo {
         = new SimpleTradeCalculator();
 
     public static void main(String[] args) throws Exception {
+        // Load the license before creating library objects; default to offline, headless inputs.
         DemoSupport.initialize(args);
         final Currency ccy = Currencies.CNY;
         final Stock stock = new SimpleStock("000001.SS", ccy, Exchange.SS);
@@ -85,12 +91,14 @@ public class SMA2DynamicDemo {
             )
         );
 
+        // Cartesian grid: four rebalance schedules times four trailing history lengths.
         Collection<NamedParam> params
             = new NamedParamFactory()
                 .forValues("rebalance period", Period.ofWeeks(1), Period.ofWeeks(2), Period.ofMonths(1), Period.ofMonths(3))
                 .forValues("data window", Period.ofMonths(1), Period.ofMonths(2), Period.ofMonths(3), Period.ofMonths(6))
                 .params();
 
+        // Keep the same calibration workflow while selecting one inexpensive configuration.
         if (DemoSupport.quick()) {
             params = new NamedParamFactory()
                 .forValues("rebalance period", Period.ofMonths(1))
@@ -110,12 +118,14 @@ public class SMA2DynamicDemo {
     ) throws Exception {
         long start = System.currentTimeMillis();
 
+        // Run sequentially and create fresh mutable simulation state for every parameter set.
         Map<NamedParam, PerformanceReport> reports = params.stream()
             .collect(toMap(
                 p -> p,
                 p -> simulate(newSimulator(stock, interval, capital0, cacheFactory, newMeasures()), stock, interval, cacheFactory, p)
             ));
 
+        // Attach parameter labels so exported results can be compared across configurations.
         SimulationResultsExporter exporter = new SimulationResultsExporter();
         reports.forEach((param, report) -> exporter.add(param, report));
         exporter.writeAsCsv();
@@ -133,7 +143,7 @@ public class SMA2DynamicDemo {
         OrderBookCacheFactory<Stock> cacheFactory,
         NamedParam param
     ) {
-        // create the strategy
+        // Rebalance frequency controls recalibration; data window controls trailing history length.
         Period rebalancePeriod = param.value("rebalance period");
         Period dataWindow = param.value("data window");
         SMA2Dynamic<Stock> strategy
@@ -147,10 +157,12 @@ public class SMA2DynamicDemo {
         LOGGER.info("running strategy {}...", strategy);
 
         PerformanceReport report = simulator.run(strategy, interval);
+        // Check that simulation produced finite NAV values, then print its performance report.
         DemoSupport.verify(report);
         return report;
     }
 
+    /** Creates independent accumulators; sharing these would mix separate simulation results. */
     private List<KeyedMeasure> newMeasures() {
         return Arrays.asList(KeyedMeasure.measures(
             new ProfitLoss(),

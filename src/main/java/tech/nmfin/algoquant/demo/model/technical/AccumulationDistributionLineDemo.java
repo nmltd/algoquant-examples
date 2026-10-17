@@ -58,12 +58,14 @@ import tech.nmfin.algoquant.model.signal.technical.volume.AccumulationDistributi
 import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
- * A simple strategy based on the Accumulation Distribution Line. Using moving
- * averages on the marginal changes in ADL and prices, we long while there is an
- * uptrend in the ADL and a downtrend in prices and short in the opposite case.
+ * Demonstrates an ADL/price divergence strategy driven by daily OHLCV bars.
+ * The implemented rule targets +1 unit when smoothed price changes are positive
+ * and smoothed money-flow volume is negative, and -1 unit for the reverse signs.
+ * It targets zero otherwise. This documents the actual rule, rather than assuming
+ * the more usual bullish-divergence interpretation.
  *
- * The underlying idea is that we interpret an uptrend in the ADL as an increase
- * in the buying pressure of the stock, which could indicate a bullish reversal.
+ * Prices are synthetic by default; {@code --live} downloads Yahoo history.
+ * Pass {@code --charts} to plot the ADL; performance measures appear in the console.
  */
 @Demo
 public class AccumulationDistributionLineDemo {
@@ -71,6 +73,7 @@ public class AccumulationDistributionLineDemo {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccumulationDistributionLineDemo.class);
 
     public static void main(String[] args) throws Exception {
+        // Load the license before creating library objects; default to offline, headless inputs.
         DemoSupport.initialize(args);
         // setup data source
         Stock stock = USDStock.newInstance("AAPL", Exchange.NEW_YORK);
@@ -87,6 +90,7 @@ public class AccumulationDistributionLineDemo {
         OrderBookCaches orderBookCaches
             = new OrderBookCaches(stock, cacheOrderBook);
 
+        // Smooth both daily price changes and ADL increments over ten observations.
         int lag = 10;
         Strategy strategy = new SimpleADLStrategy(stock, lag);
 
@@ -95,6 +99,7 @@ public class AccumulationDistributionLineDemo {
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
             .withOrderBookUpdates(orderBookCaches)
+            // OHLCV events supply the high, low, close and volume required by the indicator.
             .withNonOrderBookUpdates(cacheEOD)
             .useStrategyPlotter(
                 DemoSupport.plotter(
@@ -107,6 +112,7 @@ public class AccumulationDistributionLineDemo {
             ))
             .build();
         PerformanceReport report = simulator.run(strategy, interval);
+        // Check that simulation produced finite NAV values, then print its performance report.
         DemoSupport.verify(report);
         LOGGER.info(report.toString());
     }
@@ -140,10 +146,12 @@ public class AccumulationDistributionLineDemo {
 
         private void onEOD(TraderContext ctx, StockEOD eod) {
             double price = eod.close();
+            // The first bar only establishes a reference price for the next daily change.
             if (previousPrice != null) {
                 LocalDateTime now = ctx.now();
                 marginalPriceMA.update(now, price - previousPrice);
                 adl.update(now, eod);
+                // Money-flow volume is the current increment, not the cumulative ADL level.
                 marginalADLMA.update(now, adl.moneyFlowVolume());
 
                 ctx.broker().sendOrder(computeOrders(ctx.tradeBlotter()));
@@ -152,6 +160,7 @@ public class AccumulationDistributionLineDemo {
         }
 
         private Collection<Order> computeOrders(TradeBlotter blotter) {
+            // Orders change the current position to the target; they are not fixed-size additions.
             double qty;
             if (marginalPriceMA.value() > 0.0 && marginalADLMA.value() < 0.0) {
                 qty = scale - blotter.position(product);
@@ -161,6 +170,7 @@ public class AccumulationDistributionLineDemo {
                 qty = -blotter.position(product);
             }
 
+            // Suppress negligible orders when the target position has already been reached.
             return (DoubleUtils.compare(qty, 0., 1e-5) == 0)
                 ? Collections.<Order>emptyList()
                 : Collections.<Order>singletonList(new MarketOrder(product, qty));

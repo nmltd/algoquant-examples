@@ -59,8 +59,12 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
  * A simple strategy based on the Chaikin Money Flow. Using moving averages on
- * prices and the CMF, we long while there is a positive CMF and a downtrend in
- * prices and short in the opposite case.
+ * price changes and the CMF, the implemented rule targets +1 unit when price
+ * changes are positive and CMF is negative, and -1 unit for the reverse signs.
+ * It targets zero otherwise.
+ *
+ * Prices are synthetic by default; use {@code --live} for Yahoo history and
+ * {@code --charts} for a desktop indicator chart. The report goes to the console.
  *
  * @see
  * <a href="http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:chaikin_money_flow">
@@ -72,6 +76,7 @@ public class ChaikinMoneyFlowDemo {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChaikinMoneyFlowDemo.class);
 
     public static void main(String[] args) throws Exception {
+        // Load the license before creating library objects; default to offline, headless inputs.
         DemoSupport.initialize(args);
         // setup data source
         Stock stock = USDStock.newInstance("FCX", Exchange.NEW_YORK);
@@ -86,6 +91,7 @@ public class ChaikinMoneyFlowDemo {
         SequentialCache<OrderBook> cache = yahoo.newInstance(stock, interval);
         OrderBookCaches orderBookCaches = new OrderBookCaches(stock, cache);
 
+        // Use twenty observations for both price-change smoothing and the CMF window.
         int lag = 20;
         Strategy strategy = new SimpleCMFStrategy(stock, lag);
 
@@ -95,6 +101,7 @@ public class ChaikinMoneyFlowDemo {
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
             .withOrderBookUpdates(orderBookCaches)
+            // OHLCV events supply the high, low, close and volume required by the indicator.
             .withNonOrderBookUpdates(cacheEOD)
             .useStrategyPlotter(
                 DemoSupport.plotter(
@@ -108,6 +115,7 @@ public class ChaikinMoneyFlowDemo {
             ))
             .build();
         PerformanceReport report = simulator.run(strategy, interval);
+        // Check that simulation produced finite NAV values, then print its performance report.
         DemoSupport.verify(report);
         LOGGER.info(report.toString());
     }
@@ -140,6 +148,7 @@ public class ChaikinMoneyFlowDemo {
 
         private void onEOD(TraderContext ctx, StockEOD eod) {
             double price = eod.close();
+            // The first bar only establishes a reference price for the next daily change.
             if (previousPrice != null) {
                 LocalDateTime now = ctx.now();
                 marginalPriceMA.update(now, price - previousPrice);
@@ -150,6 +159,7 @@ public class ChaikinMoneyFlowDemo {
         }
 
         private Collection<Order> computeOrders(TradeBlotter blotter) {
+            // Orders change the current position to the target; they are not fixed-size additions.
             double qty;
             if (marginalPriceMA.value() > 0.0 && cmf.value() < 0.0) {
                 qty = scale - blotter.position(product);
@@ -159,6 +169,7 @@ public class ChaikinMoneyFlowDemo {
                 qty = -blotter.position(product);
             }
 
+            // Suppress negligible orders when the target position has already been reached.
             return (DoubleUtils.compare(qty, 0., 1e-5) == 0)
                 ? Collections.<Order>emptyList()
                 : Collections.<Order>singletonList(new MarketOrder(product, qty));

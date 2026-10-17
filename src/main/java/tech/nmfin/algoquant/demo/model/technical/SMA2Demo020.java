@@ -46,7 +46,11 @@ import tech.nmfin.algoquant.model.signal.technical.crossover.sma2.SMA2;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
- * This demonstrates how to simulate a strategy using a template.
+ * Demonstrates a fixed SMA crossover using a reusable simulation specification.
+ * The template supplies products, dates, data, strategy, currency and measures;
+ * SimTemplateUtils builds and runs the simulator from those specifications.
+ * The data override keeps this example offline by default despite its Yahoo template.
+ * Pass {@code --live} to request Yahoo data. Results are printed to the console.
  *
  * @author Haksun Li
  */
@@ -56,6 +60,7 @@ public class SMA2Demo020 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SMA2Demo020.class);
 
     public static void main(String[] args) {
+        // Load the license before creating library objects; default to offline, headless inputs.
         DemoSupport.initialize(args);
         // the simulation parameters
         final Stock product = USDStock.newInstance("XOM", Exchange.NEW_YORK);
@@ -70,6 +75,7 @@ public class SMA2Demo020 {
         SimTemplate spec = new SimTemplateYahooEOD() {
             private final ProfitLoss pnl = new ProfitLoss();
 
+            // Route all prices through the shared offline/live selector.
             @Override
             public tech.nmfin.algoquant.execution.datatype.orderbook.cache.OrderBookCaches newOrderBookCaches() {
                 return new tech.nmfin.algoquant.execution.datatype.orderbook.cache.OrderBookCaches(
@@ -91,6 +97,7 @@ public class SMA2Demo020 {
 
             @Override
             public Strategy newStrategy() {
+                // Construct a fresh strategy so indicator and position state start clean.
                 SMA2 strategy = new SMA2(
                     product,
                     fastLag,
@@ -101,6 +108,7 @@ public class SMA2Demo020 {
 
             @Override
             public List<KeyedMeasure> performanceMeasures() {
+                // Report P&L, trade-level ratios and the maximum long-side capital exposure.
                 return Arrays.asList(measures(
                     pnl,
                     ir,
@@ -124,6 +132,7 @@ public class SMA2Demo020 {
          * running the simulation
          */
         PerformanceReport report = SimTemplateUtils.run(spec);
+        // Check that simulation produced finite NAV values, then print its performance report.
         DemoSupport.verify(report);
         LOGGER.info(report.toString());
         LOGGER.info("There are {} executions.", report.tradeBlotter().allExecutions().size());

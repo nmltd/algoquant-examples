@@ -25,6 +25,17 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   });
   await page.goto('http://sma2.test/');
   assert.equal(await page.getByRole('link',{name:'Open SMA2'}).getAttribute('href'),'/sma2/');
+  await page.goto('http://sma2.test/sma2/');
+  const dates=await page.evaluate(()=>[
+   previousBusinessDay(new Date('2026-10-19T16:00:00Z')),
+   previousBusinessDay(new Date('2026-10-18T16:00:00Z')),
+   previousBusinessDay(new Date('2026-10-17T16:00:00Z')),
+   previousBusinessDay(new Date('2026-10-16T16:00:00Z')),
+   previousBusinessDay(new Date('2026-10-19T02:00:00Z')),
+   previousBusinessDay(new Date('2026-01-01T17:00:00Z'))
+  ]);
+  assert.deepEqual(dates,['2026-10-16','2026-10-16','2026-10-16','2026-10-15','2026-10-16','2025-12-31']);
+  assert.equal(await page.locator('#end').inputValue(),await page.evaluate(()=>previousBusinessDay()));
   await page.goto('http://sma2.test'+report.reportPath);
   await page.locator('#report').waitFor({state:'visible'});
   assert.match(await page.locator('#report-sizing-note').textContent(),/Full-equity sizing/);

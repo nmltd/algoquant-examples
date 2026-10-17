@@ -7,8 +7,16 @@ const decimal = n => n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFr
 const pct = n => (n*100).toFixed(2)+'%';
 let current;
 let allGroupsOpen = null;
-const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
-$('end').max = yesterday.toISOString().slice(0,10);
+// Use the US market's calendar date, independent of the visitor's timezone.
+function previousBusinessDay(now = new Date()) {
+ const parts = new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+ const part = type => parts.find(p=>p.type===type).value;
+ const day = new Date(part('year')+'-'+part('month')+'-'+part('day')+'T00:00:00Z');
+ do { day.setUTCDate(day.getUTCDate()-1); } while(day.getUTCDay()===0 || day.getUTCDay()===6);
+ return day.toISOString().slice(0,10);
+}
+$('end').max = previousBusinessDay();
+$('end').value = $('end').max;
 $('start').max = $('end').max;
 fetch(BASE+'/api/stocks').then(r=>{if(!r.ok)throw Error('Stock list unavailable.');return r.json();}).then(stocks=>{
  $('symbol').replaceChildren(...stocks.map(s=>new Option(s,s)));

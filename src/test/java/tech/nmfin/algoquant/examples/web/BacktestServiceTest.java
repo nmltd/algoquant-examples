@@ -42,4 +42,19 @@ public class BacktestServiceTest {
         assertEquals(r.finalNav-10000,r.pnl,1e-8);
         assertTrue(Double.isFinite(r.sharpe));
     }
+    @Test public void executionsFollowThePreviousSessionsCrossover() {
+        BacktestService.Result r=new BacktestService(true).run(new BacktestService.Request("AAPL","2020-01-01","2020-12-31",5,20));
+        int checked=0;
+        for(BacktestService.Fill fill:r.executions) {
+            for(int i=2;i<r.series.size();i++) if(fill.date.startsWith(r.series.get(i).date)) {
+                BacktestService.Point previous=r.series.get(i-1), before=r.series.get(i-2);
+                double signal=previous.fast-previous.slow, old=before.fast-before.slow;
+                assertTrue("Fill must follow yesterday's crossover",signal*old<=0);
+                assertEquals(signal>0 ? "BUY" : "SELL",fill.side);
+                checked++;
+            }
+        }
+        assertTrue(checked>2);
+    }
+
 }

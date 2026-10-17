@@ -54,6 +54,15 @@ jobs:
           curl -fsS http://localhost:18082/healthz
           curl -fsS -X POST -d 'symbol=AAPL&start=2020-01-01&end=2020-12-31&fast=5&slow=20' http://localhost:18082/api/backtest > target/web-reports/container.json
           docker stop sma2-web
+      - name: Upload built Cloud Run container context (no license)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sma2-web-container-context
+          path: |
+            web/Dockerfile
+            web/logback.xml
+            web/build/
+          retention-days: 14
       - name: Upload web verification reports
         if: always()
         uses: actions/upload-artifact@v4

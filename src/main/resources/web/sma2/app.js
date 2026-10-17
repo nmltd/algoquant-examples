@@ -177,47 +177,16 @@ $('download').addEventListener('click',async()=>{
  }catch(error){showError(error.message);}
 });
 
-function readableMeasureValue(m){
- if(m.status!=='ok'||!Number.isFinite(m.value))return m.display||'N/A';
- if(m.unit==='fraction')return decimal(m.value*100)+'%';
- return decimal(m.value);
+function readableMeasureValue(m){return SharedReport.readable(m);}
+function element(tag,text,cls){return SharedReport.element(tag,text,cls);}
+function reportAccounts(r){
+ const accounts=[{name:'SMA2',stats:r.sma2Statistics,measures:r.performanceMeasures},{name:r.symbol+' buy & hold',stats:r.buyHoldStatistics,measures:r.buyHoldPerformanceMeasures||[]}];
+ if(r.sp500)accounts.push({name:'S&P 500',stats:r.sp500.statistics,measures:r.sp500.performanceMeasures});
+ return accounts;
 }
-function element(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;}
-function renderLibrary(r){
- $('measure-benchmark').textContent=r.benchmarkSource+' Summary measures use the same conventions for all strategies; open buy-and-hold positions have no completed-trade statistics.';
- const query=$('measure-filter').value.trim().toLowerCase(),groups=new Map(),hold=new Map((r.buyHoldPerformanceMeasures||[]).map(m=>[metricKey(m),m])),market=new Map((r.sp500?.performanceMeasures||[]).map(m=>[metricKey(m),m]));
- $('clear-search').disabled=!$('measure-filter').value;
- const measures=r.performanceMeasures||[];
- for(const m of measures){
-  if(query&&!((m.group+' '+m.label+' '+m.sourceClass+' '+m.unit).toLowerCase().includes(query)))continue;
-  if(!groups.has(m.group))groups.set(m.group,[]);groups.get(m.group).push(m);
- }
- $('measure-count').textContent=measures.length+' summary measures per strategy. Long period-by-period tables are omitted.';
- const content=[];
- for(const [group,rows]of groups){
-  const details=element('details',null,'measure-group');details.append(element('summary',group+' ('+rows.length+')'));
-  details.open=!!query||allGroupsOpen===true;
-  const wrap=element('div',null,'table-wrap'),table=element('table',null,'measure-table comparison-table'),head=element('thead'),tr=element('tr');
-  for(const name of ['Measure','SMA2',r.symbol+' buy & hold','S&P 500','SMA2 − underlying','SMA2 − S&P 500','Unit / parameters'])tr.append(element('th',name));
-  head.append(tr);table.append(head);const body=element('tbody');
-  for(const m of rows){
-   const b=hold.get(metricKey(m)),s=market.get(metricKey(m)),row=element('tr');row.append(element('td',m.label),element('td',readableMeasureValue(m)),element('td',b?readableMeasureValue(b):'Not saved'),element('td',s?readableMeasureValue(s):'Not saved'));
-   const diff=m.status==='ok'&&b?.status==='ok'&&Number.isFinite(m.value)&&Number.isFinite(b.value)?(m.unit==='fraction'?decimal((m.value-b.value)*100)+' pp':pairedValue(m.value-b.value,m.unit)):'—';
-   row.append(element('td',diff));
-   const marketDiff=m.status==='ok'&&s?.status==='ok'&&Number.isFinite(m.value)&&Number.isFinite(s.value)?(m.unit==='fraction'?decimal((m.value-s.value)*100)+' pp':pairedValue(m.value-s.value,m.unit)):'—';
-   row.append(element('td',marketDiff));
-   const note=element('td');note.append(element('code',m.sourceClass+' · '+m.unit),element('p',m.detail||'','hint'));
-   if(m.status!=='ok')note.append(element('p','SMA2: '+m.status.replaceAll('_',' '),'hint'));
-   if(b&&b.status!=='ok')note.append(element('p','Buy & hold: '+b.status.replaceAll('_',' ')+'. '+(b.detail||''),'hint'));
-   if(s&&s.status!=='ok')note.append(element('p','S&P 500: '+s.status.replaceAll('_',' ')+'. '+(s.detail||''),'hint'));
-   row.append(note);body.append(row);
-  }
-  table.append(body);wrap.append(table);details.append(wrap);content.push(details);
- }
- $('library-measures').replaceChildren(...content);$('period-measures').replaceChildren();
-}
+function renderLibrary(r){SharedReport.renderLibrary(reportAccounts(r),r.benchmarkSource+' Summary measures use the same conventions for all accounts.',allGroupsOpen);}
 $('measure-filter').addEventListener('input',()=>{if(current)renderLibrary(current);});
-function saveFile(name,content,type){const u=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+function saveFile(name,content,type){SharedReport.saveFile(name,content,type);}
 $('download-report').addEventListener('click',()=>{if(current)saveFile(current.symbol+'-sma2-report.json',JSON.stringify(current,null,2),'application/json');});
 $('download-measures').addEventListener('click',()=>downloadPerformance('buy-hold'));
 
@@ -258,98 +227,26 @@ $('copy-report-link').addEventListener('click',async()=>{
  catch(e){$('status').textContent='Copy the saved report link: '+link;}
 });
 
-function metricKey(m){return [m.group,m.label,m.sourceClass,m.unit].join('|');}
-function pairedValue(value,unit){
- if(!Number.isFinite(value))return 'N/A';
- return unit==='fraction'?pct(value):unit==='USD'?usd(value):decimal(value);
-}
 function renderComparison(r){
  const available=!!(r.sma2Statistics&&r.buyHoldStatistics&&r.buyHoldPerformanceMeasures);
  $('comparison-panel').hidden=!available;
- $('comparison-note').textContent=available
-  ? (r.sp500?'Three independently funded accounts; same requested dates, $10,000 starting equity and zero costs. S&P 500 is Yahoo ^GSPC, a price index without reinvested dividends.':'This saved report has no S&P 500 simulation. Run a new backtest for the three-way comparison.')
-  : 'This saved report predates strategy comparisons. Run a new backtest to calculate and save all statistics.';
- if(!available)return;
- const portfolios=[
-  {name:'SMA2',stats:r.sma2Statistics,measures:r.performanceMeasures,cls:'strategy-a'},
-  {name:r.symbol+' buy & hold',stats:r.buyHoldStatistics,measures:r.buyHoldPerformanceMeasures,cls:'strategy-b'}
- ];
- if(r.sp500)portfolios.push({name:'S&P 500',stats:r.sp500.statistics,measures:r.sp500.performanceMeasures,cls:'strategy-c'});
- const cards=[['Total return','totalReturn','fraction'],['Annualized growth (CAGR)','cagr','fraction'],['Maximum drawdown','maxDrawdown','fraction'],['Annualized volatility','annualizedVolatility','fraction'],['Sharpe ratio','sharpe','ratio'],['Final portfolio value','finalNav','USD'],['Net profit / loss','pnl','USD']];
- $('metrics').replaceChildren(...cards.map(([label,key,unit])=>{
-  const card=element('div',null,'metric paired-metric');card.append(element('p',label));
-  for(const p of portfolios){
-   const row=element('div',null,'paired-line');row.append(element('span',p.name,p.cls),element('strong',pairedValue(p.stats[key],unit)));card.append(row);
-  }
-  return card;
- }));
- const metric=(p,source)=>p.measures.find(m=>m.sourceClass===source&&m.status==='ok')?.value;
- const stat=(label,key)=>[label,...portfolios.map(p=>p.stats[key])];
- const measure=(label,key)=>[label,...portfolios.map(p=>metric(p,key))];
- const charts=[
-  ['Growth and return','fraction',[stat('Total return','totalReturn'),stat('CAGR','cagr')]],
-  ['Risk','fraction',[stat('Maximum drawdown','maxDrawdown'),stat('Annualized volatility','annualizedVolatility')]],
-  ['Risk-adjusted ratios','ratio',[stat('Sharpe · daily × √252','sharpe'),measure('Sortino · monthly, annualized','SortinoRatioMonthlyAnnualized'),measure('Calmar · library annual return','CalmarRatio')]],
-  ['Portfolio and profit','USD',[stat('Final value','finalNav'),stat('Profit / loss','pnl')]]
- ];
- $('comparison-charts').replaceChildren(...charts.map(([title,unit,rows])=>comparisonChart(title,unit,rows,portfolios.map(p=>p.name))));
+ if(!available){$('comparison-note').textContent='This saved report predates strategy comparisons. Run a new backtest to calculate and save all statistics.';return;}
+ SharedReport.renderComparison(reportAccounts(r),r.sp500?'Three independently funded accounts; same requested dates, $10,000 starting equity and zero costs. S&P 500 is Yahoo ^GSPC, a price index without reinvested dividends.':'This saved report has no S&P 500 simulation. Run a new backtest for the three-way comparison.');
 }
-function comparisonChart(title,unit,rows,names){
- const panel=element('section',null,'comparison-chart'),heading=element('h3',title),legend=element('div',null,'comparison-legend'),hidden=new Set();
- const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),output=element('output','Hover or focus a bar for its value.','comparison-hover');
- const height=42+names.length*29;
- svg.setAttribute('viewBox','0 0 520 '+(rows.length*height+25));svg.setAttribute('role','img');svg.setAttribute('aria-label',title+' comparison: '+names.join(', '));
- const colors=['#188663','#cf9647','#426db4'];
- names.forEach((name,k)=>{
-  const button=element('button',name,['strategy-a','strategy-b','strategy-c'][k]);button.type='button';button.setAttribute('aria-pressed','true');
-  button.onclick=()=>{hidden.has(k)?hidden.delete(k):hidden.add(k);button.setAttribute('aria-pressed',String(!hidden.has(k)));draw();};
-  legend.append(button);
- });
- panel.append(heading,legend,svg,output);
- function draw(){
-  svg.replaceChildren();
-  const finite=rows.flatMap(row=>row.slice(1).filter((value,k)=>!hidden.has(k)&&Number.isFinite(value)));
-  let low=Math.min(0,...finite),high=Math.max(0,...finite);if(high===low)high=low+1;
-  const x=v=>28+(v-low)/(high-low)*310;
-  const add=(tag,attrs,text)=>{const node=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value]of Object.entries(attrs))node.setAttribute(key,value);if(text!=null)node.textContent=text;svg.append(node);return node;};
-  rows.forEach(([label,...values],i)=>{
-   const top=i*height;add('text',{x:28,y:top+18,class:'bar-label'},label+' · '+(unit==='fraction'?'%':unit));
-   add('line',{x1:x(0),x2:x(0),y1:top+28,y2:top+height-10,stroke:'#b6c8c0'});
-   values.forEach((value,k)=>{
-    if(hidden.has(k))return;
-    const y=top+32+k*29,valid=Number.isFinite(value);
-    if(!valid){add('text',{x:28,y:y+16,fill:colors[k]},names[k]+': N/A');return;}
-    const bar=add('rect',{x:Math.min(x(0),x(value)),y,width:Math.max(1,Math.abs(x(value)-x(0))),height:20,rx:3,fill:colors[k],tabindex:0,role:'img','aria-label':names[k]+' / '+label+': '+pairedValue(value,unit)});
-    const tip=names[k]+' · '+label+': '+pairedValue(value,unit);
-    bar.onpointerenter=()=>output.textContent=tip;bar.onfocus=()=>output.textContent=tip;
-    add('text',{x:500,y:y+15,'text-anchor':'end',class:'bar-number'},pairedValue(value,unit));
-   });
-  });
+SharedReport.installPrint({
+ getReport:()=>current,
+ title:r=>r.symbol+' SMA2 backtest '+r.start+' to '+r.end,
+ url:r=>new URL(reportPath(r),location.origin).href,
+ prepare:()=>{
+  const saved={filter:$('measure-filter').value,groups:allGroupsOpen,details:new Map([...document.querySelectorAll('#report details')].map(d=>[d.querySelector('summary')?.textContent,d.open])),range:chartRange,prices:new Set(hiddenSeries.prices),nav:new Set(hiddenSeries.nav),comparison:[...document.querySelectorAll('.comparison-legend button')].map(b=>b.getAttribute('aria-pressed'))};
+  $('measure-filter').value='';allGroupsOpen=true;renderLibrary(current);document.querySelectorAll('#report details').forEach(d=>{d.open=true;});
+  chartRange=null;hiddenSeries.prices.clear();hiddenSeries.nav.clear();drawCharts();renderComparison(current);return saved;
+ },
+ restore:saved=>{
+  $('measure-filter').value=saved.filter;allGroupsOpen=saved.groups;renderLibrary(current);
+  document.querySelectorAll('#report details').forEach(d=>{d.open=saved.details.get(d.querySelector('summary')?.textContent)??false;});
+  chartRange=saved.range;hiddenSeries.prices=saved.prices;hiddenSeries.nav=saved.nav;drawCharts();
+  document.querySelectorAll('.comparison-legend button').forEach((b,i)=>{if(saved.comparison[i]==='false')b.click();});
  }
- draw();return panel;
-}
-
-let printState=null;
-window.addEventListener('beforeprint',()=>{
- if(!current||printState)return;
- printState={
-  title:document.title,filter:$('measure-filter').value,groups:allGroupsOpen,
-  details:new Map([...document.querySelectorAll('#report details')].map(d=>[d.querySelector('summary')?.textContent,d.open])),
-  range:chartRange,prices:new Set(hiddenSeries.prices),nav:new Set(hiddenSeries.nav),
-  comparison:[...document.querySelectorAll('.comparison-legend button')].map(b=>b.getAttribute('aria-pressed'))
- };
- document.title=current.symbol+' SMA2 backtest '+current.start+' to '+current.end;
- $('pdf-report-url').textContent='Saved report: '+new URL(reportPath(current),location.origin).href;
- $('measure-filter').value='';allGroupsOpen=true;renderLibrary(current);
- document.querySelectorAll('#report details').forEach(d=>{d.open=true;});
- chartRange=null;hiddenSeries.prices.clear();hiddenSeries.nav.clear();drawCharts();renderComparison(current);
-});
-window.addEventListener('afterprint',()=>{
- if(!printState)return;
- const saved=printState;printState=null;document.title=saved.title;
- $('measure-filter').value=saved.filter;allGroupsOpen=saved.groups;renderLibrary(current);
- document.querySelectorAll('#report details').forEach(d=>{d.open=saved.details.get(d.querySelector('summary')?.textContent)??false;});
- chartRange=saved.range;hiddenSeries.prices=saved.prices;hiddenSeries.nav=saved.nav;drawCharts();
- document.querySelectorAll('.comparison-legend button').forEach((b,i)=>{if(saved.comparison[i]==='false')b.click();});
 });
 $('export-pdf').addEventListener('click',()=>{if(current)window.print();});

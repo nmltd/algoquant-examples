@@ -56,6 +56,9 @@ public final class AllPerformanceMeasures {
         this.benchmark = benchmark; this.benchmarkError = benchmarkError; this.daily = daily.clone();
     }
 
+    private boolean navOnly;
+    /** Imported NAV contains no execution, fee or position records. */
+    public void computeForNavSeries(){navOnly=true;compute(false);}
     public void compute() { compute(true); }
 
     /** Scalar comparisons can omit long period tables while using the same calculations. */
@@ -178,6 +181,10 @@ public final class AllPerformanceMeasures {
     }
 
     private void measure(String group,String label,String unit,String note,PerformanceMeasure m) {
+        if(navOnly && !(m instanceof NavMeasure)) {
+            unavailable(group,label,m.getClass().getSimpleName(),"Execution/position data is not supplied; this statistic cannot be inferred from NAV.");
+            metrics.get(metrics.size()-1).unit=unit;return;
+        }
         number(group,label,m.getClass().getSimpleName(),unit,note,()->m instanceof NavMeasure
             ? ((NavMeasure)m).valueOf(nav)
             : m.valueOf(interval,capital,fees,fills,books,rates));

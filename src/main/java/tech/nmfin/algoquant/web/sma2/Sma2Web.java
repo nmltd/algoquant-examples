@@ -1,6 +1,8 @@
 package tech.nmfin.algoquant.web.sma2;
 
 import com.google.gson.Gson;
+import static tech.nmfin.algoquant.web.HttpSupport.*;
+import tech.nmfin.algoquant.web.performance.PerformanceRoutes;
 import com.sun.net.httpserver.*;
 import dev.nm.misc.license.License;
 import java.io.*;
@@ -30,9 +32,19 @@ public final class Sma2Web {
         Semaphore running = new Semaphore(1);
         server.setExecutor(new ThreadPoolExecutor(4, 4, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(32),
             new ThreadPoolExecutor.CallerRunsPolicy()));
+        PerformanceRoutes performance=new PerformanceRoutes(new tech.nmfin.algoquant.web.performance.PerformanceAnalyzer(),reports.store,running);
         server.createContext("/", e -> {
             try {
                 String incoming = e.getRequestURI().getPath();
+                if(performance.handle(e))return;
+                if(incoming.startsWith("/shared/") && "GET".equals(e.getRequestMethod())) {
+                    if(!Arrays.asList("/shared/report.js","/shared/report.css").contains(incoming)){send(e,404,error("Not found."));return;}
+                    try(InputStream in=Sma2Web.class.getResourceAsStream("/web"+incoming)) {
+                        ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int count;
+                        while((count=in.read(buffer))!=-1)out.write(buffer,0,count);
+                        respond(e,200,incoming.endsWith(".js")?"application/javascript":"text/css",out.toByteArray());return;
+                    }
+                }
                 if("GET".equals(e.getRequestMethod()) && ("/sma2".equals(incoming)||incoming.matches("/reports/[a-f0-9]{32}"))) {
                     e.getResponseHeaders().set("Location","/sma2".equals(incoming)?"/sma2/":"/sma2"+incoming);
                     e.sendResponseHeaders(308,-1);return;
@@ -104,25 +116,5 @@ public final class Sma2Web {
             finally { e.close(); }
         });
         return server;
-    }
-    private static String readLimited(InputStream in) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream(); int b;
-        while ((b = in.read()) != -1) { if (out.size() >= 8192) throw new IllegalArgumentException("Request too large."); out.write(b); }
-        return new String(out.toByteArray(),StandardCharsets.UTF_8);
-    }
-    private static Map<String,String> form(String body) throws UnsupportedEncodingException {
-        Map<String,String> values = new HashMap<>();
-        for (String part : body.split("&")) { String[] p = part.split("=",2); String k = URLDecoder.decode(p[0],"UTF-8");
-            if (values.put(k,p.length == 2 ? URLDecoder.decode(p[1],"UTF-8") : "") != null) throw new IllegalArgumentException("Duplicate field."); }
-        return values;
-    }
-    private static String required(Map<String,String> f,String k) { String v = f.get(k); if (v == null || v.trim().isEmpty()) throw new IllegalArgumentException("Missing " + k + "."); return v.trim(); }
-    private static String error(String message) { return JSON.toJson(Collections.singletonMap("error",message)); }
-    private static void send(HttpExchange e,int code,String body) throws IOException { respond(e,code,"application/json",body.getBytes(StandardCharsets.UTF_8)); }
-    private static void respond(HttpExchange e,int code,String type,byte[] bytes) throws IOException {
-        Headers h=e.getResponseHeaders(); h.set("Content-Type",type+"; charset=utf-8"); h.set("Cache-Control","no-store");
-        h.set("X-Content-Type-Options","nosniff"); h.set("Referrer-Policy","same-origin");
-        h.set("Content-Security-Policy","default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
-        e.sendResponseHeaders(code,bytes.length); e.getResponseBody().write(bytes);
     }
 }

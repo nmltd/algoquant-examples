@@ -1,6 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const usd = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
+const decimal = n => n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const pct = n => (n*100).toFixed(2)+'%';
 let current;
 let allGroupsOpen = null;
@@ -54,7 +55,7 @@ function render(r){
  chart('prices',r.series,['close','fast','slow'],['#344a52','#188663','#cf9647']);
  chart('nav',r.series,['nav','benchmark'],['#188663','#cf9647']);
  $('fill-count').textContent='('+r.executions.length+')';
- $('fills').replaceChildren(...r.executions.map(f=>{const tr=document.createElement('tr');for(const value of [f.date.replace('T',' '),f.side,f.quantity.toString(),usd(f.price)]){const td=document.createElement('td');td.textContent=value;tr.append(td);}return tr;}));
+ $('fills').replaceChildren(...r.executions.map(f=>{const tr=document.createElement('tr');for(const value of [f.date.replace('T',' '),f.side,decimal(f.quantity),usd(f.price)]){const td=document.createElement('td');td.textContent=value;tr.append(td);}return tr;}));
  $('fill-note').textContent=r.executions.length?'Executions are fills, not completed round-trip trades.':'No crossovers produced executions in this period.';
  $('provenance').textContent='Generated '+r.generatedAt+' · Simple daily returns; sample volatility and Sharpe annualized with 252 sessions. Account returns use $10,000 initial equity. Position sizing is stated above. Prices are adjusted; distributions are not modeled as separate cash payments.';
  $('empty').hidden=true;$('report').hidden=false;
@@ -97,7 +98,7 @@ function chart(id,data,keys,colors){
  let low=Math.min(...values),high=Math.max(...values);const pad=(high-low)*.08||1;low-=pad;high+=pad;
  const x=i=>64+(i-lo)/Math.max(1,hi-lo)*718,y=v=>230-(v-low)/(high-low)*210;
  const add=(tag,attrs,text,parent=svg)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!=null)n.textContent=text;parent.append(n);return n;};
- for(let i=0;i<5;i++){const v=low+(high-low)*i/4,yy=y(v);add('line',{x1:64,x2:782,y1:yy,y2:yy,class:'grid'});add('text',{x:55,y:yy+3,'text-anchor':'end'},v.toLocaleString('en-US',{maximumFractionDigits:1}));}
+ for(let i=0;i<5;i++){const v=low+(high-low)*i/4,yy=y(v);add('line',{x1:64,x2:782,y1:yy,y2:yy,class:'grid'});add('text',{x:55,y:yy+3,'text-anchor':'end'},decimal(v));}
  keys.forEach((key,k)=>{
   if(hidden.has(key))return;
   let d='';visible.forEach((p,j)=>{if(Number.isFinite(p[key]))d+=(d?' L':'M')+x(lo+j).toFixed(2)+','+y(p[key]).toFixed(2);});
@@ -122,7 +123,7 @@ function chart(id,data,keys,colors){
   const i=Math.round(lo+fraction(e)*(hi-lo)),point=data[i];cross.setAttribute('visibility','visible');
   crossLine.setAttribute('x1',x(i));crossLine.setAttribute('x2',x(i));
   const text=[point.date];
-  keys.forEach((key,k)=>{const v=point[key],show=!hidden.has(key)&&Number.isFinite(v);dots[k].setAttribute('visibility',show?'visible':'hidden');if(show){dots[k].setAttribute('cx',x(i));dots[k].setAttribute('cy',y(v));text.push(labels[k]+': $'+v.toLocaleString('en-US',{maximumFractionDigits:4}));}});
+  keys.forEach((key,k)=>{const v=point[key],show=!hidden.has(key)&&Number.isFinite(v);dots[k].setAttribute('visibility',show?'visible':'hidden');if(show){dots[k].setAttribute('cx',x(i));dots[k].setAttribute('cy',y(v));text.push(labels[k]+': $'+decimal(v));}});
   tooltip.textContent=text.join(' · ');
  }
  svg.onpointerdown=e=>{
@@ -157,8 +158,8 @@ $('download').addEventListener('click',()=>{
 
 function readableMeasureValue(m){
  if(m.status!=='ok'||!Number.isFinite(m.value))return m.display||'N/A';
- if(m.unit==='fraction')return (m.value*100).toLocaleString('en-US',{maximumFractionDigits:6})+'%';
- return m.value.toLocaleString('en-US',{maximumFractionDigits:8});
+ if(m.unit==='fraction')return decimal(m.value*100)+'%';
+ return decimal(m.value);
 }
 function element(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;}
 function renderLibrary(r){

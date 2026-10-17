@@ -56,7 +56,10 @@ public final class AllPerformanceMeasures {
         this.benchmark = benchmark; this.benchmarkError = benchmarkError; this.daily = daily.clone();
     }
 
-    public void compute() {
+    public void compute() { compute(true); }
+
+    /** Scalar comparisons can omit long period tables while using the same calculations. */
+    public void compute(boolean includePeriodTables) {
         String g = "Balances and profit";
         measure(g,"Starting balance","USD","",new StartBalance());
         measure(g,"Ending balance","USD","",new EndBalance());
@@ -164,7 +167,7 @@ public final class AllPerformanceMeasures {
             number(g,"Analytic normal VaR / "+level,"AnalyticVaR","fraction",note,()->new AnalyticVaR(alpha,capital,ReturnsCalculators.SIMPLE).valueOf(daily.clone()));
             number(g,"Conditional VaR / "+level,"ConditionalVaR","fraction",note,()->new ConditionalVaR(alpha,capital,ReturnsCalculators.SIMPLE).valueOf(daily.clone()));
         }
-        for(int i=0;i<lengths.length;i++) {
+        if(includePeriodTables) for(int i=0;i<lengths.length;i++) {
             String prefix=names[i]; Period p=lengths[i]; LocalDateTimeInterval w=windows[i];
             periodTable(prefix+" returns","fraction",w,p,new PeriodByPeriodReturns(capital,ReturnsCalculators.SIMPLE));
             periodTable(prefix+" trading volume","USD",w,p,new PeriodByPeriodTradingVolume());

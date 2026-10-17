@@ -54,6 +54,7 @@ function render(r){
  values.push(['Buy & hold return',pct(r.series[r.series.length-1].benchmark/r.initialCapital-1)]);
  $('metrics').replaceChildren(...values.map(([title,value])=>{const d=document.createElement('div');d.className='metric';const p=document.createElement('p');p.textContent=title;const s=document.createElement('strong');s.textContent=value;d.append(p,s);return d;}));
  renderLibrary(r);
+ renderComparison(r);
  chart('prices',r.series,['close','fast','slow'],['#344a52','#188663','#cf9647']);
  chart('nav',r.series,['nav','benchmark'],['#188663','#cf9647']);
  $('fill-count').textContent='('+r.executions.length+')';
@@ -165,47 +166,45 @@ function readableMeasureValue(m){
 }
 function element(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;}
 function renderLibrary(r){
- $('measure-benchmark').textContent=r.benchmarkSource+' The chart benchmark is '+(r.sizingModel==='FULL_EQUITY_V1'?'fully invested buy & hold of the selected stock.':'legacy one-share buy & hold of the selected stock.');
- const query=$('measure-filter').value.trim().toLowerCase(),groups=new Map();
+ $('measure-benchmark').textContent=r.benchmarkSource+' Summary measures use the same conventions for both strategies; open buy-and-hold positions have no completed-trade statistics.';
+ const query=$('measure-filter').value.trim().toLowerCase(),groups=new Map(),hold=new Map((r.buyHoldPerformanceMeasures||[]).map(m=>[metricKey(m),m]));
  $('clear-search').disabled=!$('measure-filter').value;
  const measures=r.performanceMeasures||[];
  for(const m of measures){
   if(query&&!((m.group+' '+m.label+' '+m.sourceClass+' '+m.unit).toLowerCase().includes(query)))continue;
   if(!groups.has(m.group))groups.set(m.group,[]);groups.get(m.group).push(m);
  }
- $('measure-count').textContent=measures.length+' configured scalar results · '+measures.filter(m=>m.status==='ok').length+' finite · '+measures.filter(m=>m.status==='not_applicable').length+' not applicable. Expand a group for details.';
+ $('measure-count').textContent=measures.length+' summary measures per strategy. Long period-by-period tables are omitted.';
  const content=[];
- for(const [group,rows] of groups){
-  const details=element('details',null,'measure-group'),summary=element('summary',group+' ('+rows.length+')');details.append(summary);
-  details.open=!!query||(allGroupsOpen===null?group==='Balances and profit':allGroupsOpen);
-  const wrap=element('div',null,'table-wrap'),table=element('table',null,'measure-table'),head=element('thead'),tr=element('tr');
-  for(const text of ['Measure','Value','Unit','Library class / parameters'])tr.append(element('th',text));
+ for(const [group,rows]of groups){
+  const details=element('details',null,'measure-group');details.append(element('summary',group+' ('+rows.length+')'));
+  details.open=!!query||allGroupsOpen===true;
+  const wrap=element('div',null,'table-wrap'),table=element('table',null,'measure-table comparison-table'),head=element('thead'),tr=element('tr');
+  for(const name of ['Measure','SMA2','Buy & hold','Difference','Unit / parameters'])tr.append(element('th',name));
   head.append(tr);table.append(head);const body=element('tbody');
-  for(const m of rows){const row=element('tr');row.append(element('td',m.label),element('td',readableMeasureValue(m)),element('td',m.unit));const note=element('td');note.append(element('code',m.sourceClass),element('p',m.detail||'', 'hint'));if(m.status!=='ok')note.append(element('span',m.status.replaceAll('_',' '),'measure-status'));row.append(note);body.append(row);}
+  for(const m of rows){
+   const b=hold.get(metricKey(m)),row=element('tr');row.append(element('td',m.label),element('td',readableMeasureValue(m)),element('td',b?readableMeasureValue(b):'Not saved'));
+   const diff=m.status==='ok'&&b?.status==='ok'&&Number.isFinite(m.value)&&Number.isFinite(b.value)?(m.unit==='fraction'?decimal((m.value-b.value)*100)+' pp':pairedValue(m.value-b.value,m.unit)):'—';
+   row.append(element('td',diff));
+   const note=element('td');note.append(element('code',m.sourceClass+' · '+m.unit),element('p',m.detail||'','hint'));
+   if(m.status!=='ok')note.append(element('p','SMA2: '+m.status.replaceAll('_',' '),'hint'));
+   if(b&&b.status!=='ok')note.append(element('p','Buy & hold: '+b.status.replaceAll('_',' ')+'. '+(b.detail||''),'hint'));
+   row.append(note);body.append(row);
+  }
   table.append(body);wrap.append(table);details.append(wrap);content.push(details);
  }
- $('library-measures').replaceChildren(...content);
- const tables=[];
- for(const t of r.periodMeasures||[]){
-  const details=element('details',null,'measure-group');details.open=allGroupsOpen===true;details.append(element('summary',t.label+' ('+t.values.length+' periods)'));
-  details.append(element('p',t.sourceClass+' · '+t.unit+' · '+t.detail,'hint'));
-  const wrap=element('div',null,'table-wrap'),table=element('table'),head=element('thead'),tr=element('tr');
-  for(const name of ['Start','End (excluded)','Value'])tr.append(element('th',name));head.append(tr);table.append(head);
-  const body=element('tbody');for(const p of t.values.slice(0,200)){const row=element('tr');row.append(element('td',p.start.replace('T',' ')),element('td',p.end.replace('T',' ')),element('td',readableMeasureValue({...p,unit:t.unit})));body.append(row);}
-  table.append(body);wrap.append(table);details.append(wrap);tables.push(details);
- }
- $('period-measures').replaceChildren(...tables);
+ $('library-measures').replaceChildren(...content);$('period-measures').replaceChildren();
 }
 $('measure-filter').addEventListener('input',()=>{if(current)renderLibrary(current);});
 function saveFile(name,content,type){const u=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 $('download-report').addEventListener('click',()=>{if(current)saveFile(current.symbol+'-sma2-report.json',JSON.stringify(current,null,2),'application/json');});
 $('download-measures').addEventListener('click',()=>{
  if(!current)return;
- const rows=[['kind','group','measure','library_class','unit','status','value','display','parameters_or_reason','start','end']];
- for(const m of current.performanceMeasures)rows.push(['scalar',m.group,m.label,m.sourceClass,m.unit,m.status,m.value??'',m.display,m.detail,'','']);
- for(const t of current.periodMeasures)for(const p of t.values)rows.push(['period',t.label,t.label,t.sourceClass,t.unit,p.status,p.value??'',p.display,t.detail,p.start,p.end]);
+ const rows=[['strategy','group','measure','library_class','unit','status','value','display','parameters_or_reason']];
+ for(const [strategy,measures]of [['SMA2',current.performanceMeasures||[]],['Buy & hold',current.buyHoldPerformanceMeasures||[]]])
+  for(const m of measures)rows.push([strategy,m.group,m.label,m.sourceClass,m.unit,m.status,m.value??'',m.display,m.detail]);
  const csv=rows.map(row=>row.map(v=>{let text=String(v??'');if(/^[=+@]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';}).join(',')).join('\r\n');
- saveFile(current.symbol+'-sma2-all-measures.csv',csv,'text/csv');
+ saveFile(current.symbol+'-sma2-vs-buy-hold.csv',csv,'text/csv');
 });
 
 function setReportGroups(open){
@@ -244,3 +243,67 @@ $('copy-report-link').addEventListener('click',async()=>{
  try{await navigator.clipboard.writeText(link);$('status').className='';$('status').textContent='Saved report link copied.';}
  catch(e){$('status').textContent='Copy the saved report link: '+link;}
 });
+
+function metricKey(m){return [m.group,m.label,m.sourceClass,m.unit].join('|');}
+function pairedValue(value,unit){
+ if(!Number.isFinite(value))return 'N/A';
+ return unit==='fraction'?pct(value):unit==='USD'?usd(value):decimal(value);
+}
+function renderComparison(r){
+ const available=!!(r.sma2Statistics&&r.buyHoldStatistics&&r.buyHoldPerformanceMeasures);
+ $('comparison-panel').hidden=!available;
+ $('comparison-note').textContent=available
+  ? 'Same stock, dates, $10,000 starting equity, adjusted prices and zero costs. Difference means SMA2 minus buy & hold; it does not automatically mean better.'
+  : 'This saved report predates the two-strategy comparison. Run a new backtest to calculate and save both sets of statistics.';
+ if(!available)return;
+ const a=r.sma2Statistics,b=r.buyHoldStatistics;
+ const cards=[['Total return','totalReturn','fraction'],['Annualized growth (CAGR)','cagr','fraction'],['Maximum drawdown','maxDrawdown','fraction'],['Annualized volatility','annualizedVolatility','fraction'],['Sharpe ratio','sharpe','ratio'],['Final portfolio value','finalNav','USD'],['Net profit / loss','pnl','USD']];
+ $('metrics').replaceChildren(...cards.map(([label,key,unit])=>{
+  const card=element('div',null,'metric paired-metric');card.append(element('p',label));
+  for(const [name,stats,cls]of [['SMA2',a,'strategy-a'],['Buy & hold',b,'strategy-b']]){
+   const row=element('div',null,'paired-line');row.append(element('span',name,cls),element('strong',pairedValue(stats[key],unit)));card.append(row);
+  }
+  return card;
+ }));
+ const metric=(list,source)=>list.find(m=>m.sourceClass===source&&m.status==='ok')?.value;
+ const charts=[
+  ['Growth and return','fraction',[['Total return',a.totalReturn,b.totalReturn],['CAGR',a.cagr,b.cagr]]],
+  ['Risk','fraction',[['Maximum drawdown',a.maxDrawdown,b.maxDrawdown],['Annualized volatility',a.annualizedVolatility,b.annualizedVolatility]]],
+  ['Risk-adjusted ratios','ratio',[['Sharpe · daily × √252',a.sharpe,b.sharpe],['Sortino · monthly, annualized',metric(r.performanceMeasures,'SortinoRatioMonthlyAnnualized'),metric(r.buyHoldPerformanceMeasures,'SortinoRatioMonthlyAnnualized')],['Calmar · library annual return',metric(r.performanceMeasures,'CalmarRatio'),metric(r.buyHoldPerformanceMeasures,'CalmarRatio')]]],
+  ['Portfolio and profit','USD',[['Final value',a.finalNav,b.finalNav],['Profit / loss',a.pnl,b.pnl]]]
+ ];
+ $('comparison-charts').replaceChildren(...charts.map(([title,unit,rows])=>comparisonChart(title,unit,rows)));
+}
+function comparisonChart(title,unit,rows){
+ const panel=element('section',null,'comparison-chart'),heading=element('h3',title),legend=element('div',null,'comparison-legend'),hidden=new Set();
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'),output=element('output','Hover or focus a bar for its value.','comparison-hover');
+ svg.setAttribute('viewBox','0 0 520 '+(rows.length*112+35));svg.setAttribute('role','img');svg.setAttribute('aria-label',title+' comparison: SMA2 and buy & hold');
+ const colors=['#188663','#cf9647'],names=['SMA2','Buy & hold'],buttons=[];
+ names.forEach((name,k)=>{
+  const button=element('button',name,k===0?'strategy-a':'strategy-b');button.type='button';button.setAttribute('aria-pressed','true');
+  button.onclick=()=>{hidden.has(k)?hidden.delete(k):hidden.add(k);button.setAttribute('aria-pressed',String(!hidden.has(k)));draw();};
+  buttons.push(button);legend.append(button);
+ });
+ panel.append(heading,legend,svg,output);
+ function draw(){
+  svg.replaceChildren();
+  const finite=rows.flatMap(row=>row.slice(1).filter((value,k)=>!hidden.has(k)&&Number.isFinite(value)));
+  let low=Math.min(0,...finite),high=Math.max(0,...finite);if(high===low)high=low+1;
+  const x=v=>28+(v-low)/(high-low)*310;
+  const add=(tag,attrs,text)=>{const node=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value]of Object.entries(attrs))node.setAttribute(key,value);if(text!=null)node.textContent=text;svg.append(node);return node;};
+  rows.forEach(([label,a,b],i)=>{
+   const top=i*112;add('text',{x:28,y:top+18,class:'bar-label'},label+' · '+(unit==='fraction'?'%':unit));
+   add('line',{x1:x(0),x2:x(0),y1:top+28,y2:top+90,stroke:'#b6c8c0'});
+   [a,b].forEach((value,k)=>{
+    if(hidden.has(k))return;
+    const y=top+32+k*29,valid=Number.isFinite(value);
+    if(!valid){add('text',{x:28,y:y+16,fill:colors[k]},names[k]+': N/A');return;}
+    const bar=add('rect',{x:Math.min(x(0),x(value)),y,width:Math.max(1,Math.abs(x(value)-x(0))),height:20,rx:3,fill:colors[k],tabindex:0,role:'img','aria-label':names[k]+' / '+label+': '+pairedValue(value,unit)});
+    const tip=names[k]+' · '+label+': '+pairedValue(value,unit);
+    bar.onpointerenter=()=>output.textContent=tip;bar.onfocus=()=>output.textContent=tip;
+    add('text',{x:500,y:y+15,'text-anchor':'end',class:'bar-number'},pairedValue(value,unit));
+   });
+  });
+ }
+ draw();return panel;
+}

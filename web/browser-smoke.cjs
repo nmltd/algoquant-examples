@@ -13,7 +13,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
    if(path==='/api/stocks')return route.fulfill({json:['AAPL','MSFT']});
    if(path.startsWith('/api/reports/')){
     if(path.endsWith('00000000000000000000000000000001')){
-     const legacy=JSON.parse(JSON.stringify(report));delete legacy.sizingModel;delete legacy.benchmarkTotalReturn;legacy.reportSchemaVersion=1;legacy.reportId='00000000000000000000000000000001';legacy.reportPath='/reports/'+legacy.reportId;
+     const legacy=JSON.parse(JSON.stringify(report));delete legacy.sizingModel;delete legacy.benchmarkTotalReturn;legacy.reportSchemaVersion=1;delete legacy.buyHoldStatistics;delete legacy.sma2Statistics;delete legacy.buyHoldPerformanceMeasures;legacy.reportId='00000000000000000000000000000001';legacy.reportPath='/reports/'+legacy.reportId;
      legacy.series.forEach(p=>p.benchmark=10000+p.close-legacy.series[0].close);
      return route.fulfill({json:legacy});
     }
@@ -29,6 +29,15 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   await page.locator('#report').waitFor({state:'visible'});
   assert.match(await page.locator('#report-sizing-note').textContent(),/Full-equity sizing/);
   assert.match(await page.locator('#benchmark-legend').textContent(),/fully invested/);
+  assert.equal(await page.locator('.comparison-chart').count(),4);
+  assert.match(await page.locator('.paired-metric').first().textContent(),/Buy & hold/);
+  assert.equal(await page.locator('#period-measures').isVisible(),false);
+  const bar=page.locator('.comparison-chart rect').first();await bar.focus();
+  assert.match(await page.locator('.comparison-hover').first().textContent(),/SMA2/);
+  await page.locator('.comparison-legend button').first().click();
+  assert.equal(await page.locator('.comparison-legend button').first().getAttribute('aria-pressed'),'false');
+  await page.locator('.comparison-legend button').first().click();
+  await page.locator('#market-history > summary').click();
   const full=await page.locator('#prices-window').textContent();
   await page.locator('.chart-panel').first().getByRole('button',{name:'Zoom in +',exact:true}).click();
   const zoom=await page.locator('#prices-window').textContent();
@@ -65,6 +74,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   await page.goto('http://sma2.test/sma2/reports/00000000000000000000000000000001');await page.locator('#report').waitFor({state:'visible'});
   assert.match(await page.locator('#report-sizing-note').textContent(),/Legacy saved report/);
   assert.match(await page.locator('#benchmark-legend').textContent(),/one share/);
+  assert.equal(await page.locator('#comparison-panel').isVisible(),false);
   assert.equal(await page.locator('#report-link').getAttribute('href'),'/sma2/reports/00000000000000000000000000000001');
   await page.goto('http://sma2.test'+report.reportPath);await page.locator('#report').waitFor({state:'visible'});
   assert.deepEqual(errors,[]);

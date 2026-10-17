@@ -37,7 +37,7 @@ assert abs(r["executions"][0]["quantity"]*r["executions"][0]["price"]-r["initial
 assert len(r["series"]) > 1000 and len(r["executions"]) > 0
 assert abs(r["finalNav"] - 10000 - r["pnl"]) < 1e-7
 measures = r["performanceMeasures"]
-assert len(measures) > 150 and len(r["periodMeasures"]) == 12
+assert len(measures) > 150 and len(r["periodMeasures"]) == 0
 for m in measures:
     assert m["status"] != "unavailable", (m["label"], m["detail"])
     if m["sourceClass"].startswith("RollingAnnualReturn") or m["sourceClass"] == "TreynorRatio":
@@ -47,6 +47,10 @@ with urllib.request.urlopen(sys.argv[2]+"/sma2/api/reports/"+r["reportId"],timeo
 with urllib.request.urlopen(sys.argv[2]+r["reportPath"],timeout=30) as page:
     assert page.status == 200
 print("SAVED REPORT VERIFIED:", sys.argv[2]+r["reportPath"])
+assert len(r["buyHoldPerformanceMeasures"])==len(measures)
+assert len(r["buyHoldExecutions"])==1
+assert abs(r["buyHoldStatistics"]["totalReturn"]-r["benchmarkTotalReturn"])<1e-10
+print("BUY-AND-HOLD COMPARISON VERIFIED:", len(r["buyHoldPerformanceMeasures"]), "summary measures")
 print("LIBRARY MEASURES VERIFIED:", len(measures), "scalar results;", len(r["periodMeasures"]), "period tables")
 print("LIVE DEPLOYMENT VERIFIED:", r["symbol"], len(r["series"]), "NAV observations;", len(r["executions"]), "executions")
 PY

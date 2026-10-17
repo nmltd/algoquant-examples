@@ -64,7 +64,10 @@ public final class SMA2App {
     public static final class Result {
         public String symbol, start, end, source, generatedAt;
         public String reportId, reportPath, appRevision;
-        public int reportSchemaVersion = 2;
+        public int reportSchemaVersion = 3;
+        public StrategyStatistics sma2Statistics, buyHoldStatistics;
+        public List<AllPerformanceMeasures.Metric> buyHoldPerformanceMeasures;
+        public List<Fill> buyHoldExecutions = new ArrayList<>();
         public String sizingModel = "FULL_EQUITY_V1";
         public Double benchmarkTotalReturn;
         public boolean bankrupt;
@@ -74,6 +77,11 @@ public final class SMA2App {
         public List<AllPerformanceMeasures.Metric> performanceMeasures;
         public List<AllPerformanceMeasures.PeriodTable> periodMeasures;
         public String benchmarkSource;
+    }
+
+    public static final class StrategyStatistics {
+        public double finalNav, pnl, totalReturn, maxDrawdown;
+        public Double annualizedVolatility, sharpe, cagr;
     }
 
     public Result run(Request req) {
@@ -187,10 +195,62 @@ public final class SMA2App {
         AllPerformanceMeasures measures = new AllPerformanceMeasures(measureInterval,CAPITAL,measureNav,
             report.tradeBlotter().allExecutions(),new OrderBookCaches(stock,books),benchmark,benchmarkError,
             returns.stream().mapToDouble(Double::doubleValue).toArray());
-        measures.compute();
+        measures.compute(false);
         out.performanceMeasures = measures.metrics;
         out.periodMeasures = measures.periods;
+        // Run a separately funded buy-and-hold portfolio through the same execution engine.
+        Strategy buyHold = new Strategy() {
+            private boolean entered;
+            @Override public void onEvent(TraderContext ctx,Event event) {
+                if(!entered && event instanceof OrderBook) {
+                    ctx.broker().sendOrder(newMarketOrder(stock,CAPITAL/((OrderBook)event).mid()));
+                    entered=true;
+                }
+            }
+        };
+        PerformanceReport buyHoldReport=new SimpleSimulatorBuilder().withInitialCash(CAPITAL)
+            .withOrderBookUpdates(new OrderBookCaches(stock,books)).build().run(buyHold,measureInterval);
+        BufferCache<Double> buyHoldNav=new BufferCache<>();
+        buyHoldNav.add(measureInterval.start(),CAPITAL);
+        for(TimedEntry<Double> entry:buyHoldReport.navCache())buyHoldNav.add(entry.time(),entry.data());
+        buyHoldNav.add(measureInterval.end(),out.series.get(out.series.size()-1).benchmark);
+        List<Double> holdReturns=new ArrayList<>();double previousHold=CAPITAL;
+        for(Point point:out.series){holdReturns.add(point.benchmark/previousHold-1);previousHold=point.benchmark;}
+        AllPerformanceMeasures holdMeasures=new AllPerformanceMeasures(measureInterval,CAPITAL,buyHoldNav,
+            buyHoldReport.tradeBlotter().allExecutions(),new OrderBookCaches(stock,books),benchmark,benchmarkError,
+            holdReturns.stream().mapToDouble(Double::doubleValue).toArray());
+        holdMeasures.compute(false);
+        for(AllPerformanceMeasures.Metric metric:holdMeasures.metrics) {
+            if(!"ok".equals(metric.status) && (metric.group.equals("Per-trade distribution statistics")||metric.group.equals("Trade return ratios")||metric.sourceClass.startsWith("WinLoss"))) {
+                metric.status="not_applicable";metric.display="N/A";metric.value=null;
+                metric.detail="Buy-and-hold has one open position and no completed round-trip trades. "+metric.detail;
+            }
+        }
+        out.buyHoldPerformanceMeasures=holdMeasures.metrics;
+        for(Execution execution:buyHoldReport.tradeBlotter().allExecutions()) {
+            Fill fill=new Fill();fill.date=execution.time().toString();fill.side=execution.side().toString();
+            fill.quantity=execution.quantity();fill.price=execution.price();out.buyHoldExecutions.add(fill);
+        }
+        out.sma2Statistics=statistics(out.series,false);
+        out.buyHoldStatistics=statistics(out.series,true);
         return out;
+    }
+    static StrategyStatistics statistics(List<Point> series,boolean buyHold) {
+        StrategyStatistics stats=new StrategyStatistics();
+        double previous=CAPITAL,peak=CAPITAL,mean=0,sum=0;List<Double> returns=new ArrayList<>();
+        for(Point point:series) {
+            double nav=buyHold?point.benchmark:point.nav;
+            peak=Math.max(peak,nav);stats.maxDrawdown=Math.max(stats.maxDrawdown,(peak-nav)/peak);
+            double value=nav/previous-1;returns.add(value);mean+=value;previous=nav;
+        }
+        stats.finalNav=previous;stats.pnl=previous-CAPITAL;stats.totalReturn=previous/CAPITAL-1;
+        mean/=returns.size();for(double value:returns)sum+=(value-mean)*(value-mean);
+        double sd=Math.sqrt(sum/(returns.size()-1));
+        if(Double.isFinite(sd))stats.annualizedVolatility=sd*Math.sqrt(252);
+        if(sd>0&&Double.isFinite(mean/sd))stats.sharpe=mean/sd*Math.sqrt(252);
+        long days=ChronoUnit.DAYS.between(LocalDate.parse(series.get(0).date),LocalDate.parse(series.get(series.size()-1).date));
+        if(days>0&&previous>0) {double annual=Math.pow(previous/CAPITAL,365.2425/days)-1;if(Double.isFinite(annual))stats.cagr=annual;}
+        return stats;
     }
     private static double average(List<Double> values, int lag) {
         double sum = 0; for (int i = values.size() - lag; i < values.size(); i++) sum += values.get(i); return sum / lag;

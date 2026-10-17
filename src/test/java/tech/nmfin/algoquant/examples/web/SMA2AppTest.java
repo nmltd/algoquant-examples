@@ -61,7 +61,7 @@ public class SMA2AppTest {
     @Test public void comprehensiveLibraryResultsAreSerializableAndMatchLedger() {
         SMA2App.Result r=new SMA2App(true).run(new SMA2App.Request("AAPL","2020-01-01","2020-12-31",5,20));
         assertTrue(r.performanceMeasures.size()>150);
-        assertEquals(12,r.periodMeasures.size());
+        assertEquals(0,r.periodMeasures.size());
         java.util.Map<String,AllPerformanceMeasures.Metric> byClass=new java.util.HashMap<>();
         for(AllPerformanceMeasures.Metric m:r.performanceMeasures) {
             assertNotNull(m.label);assertNotNull(m.sourceClass);assertNotNull(m.status);
@@ -113,7 +113,7 @@ public class SMA2AppTest {
             assertEquals(p.close/first-1,p.benchmark/SMA2App.CAPITAL-1,1e-12);
         assertEquals(r.benchmarkTotalReturn,r.series.get(r.series.size()-1).benchmark/SMA2App.CAPITAL-1,1e-12);
         assertEquals("FULL_EQUITY_V1",r.sizingModel);
-        assertEquals(2,r.reportSchemaVersion);
+        assertEquals(3,r.reportSchemaVersion);
     }
     @Test public void initialEntryDeploysCapitalAndSubsequentDaysHoldShares() {
         SMA2App.Result r=new SMA2App(true).run(new SMA2App.Request("AAPL","2020-01-01","2020-12-31",5,20));
@@ -134,5 +134,34 @@ public class SMA2AppTest {
             assertEquals(cash+position*p.close,p.nav,1e-7);
         }
         assertEquals(r.executions.size(),next);
+    }
+
+    @Test public void buyHoldHasIndependentLibraryMeasuresAndNoForcedExit() {
+        SMA2App.Result r=new SMA2App(true).run(new SMA2App.Request("AAPL","2016-01-01","2020-12-31",5,20));
+        assertEquals(r.performanceMeasures.size(),r.buyHoldPerformanceMeasures.size());
+        assertEquals(0,r.periodMeasures.size());
+        assertEquals(1,r.buyHoldExecutions.size());
+        assertEquals("BUY",r.buyHoldExecutions.get(0).side);
+        assertEquals(SMA2App.CAPITAL,r.buyHoldExecutions.get(0).quantity*r.buyHoldExecutions.get(0).price,1e-7);
+        java.util.Map<String,AllPerformanceMeasures.Metric> metrics=new java.util.HashMap<>();
+        for(AllPerformanceMeasures.Metric m:r.buyHoldPerformanceMeasures)metrics.put(m.sourceClass,m);
+        assertEquals(1.,metrics.get("ExecutionCount").value,0);
+        assertEquals(r.buyHoldStatistics.finalNav,metrics.get("EndBalance").value,1e-7);
+        assertEquals(r.buyHoldStatistics.pnl,metrics.get("ProfitLoss").value,1e-7);
+        assertEquals(r.benchmarkTotalReturn,r.buyHoldStatistics.totalReturn,1e-12);
+        assertEquals(r.finalNav,r.sma2Statistics.finalNav,1e-7);
+        assertEquals(r.maxDrawdown,r.sma2Statistics.maxDrawdown,1e-12);
+        assertEquals(r.annualizedVolatility,r.sma2Statistics.annualizedVolatility,1e-12);
+        double previous=10000,peak=10000,drawdown=0;java.util.List<Double> daily=new java.util.ArrayList<>();
+        for(SMA2App.Point p:r.series){
+            daily.add(p.benchmark/previous-1);previous=p.benchmark;
+            peak=Math.max(peak,p.benchmark);drawdown=Math.max(drawdown,(peak-p.benchmark)/peak);
+        }
+        double mean=daily.stream().mapToDouble(Double::doubleValue).average().getAsDouble(),sum=0;
+        for(double x:daily)sum+=(x-mean)*(x-mean);
+        double sd=Math.sqrt(sum/(daily.size()-1));
+        assertEquals(drawdown,r.buyHoldStatistics.maxDrawdown,1e-12);
+        assertEquals(sd*Math.sqrt(252),r.buyHoldStatistics.annualizedVolatility,1e-12);
+        assertEquals(mean/sd*Math.sqrt(252),r.buyHoldStatistics.sharpe,1e-12);
     }
 }

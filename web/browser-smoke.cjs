@@ -10,13 +10,22 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   await page.route('http://sma2.test/**',async route=>{
    const path=new URL(route.request().url()).pathname;
    if(path==='/api/stocks')return route.fulfill({json:['AAPL','MSFT']});
-   if(path.startsWith('/api/reports/'))return route.fulfill({json:report});
+   if(path.startsWith('/api/reports/')){
+    if(path.endsWith('00000000000000000000000000000001')){
+     const legacy=JSON.parse(JSON.stringify(report));delete legacy.sizingModel;delete legacy.benchmarkTotalReturn;legacy.reportSchemaVersion=1;
+     legacy.series.forEach(p=>p.benchmark=10000+p.close-legacy.series[0].close);
+     return route.fulfill({json:legacy});
+    }
+    return route.fulfill({json:report});
+   }
    if(path==='/api/backtest'){posts++;return route.fulfill({json:report});}
    const file=path==='/app.js'?'app.js':path==='/style.css'?'style.css':'index.html';
    return route.fulfill({body:fs.readFileSync('src/main/resources/web/'+file),contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html'});
   });
   await page.goto('http://sma2.test'+report.reportPath);
   await page.locator('#report').waitFor({state:'visible'});
+  assert.match(await page.locator('#report-sizing-note').textContent(),/Full-equity sizing/);
+  assert.match(await page.locator('#benchmark-legend').textContent(),/fully invested/);
   const full=await page.locator('#prices-window').textContent();
   await page.locator('.chart-panel').first().getByRole('button',{name:'Zoom in +',exact:true}).click();
   const zoom=await page.locator('#prices-window').textContent();
@@ -50,6 +59,10 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   await page.locator('#run').click();await page.waitForFunction(()=>document.getElementById('status').textContent.startsWith('Complete'));
   assert.equal(posts,1);assert.equal(new URL(page.url()).pathname,report.reportPath);
   await page.reload();await page.locator('#report').waitFor({state:'visible'});assert.equal(posts,1);
+  await page.goto('http://sma2.test/reports/00000000000000000000000000000001');await page.locator('#report').waitFor({state:'visible'});
+  assert.match(await page.locator('#report-sizing-note').textContent(),/Legacy saved report/);
+  assert.match(await page.locator('#benchmark-legend').textContent(),/one share/);
+  await page.goto('http://sma2.test'+report.reportPath);await page.locator('#report').waitFor({state:'visible'});
   assert.deepEqual(errors,[]);
   await page.screenshot({path:'target/web-reports/browser.png',fullPage:true});
   console.log('Browser checks passed: zoom, synchronized windows, hover, legend, pan, reset, report controls and refresh without rerun.');

@@ -27,6 +27,12 @@ python3 - "$report" "$url" <<'PY'
 import json, sys, urllib.request
 r = json.load(open(sys.argv[1]))
 assert r["source"] == "Yahoo Finance daily adjusted close"
+assert r["sizingModel"] == "FULL_EQUITY_V1"
+first=r["series"][0]["close"]
+for point in r["series"]:
+    assert abs(point["benchmark"]/r["initialCapital"] - point["close"]/first) < 1e-10
+assert abs(r["benchmarkTotalReturn"] - (r["series"][-1]["close"]/first-1)) < 1e-10
+assert abs(r["executions"][0]["quantity"]*r["executions"][0]["price"]-r["initialCapital"]) < 1e-7
 assert len(r["series"]) > 1000 and len(r["executions"]) > 0
 assert abs(r["finalNav"] - 10000 - r["pnl"]) < 1e-7
 measures = r["performanceMeasures"]

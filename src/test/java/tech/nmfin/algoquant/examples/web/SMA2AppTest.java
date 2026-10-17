@@ -33,8 +33,9 @@ public class SMA2AppTest {
             while(next<r.executions.size() && r.executions.get(next).date.substring(0,10).compareTo(p.date)<=0) {
                 SMA2App.Fill f=r.executions.get(next++);
                 double qty=f.side.equals("BUY")?f.quantity:-f.quantity;
+                double equityBefore=cash+position*f.price;
                 cash-=qty*f.price;position+=qty;
-                assertEquals(1.,Math.abs(position),1e-8);
+                assertEquals("Full equity must be deployed at every entry/reversal",equityBefore,Math.abs(position)*f.price,1e-7);
                 assertEquals(p.close,f.price,1e-8);
             }
             assertEquals(cash+position*p.close,p.nav,1e-7);
@@ -103,5 +104,35 @@ public class SMA2AppTest {
         }
         for(AllPerformanceMeasures.PeriodTable t:r.periodMeasures)
             assertFalse(t.label+": "+t.detail,"unavailable".equals(t.status));
+    }
+
+    @Test public void benchmarkReturnEqualsUnderlyingAdjustedPriceReturn() {
+        SMA2App.Result r=new SMA2App(true).run(new SMA2App.Request("AAPL","2020-01-01","2020-12-31",5,20));
+        double first=r.series.get(0).close;
+        for(SMA2App.Point p:r.series)
+            assertEquals(p.close/first-1,p.benchmark/SMA2App.CAPITAL-1,1e-12);
+        assertEquals(r.benchmarkTotalReturn,r.series.get(r.series.size()-1).benchmark/SMA2App.CAPITAL-1,1e-12);
+        assertEquals("FULL_EQUITY_V1",r.sizingModel);
+        assertEquals(2,r.reportSchemaVersion);
+    }
+    @Test public void initialEntryDeploysCapitalAndSubsequentDaysHoldShares() {
+        SMA2App.Result r=new SMA2App(true).run(new SMA2App.Request("AAPL","2020-01-01","2020-12-31",5,20));
+        SMA2App.Fill initial=r.executions.get(0);
+        assertTrue(initial.date.startsWith(r.series.get(0).date));
+        assertEquals(SMA2App.CAPITAL,initial.quantity*initial.price,1e-7);
+        assertTrue(initial.quantity>1);
+        double cash=SMA2App.CAPITAL,position=0;int next=0;
+        for(SMA2App.Point p:r.series) {
+            if(next<r.executions.size()&&r.executions.get(next).date.startsWith(p.date)) {
+                SMA2App.Fill fill=r.executions.get(next++);
+                double qty=fill.side.equals("BUY")?fill.quantity:-fill.quantity;
+                double equity=cash+position*p.close;
+                cash-=qty*p.close;position+=qty;
+                assertEquals(equity,Math.abs(position)*p.close,1e-7);
+                assertEquals(fill.side.equals("BUY")?1.:-1.,Math.signum(position),0.);
+            }
+            assertEquals(cash+position*p.close,p.nav,1e-7);
+        }
+        assertEquals(r.executions.size(),next);
     }
 }

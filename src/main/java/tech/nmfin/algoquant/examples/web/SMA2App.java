@@ -18,9 +18,10 @@ import tech.nmfin.algoquant.execution.datatype.product.stock.usa.USDStock;
 import tech.nmfin.algoquant.execution.performance.report.PerformanceReport;
 import tech.nmfin.algoquant.execution.performance.measure.BenchmarkLookup;
 import tech.nmfin.algoquant.execution.strategy.Strategy;
-import tech.nmfin.algoquant.model.signal.technical.crossover.sma2.SMA2;
+import tech.nmfin.algoquant.model.signal.technical.crossover.MovingAverageCrossover;
+import static tech.nmfin.algoquant.execution.datatype.order.OrderUtils.newMarketOrder;
 
-/** Runs the published AlgoQuant strategy, keeping mutable simulation state per request. */
+/** AlgoQuant SMA crossover signals and simulator with full-equity position sizing. */
 public final class SMA2App {
     public static final double CAPITAL = 10000;
     public static final List<String> SYMBOLS = Collections.unmodifiableList(Arrays.asList(
@@ -63,7 +64,10 @@ public final class SMA2App {
     public static final class Result {
         public String symbol, start, end, source, generatedAt;
         public String reportId, reportPath, appRevision;
-        public int reportSchemaVersion = 1;
+        public int reportSchemaVersion = 2;
+        public String sizingModel = "FULL_EQUITY_V1";
+        public Double benchmarkTotalReturn;
+        public boolean bankrupt;
         public int fast, slow; public double initialCapital = CAPITAL, finalNav, pnl, totalReturn, maxDrawdown;
         public Double annualizedVolatility, sharpe;
         public List<Point> series = new ArrayList<>(); public List<Fill> executions = new ArrayList<>();
@@ -90,19 +94,36 @@ public final class SMA2App {
         }
         if (warm.size() < req.slow || selected.size() < 2)
             throw new IllegalArgumentException("Insufficient price history for this period and slow SMA. Try a later start or longer period.");
-        SMA2 sma = new SMA2(stock, req.fast, req.slow);
-        BufferCache<OrderBook> history = new BufferCache<>();
-        for (int i = 0; i < warm.size() - 1; i++) history.add(warm.get(i).time(), warm.get(i).data());
-        sma.initialize(history);
-        final OrderBook[] previous = {warm.get(warm.size() - 1).data()};
-        // Decide using the previous session's close; execute at the current session's adjusted close.
-        // This deliberate one-bar delay avoids using today's closing signal for a same-close fill.
+        MovingAverageCrossover signal = new MovingAverageCrossover(req.fast,req.slow);
+        for(int i=0;i<warm.size()-1;i++) {
+            signal.update(warm.get(i).time(),warm.get(i).data().mid());signal.value();
+        }
+        final OrderBook[] previous={warm.get(warm.size()-1).data()};
+        // Signals use yesterday's close. Fractional sizing uses today's simulated fill price.
         Strategy delayed = new Strategy() {
+            private int heldDirection=0;
+            private boolean halted=false;
             @Override public void onEvent(TraderContext ctx, Event evt) {
-            if (evt instanceof OrderBook) {
-                sma.onOrderBookUpdate(ctx.now(), previous[0], ctx.marketCondition(), ctx.tradeBlotter(), ctx.broker());
-                previous[0] = (OrderBook) evt;
-            }
+                if(!(evt instanceof OrderBook))return;
+                OrderBook book=(OrderBook)evt;
+                signal.update(ctx.now(),previous[0].mid());signal.value();
+                previous[0]=book;
+                double[] averages=signal.signalValues();
+                int direction=averages[0]>averages[1]?1:averages[0]<averages[1]?-1:heldDirection;
+                double position=ctx.tradeBlotter().position(stock);
+                double equity=ctx.cash()+position*book.mid();
+                if(equity<=0)halted=true;
+                if(halted) {
+                    if(Math.abs(position)>1e-8)ctx.broker().sendOrder(newMarketOrder(stock,-position));
+                    return;
+                }
+                // Enter on the first selected close using the pre-existing trend, then reverse only.
+                if(direction!=heldDirection) {
+                    double target=direction*equity/book.mid();
+                    double quantity=target-position;
+                    if(Math.abs(quantity)>1e-8)ctx.broker().sendOrder(newMarketOrder(stock,quantity));
+                    heldDirection=direction;
+                }
             }
         };
         PerformanceReport report = new SimpleSimulatorBuilder()
@@ -125,10 +146,12 @@ public final class SMA2App {
             if (nav == null) throw new IllegalStateException("Missing daily NAV observation.");
             Point p = new Point(); p.date = b.time().toLocalDate().toString(); p.close = b.data().adjClose();
             closes.add(p.close); p.fast = average(closes, req.fast); p.slow = average(closes, req.slow);
-            p.nav = nav; p.benchmark = CAPITAL + p.close - first; out.series.add(p);
+            p.nav = nav; p.benchmark = CAPITAL * p.close / first; out.series.add(p);
             peak = Math.max(peak, nav); out.maxDrawdown = Math.max(out.maxDrawdown, (peak - nav) / peak);
             returns.add(nav / last - 1); last = nav;
         }
+        out.benchmarkTotalReturn=out.series.get(out.series.size()-1).close/first-1;
+        out.bankrupt=last<=0;
         out.finalNav = last; out.pnl = last - CAPITAL; out.totalReturn = out.pnl / CAPITAL;
         double mean = returns.stream().mapToDouble(Double::doubleValue).average().orElse(0), sum = 0;
         for (double r : returns) sum += (r - mean) * (r - mean);

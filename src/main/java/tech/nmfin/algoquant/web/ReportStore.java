@@ -1,4 +1,4 @@
-package tech.nmfin.algoquant.examples.web;
+package tech.nmfin.algoquant.web;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

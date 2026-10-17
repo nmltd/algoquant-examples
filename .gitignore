@@ -3,3 +3,6 @@ log/
 license/*.lic
 .idea/
 *.iml
+
+web/build/
+gha-creds-*.json

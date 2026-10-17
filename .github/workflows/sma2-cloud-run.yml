@@ -1,0 +1,55 @@
+name: Deploy SMA2 web to Cloud Run
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+concurrency:
+  group: sma2-cloud-run-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_RUNTIME_SERVICE_ACCOUNT: ${{ vars.GCP_RUNTIME_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check deployment configuration
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          DEPLOY_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          test -n "$GCP_PROJECT_ID" && test -n "$GCP_RUNTIME_SERVICE_ACCOUNT" && test -n "$WIF_PROVIDER" && test -n "$DEPLOY_ACCOUNT" || { echo 'Configure the four GCP repository variables using web/bootstrap-cloud.sh first.'; exit 1; }
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+          server-id: github-nm-packages
+      - name: Set up pinned Maven
+        run: |
+          curl -fsSL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.tar.gz -o "$RUNNER_TEMP/maven.tar.gz"
+          echo "a555254d6b53d267965a3404ecb14e53c3827c09c3b94b5678835887ab404556bfaf78dcfe03ba76fa2508649dca8531c74bca4d5846513522404d48e8c4ac8b  $RUNNER_TEMP/maven.tar.gz" | sha512sum --check
+          tar -xzf "$RUNNER_TEMP/maven.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.9.9/bin" >> "$GITHUB_PATH"
+      - name: Build and test with the already-public starter trial license
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p license
+          curl -fsSL https://raw.githubusercontent.com/nmltd/new-algoquant-project/main/license/nm.lic -o license/nm.lic
+          mvn -B -ntp -U clean verify
+          python3 web/smoke.py
+          mkdir -p web/build
+          cp -r target/classes target/lib web/build/
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Build container and deploy production service
+        run: bash web/deploy.sh

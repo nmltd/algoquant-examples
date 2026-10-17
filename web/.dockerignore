@@ -1,0 +1,5 @@
+*
+!Dockerfile
+!logback.xml
+!build/
+!build/**

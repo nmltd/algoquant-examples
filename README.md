@@ -71,3 +71,7 @@ The script uses the packaged public dependency in `target/lib/`, disables deskto
 The example sources retain their original copyright and license notices. The underlying AlgoQuant/NM Dev libraries require a valid NM license.
 
 [AlgoQuant Javadoc](https://nmltd.github.io/algoquant/) · [Minimal starter](https://github.com/nmltd/new-algoquant-project) · [Public distributions](https://github.com/nmltd/maven-packages)
+
+## SMA2 web application
+
+An interactive US-stock SMA2 backtest application is included separately from the six demos. See [web setup and Cloud Run deployment](web/README.md). Intended hostname: `optim.nmfin.tech`.

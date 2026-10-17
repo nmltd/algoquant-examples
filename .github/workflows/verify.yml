@@ -36,6 +36,41 @@ jobs:
         run: mvn -B -ntp -U -Dmaven.repo.local="$RUNNER_TEMP/m2" clean verify
       - name: Run every example with synthetic data and no desktop or market-data service
         run: bash scripts/run-offline.sh
+      - name: Verify the SMA2 web API offline
+        run: python3 web/smoke.py
+      - name: Verify Yahoo-backed web backtest on an explicit manual run
+        if: github.event_name == 'workflow_dispatch'
+        run: python3 web/smoke.py --live
+      - name: Build the Cloud Run container and check its health endpoint
+        run: |
+          mkdir -p web/build
+          cp -r target/classes target/lib web/build/
+          docker build -t sma2-web:ci web
+          docker run -d --name sma2-web -p 18082:8080 -e SMA2_DATA_MODE=synthetic -v "$PWD/license:/secrets:ro" sma2-web:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:18082/healthz; then break; fi
+            sleep 1
+          done
+          curl -fsS http://localhost:18082/healthz
+          curl -fsS -X POST -d 'symbol=AAPL&start=2020-01-01&end=2020-12-31&fast=5&slow=20' http://localhost:18082/api/backtest > target/web-reports/container.json
+          docker stop sma2-web
+      - name: Upload built Cloud Run container context (no license)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sma2-web-container-context
+          path: |
+            web/Dockerfile
+            web/logback.xml
+            web/build/
+          retention-days: 14
+      - name: Upload web verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sma2-web-verification
+          path: |
+            target/web-reports/
+            target/surefire-reports/
       - name: Upload generated simulation reports
         if: always()
         uses: actions/upload-artifact@v4

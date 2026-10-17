@@ -159,13 +159,15 @@ function chart(id,data,keys,colors){
  };
 }
 
-$('download').addEventListener('click',()=>{
+async function downloadPerformance(strategy){
  if(!current)return;
- const r=current, lines=['date,adjusted_close,fast_sma,slow_sma,sma2_nav,'+(r.sizingModel==='FULL_EQUITY_V1'?'fully_invested_buy_hold_nav':'legacy_one_share_benchmark')];
- r.series.forEach(p=>lines.push([p.date,p.close,p.fast,p.slow,p.nav,p.benchmark].join(',')));
- const url=URL.createObjectURL(new Blob([lines.join('\r\n')],{type:'text/csv'}));
- const a=document.createElement('a');a.href=url;a.download=r.symbol+'-sma2-'+r.fast+'-'+r.slow+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-});
+ try{
+  const response=await fetch(BASE+'/api/reports/'+current.reportId+'/'+strategy+'.csv');
+  if(!response.ok){const error=await response.json();throw Error(error.error||'CSV export failed.');}
+  saveFile(current.symbol+'-'+strategy+'-performance.csv',await response.text(),'text/csv');
+ }catch(error){showError(error.message);}
+}
+$('download').addEventListener('click',()=>downloadPerformance('sma2'));
 
 function readableMeasureValue(m){
  if(m.status!=='ok'||!Number.isFinite(m.value))return m.display||'N/A';
@@ -206,14 +208,7 @@ function renderLibrary(r){
 $('measure-filter').addEventListener('input',()=>{if(current)renderLibrary(current);});
 function saveFile(name,content,type){const u=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 $('download-report').addEventListener('click',()=>{if(current)saveFile(current.symbol+'-sma2-report.json',JSON.stringify(current,null,2),'application/json');});
-$('download-measures').addEventListener('click',()=>{
- if(!current)return;
- const rows=[['strategy','group','measure','library_class','unit','status','value','display','parameters_or_reason']];
- for(const [strategy,measures]of [['SMA2',current.performanceMeasures||[]],['Buy & hold',current.buyHoldPerformanceMeasures||[]]])
-  for(const m of measures)rows.push([strategy,m.group,m.label,m.sourceClass,m.unit,m.status,m.value??'',m.display,m.detail]);
- const csv=rows.map(row=>row.map(v=>{let text=String(v??'');if(/^[=+@]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';}).join(',')).join('\r\n');
- saveFile(current.symbol+'-sma2-vs-buy-hold.csv',csv,'text/csv');
-});
+$('download-measures').addEventListener('click',()=>downloadPerformance('buy-hold'));
 
 function setReportGroups(open){
  allGroupsOpen=open;

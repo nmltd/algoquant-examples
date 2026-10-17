@@ -12,6 +12,10 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
    const path=incoming.startsWith('/sma2/')?incoming.slice('/sma2'.length):incoming;
    if(path==='/api/stocks')return route.fulfill({json:['AAPL','MSFT']});
    if(path.startsWith('/api/reports/')){
+    if(path.endsWith('.csv')){
+     const name=path.endsWith('/buy-hold.csv')?'buy-hold':'sma2';
+     return route.fulfill({body:fs.readFileSync('target/web-reports/'+name+'.csv'),contentType:'text/csv'});
+    }
     if(path.endsWith('00000000000000000000000000000001')){
      const legacy=JSON.parse(JSON.stringify(report));delete legacy.sizingModel;delete legacy.benchmarkTotalReturn;legacy.reportSchemaVersion=1;delete legacy.buyHoldStatistics;delete legacy.sma2Statistics;delete legacy.buyHoldPerformanceMeasures;legacy.reportId='00000000000000000000000000000001';legacy.reportPath='/reports/'+legacy.reportId;
      legacy.series.forEach(p=>p.benchmark=10000+p.close-legacy.series[0].close);
@@ -38,6 +42,12 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   assert.equal(await page.locator('#end').inputValue(),await page.evaluate(()=>previousBusinessDay()));
   await page.goto('http://sma2.test'+report.reportPath);
   await page.locator('#report').waitFor({state:'visible'});
+  for(const [id,name]of [['download','sma2'],['download-measures','buy-hold']]){
+   const waiting=page.waitForEvent('download');await page.locator('#'+id).click();const download=await waiting;
+   assert.equal(download.suggestedFilename(),report.symbol+'-'+name+'-performance.csv');
+   const stream=await download.createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);
+   assert.equal(Buffer.concat(chunks).toString(),fs.readFileSync('target/web-reports/'+name+'.csv','utf8'));
+  }
   assert.match(await page.locator('#report-sizing-note').textContent(),/Full-equity sizing/);
   assert.match(await page.locator('#benchmark-legend').textContent(),/fully invested/);
   assert.equal(await page.locator('.comparison-chart').count(),4);

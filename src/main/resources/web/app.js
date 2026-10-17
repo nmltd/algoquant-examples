@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 const usd = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
 const pct = n => (n*100).toFixed(2)+'%';
 let current;
+let allGroupsOpen = null;
 const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
 $('end').max = yesterday.toISOString().slice(0,10);
 $('start').max = $('end').max;
@@ -25,6 +26,7 @@ $('backtest').addEventListener('submit',async e=>{
 });
 function showError(msg){$('status').className='error';$('status').textContent=msg;}
 function render(r){
+ allGroupsOpen=null;
  $('report-title').textContent=r.symbol+' / SMA '+r.fast+' days × '+r.slow+' days';
  $('report-meta').textContent=r.start+' → '+r.end+' · USD · '+r.source;
  $('fast-legend').textContent='Fast SMA · '+r.fast+' days';
@@ -67,6 +69,7 @@ function element(tag,text,cls){const e=document.createElement(tag);if(text!=null
 function renderLibrary(r){
  $('measure-benchmark').textContent=r.benchmarkSource+' The chart benchmark remains one share of the selected stock.';
  const query=$('measure-filter').value.trim().toLowerCase(),groups=new Map();
+ $('clear-search').disabled=!$('measure-filter').value;
  const measures=r.performanceMeasures||[];
  for(const m of measures){
   if(query&&!((m.group+' '+m.label+' '+m.sourceClass+' '+m.unit).toLowerCase().includes(query)))continue;
@@ -76,7 +79,7 @@ function renderLibrary(r){
  const content=[];
  for(const [group,rows] of groups){
   const details=element('details',null,'measure-group'),summary=element('summary',group+' ('+rows.length+')');details.append(summary);
-  if(query||group==='Balances and profit')details.open=true;
+  details.open=!!query||(allGroupsOpen===null?group==='Balances and profit':allGroupsOpen);
   const wrap=element('div',null,'table-wrap'),table=element('table',null,'measure-table'),head=element('thead'),tr=element('tr');
   for(const text of ['Measure','Value','Unit','Library class / parameters'])tr.append(element('th',text));
   head.append(tr);table.append(head);const body=element('tbody');
@@ -86,7 +89,7 @@ function renderLibrary(r){
  $('library-measures').replaceChildren(...content);
  const tables=[];
  for(const t of r.periodMeasures||[]){
-  const details=element('details',null,'measure-group');details.append(element('summary',t.label+' ('+t.values.length+' periods)'));
+  const details=element('details',null,'measure-group');details.open=allGroupsOpen===true;details.append(element('summary',t.label+' ('+t.values.length+' periods)'));
   details.append(element('p',t.sourceClass+' · '+t.unit+' · '+t.detail,'hint'));
   const wrap=element('div',null,'table-wrap'),table=element('table'),head=element('thead'),tr=element('tr');
   for(const name of ['Start','End (excluded)','Value'])tr.append(element('th',name));head.append(tr);table.append(head);
@@ -105,4 +108,16 @@ $('download-measures').addEventListener('click',()=>{
  for(const t of current.periodMeasures)for(const p of t.values)rows.push(['period',t.label,t.label,t.sourceClass,t.unit,p.status,p.value??'',p.display,t.detail,p.start,p.end]);
  const csv=rows.map(row=>row.map(v=>{let text=String(v??'');if(/^[=+@]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';}).join(',')).join('\r\n');
  saveFile(current.symbol+'-sma2-all-measures.csv',csv,'text/csv');
+});
+
+function setReportGroups(open){
+ allGroupsOpen=open;
+ document.querySelectorAll('#library-measures details, #period-measures details').forEach(d=>{d.open=open;});
+}
+$('expand-all').addEventListener('click',()=>setReportGroups(true));
+$('collapse-all').addEventListener('click',()=>setReportGroups(false));
+$('clear-search').addEventListener('click',()=>{
+ $('measure-filter').value='';
+ if(current)renderLibrary(current);
+ $('measure-filter').focus();
 });

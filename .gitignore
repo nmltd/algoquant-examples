@@ -1,0 +1,5 @@
+target/
+log/
+license/*.lic
+.idea/
+*.iml

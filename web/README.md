@@ -10,7 +10,7 @@ Use the root README's Maven authentication and a valid external NM license:
 
 ```bash
 mvn clean verify
-java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.examples.web.Sma2Web
+java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.Sma2Web
 ```
 
 Open http://localhost:8080 for the tools directory, or http://localhost:8080/sma2 for SMA2. `PORT` overrides the port and `NM_LICENSE_FILE` overrides `license/nm.lic`. Production defaults to Yahoo downloads. `SMA2_DATA_MODE=synthetic` is explicitly for offline verification and labels every report SYNTHETIC. There is no automatic synthetic fallback when Yahoo fails.
@@ -89,7 +89,7 @@ Cloud Run uses the private bucket <project>-sma2-reports through its attached ru
 
 Local runs use reports/ (gitignored); SMA2_REPORT_DIRECTORY can choose another persistent local directory. Container smoke tests use /tmp/sma2-reports explicitly; that is testing storage, not production persistence. Tests verify snapshot identity after store/server recreation, independent IDs, invalid/missing IDs, GCS create-only upload and authenticated retrieval, and write-failure handling.
 
-The application implementation is [SMA2App.java](../src/main/java/tech/nmfin/algoquant/examples/web/SMA2App.java).
+The application implementation is [SMA2App.java](../src/main/java/tech/nmfin/algoquant/web/SMA2App.java).
 
 ## Interactive charts
 

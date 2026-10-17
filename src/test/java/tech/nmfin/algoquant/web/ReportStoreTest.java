@@ -1,4 +1,4 @@
-package tech.nmfin.algoquant.examples.web;
+package tech.nmfin.algoquant.web;
 
 import com.sun.net.httpserver.HttpServer;
 import java.io.*;

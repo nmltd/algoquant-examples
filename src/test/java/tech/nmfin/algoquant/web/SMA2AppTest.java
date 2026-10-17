@@ -1,4 +1,4 @@
-package tech.nmfin.algoquant.examples.web;
+package tech.nmfin.algoquant.web;
 
 import dev.nm.misc.license.License;
 import java.io.File;

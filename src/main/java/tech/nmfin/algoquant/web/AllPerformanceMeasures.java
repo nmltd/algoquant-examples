@@ -1,4 +1,4 @@
-package tech.nmfin.algoquant.examples.web;
+package tech.nmfin.algoquant.web;
 
 import java.time.*;
 import java.util.*;

@@ -167,7 +167,15 @@ async function downloadPerformance(strategy){
   saveFile(current.symbol+'-'+strategy+'-performance.csv',await response.text(),'text/csv');
  }catch(error){showError(error.message);}
 }
-$('download').addEventListener('click',()=>downloadPerformance('sma2'));
+$('download-sma2-csv').addEventListener('click',()=>downloadPerformance('sma2'));
+$('download').addEventListener('click',async()=>{
+ if(!current)return;
+ try{
+  const response=await fetch(BASE+'/api/reports/'+current.reportId+'/report.xlsx');
+  if(!response.ok){const error=await response.json();throw Error(error.error||'Excel export failed.');}
+  saveFile(current.symbol+'-sma2-backtest.xlsx',await response.blob(),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+ }catch(error){showError(error.message);}
+});
 
 function readableMeasureValue(m){
  if(m.status!=='ok'||!Number.isFinite(m.value))return m.display||'N/A';

@@ -116,3 +116,7 @@ CAGR is based on elapsed calendar time between first and last selected closes (3
 ### Performance CSV downloads
 
 The SMA2 and buy-and-hold buttons call the server's saved-report CSV endpoints. `PerformanceCsv` adapts the saved scalar measures to `PerformanceReport`, and AlgoQuant's `PerformanceReportCsvExporter` writes the CSV file. Each CSV contains one account-level `Total` row, with units, parameters and availability status in the column headings. Undefined measures are `NaN`; reasons remain in the headings and report JSON. Downloads preserve full numeric precision and work after restart without rerunning the strategy. Long time series remain available in the full report JSON.
+
+### Combined Excel report
+
+Download Excel report creates one `.xlsx` for the saved simulation: SMA2 statistics, Buy and hold statistics, and Daily data. Both statistics tabs use the values serialized by `PerformanceReportCsvExporter`, arranged one measure per row with units/status/parameters. Daily data restores date, adjusted_close, fast_sma, slow_sma, sma2_nav and fully_invested_buy_hold_nav. Dates and numbers are native Excel values, numeric displays use two decimals, and full precision is retained. Header filters and frozen rows make long tables navigable. Legacy one-share snapshots retain an explicit legacy benchmark heading; missing old buy-and-hold measures are explained rather than recomputed.

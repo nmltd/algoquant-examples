@@ -68,7 +68,7 @@ public final class Sma2Web {
                     String[] parts=requested.split("/",-1);
                     String id=parts[0];
                     String format=parts.length==2?parts[1]:null;
-                    if(parts.length>2 || (format!=null && !Arrays.asList("sma2.csv","buy-hold.csv").contains(format))) {
+                    if(parts.length>2 || (format!=null && !Arrays.asList("sma2.csv","buy-hold.csv","report.xlsx").contains(format))) {
                         send(e,404,error("Not found."));return;
                     }
                     ReportStore.validateId(id);
@@ -78,6 +78,10 @@ public final class Sma2Web {
                         else if(format==null)send(e,200,snapshot);
                         else {
                             SMA2App.Result saved=JSON.fromJson(snapshot,SMA2App.Result.class);
+                            if("report.xlsx".equals(format)) {
+                                e.getResponseHeaders().set("Content-Disposition","attachment; filename=\""+id+"-report.xlsx\"");
+                                respond(e,200,PerformanceWorkbook.MIME,PerformanceWorkbook.export(saved));return;
+                            }
                             String csv=PerformanceCsv.export("sma2.csv".equals(format)?saved.performanceMeasures:saved.buyHoldPerformanceMeasures);
                             e.getResponseHeaders().set("Content-Disposition","attachment; filename=\""+id+"-"+format+"\"");
                             respond(e,200,"text/csv",csv.getBytes(StandardCharsets.UTF_8));

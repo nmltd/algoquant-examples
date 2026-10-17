@@ -48,10 +48,10 @@ jobs:
           docker build -t sma2-web:ci web
           docker run -d --name sma2-web -p 18082:8080 -e SMA2_DATA_MODE=synthetic -v "$PWD/license:/secrets:ro" sma2-web:ci
           for attempt in $(seq 1 30); do
-            if curl -fsS http://localhost:18082/healthz; then break; fi
+            if curl -fsS http://localhost:18082/api/health; then break; fi
             sleep 1
           done
-          curl -fsS http://localhost:18082/healthz
+          curl -fsS http://localhost:18082/api/health
           curl -fsS -X POST -d 'symbol=AAPL&start=2020-01-01&end=2020-12-31&fast=5&slow=20' http://localhost:18082/api/backtest > target/web-reports/container.json
           docker stop sma2-web
       - name: Upload built Cloud Run container context (no license)

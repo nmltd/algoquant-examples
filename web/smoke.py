@@ -20,7 +20,7 @@ try:
     for _ in range(100):
         if proc.poll() is not None: raise RuntimeError('Server exited')
         try:
-            if request('/healthz')[0]==200: break
+            if request('/api/health')[0]==200: break
         except OSError: pass
         time.sleep(.1)
     else: raise RuntimeError('Server did not start')

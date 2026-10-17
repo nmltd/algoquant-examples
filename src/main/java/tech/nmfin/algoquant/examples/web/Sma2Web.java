@@ -44,7 +44,7 @@ public final class Sma2Web {
                     catch (IllegalArgumentException ex) { send(e, 400, error(ex.getMessage())); }
                     catch (Exception ex) { System.err.println("Backtest failed: " + ex.getClass().getSimpleName()); send(e, 502, error("The data provider or simulation could not complete this run. Try another period or retry later.")); }
                     finally { running.release(); }
-                } else if ("/healthz".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,"{\"status\":\"ok\"}");
+                } else if ("/api/health".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,"{\"status\":\"ok\"}");
                 else if ("/api/stocks".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,JSON.toJson(BacktestService.SYMBOLS));
                 else if (Arrays.asList("/", "/app.js", "/style.css").contains(path) && "GET".equals(e.getRequestMethod())) {
                     String file = "/".equals(path) ? "index.html" : path.substring(1);

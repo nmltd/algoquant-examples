@@ -90,3 +90,7 @@ Cloud Run uses the private bucket <project>-sma2-reports through its attached ru
 Local runs use reports/ (gitignored); SMA2_REPORT_DIRECTORY can choose another persistent local directory. Container smoke tests use /tmp/sma2-reports explicitly; that is testing storage, not production persistence. Tests verify snapshot identity after store/server recreation, independent IDs, invalid/missing IDs, GCS create-only upload and authenticated retrieval, and write-failure handling.
 
 The application implementation is [SMA2App.java](../src/main/java/tech/nmfin/algoquant/examples/web/SMA2App.java).
+
+## Interactive charts
+
+Both charts share a date window. Hover/tap shows exact session values with a crosshair; use zoom buttons or Ctrl/Command+wheel, drag horizontally to pan, and Reset view or double-click to return to full history. Focus a chart and use +/−, left/right arrows or Home. Click legend buttons to hide/show individual series. Y axes rescale to visible data; chart navigation changes only the view, never the saved results or exports.

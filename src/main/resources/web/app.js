@@ -29,7 +29,7 @@ $('backtest').addEventListener('submit',async e=>{
 });
 function showError(msg){$('status').className='error';$('status').textContent=msg;}
 function render(r){
- allGroupsOpen=null;
+ allGroupsOpen=null;chartRange=null;chartDrag=null;
  $('measure-filter').value='';
  $('report-link').href=r.reportPath;
  $('saved-report-note').textContent='Saved '+r.generatedAt+' · Report '+r.reportId;
@@ -48,16 +48,94 @@ function render(r){
  $('provenance').textContent='Generated '+r.generatedAt+' · Simple daily returns; sample volatility and Sharpe annualized with 252 sessions. Returns use the full $10,000 starting account, not a fully invested stock position. Prices are adjusted; distributions are not modeled as separate cash payments.';
  $('empty').hidden=true;$('report').hidden=false;
 }
+// Shared date window keeps the price and NAV charts aligned.
+let chartRange=null, chartDrag=null;
+const hiddenSeries={prices:new Set(),nav:new Set()};
+const chartDefinitions={
+ prices:{keys:['close','fast','slow'],colors:['#344a52','#188663','#cf9647'],labels:['Adjusted close','Fast SMA','Slow SMA']},
+ nav:{keys:['nav','benchmark'],colors:['#188663','#cf9647'],labels:['SMA2 portfolio','One-share buy & hold']}
+};
+function drawCharts(){
+ if(!current)return;
+ for(const [id,c] of Object.entries(chartDefinitions))chart(id,current.series,c.keys,c.colors);
+}
+function setChartRange(start,size){
+ const total=current.series.length;size=Math.max(2,Math.min(total,Math.round(size)));
+ start=Math.max(0,Math.min(total-size,Math.round(start)));chartRange=[start,start+size-1];drawCharts();
+}
+function zoomCharts(factor,anchor=.5){
+ const range=chartRange||[0,current.series.length-1],size=range[1]-range[0]+1;
+ const next=Math.max(2,Math.min(current.series.length,Math.round(size*factor)));
+ setChartRange(range[0]+(size-next)*anchor,next);
+}
+function chartAction(action){
+ if(!current)return;
+ const range=chartRange||[0,current.series.length-1],size=range[1]-range[0]+1;
+ if(action==='in')zoomCharts(.5);
+ else if(action==='out')zoomCharts(2);
+ else if(action==='reset'){chartRange=null;drawCharts();}
+ else setChartRange(range[0]+(action==='left'?-1:1)*Math.max(1,Math.round(size*.25)),size);
+}
+document.querySelectorAll('[data-chart-action]').forEach(button=>button.addEventListener('click',()=>chartAction(button.dataset.chartAction)));
 function chart(id,data,keys,colors){
  const svg=$(id),NS='http://www.w3.org/2000/svg';svg.replaceChildren();
- const values=data.flatMap(p=>keys.map(k=>p[k])).filter(Number.isFinite);
- let low=Math.min(...values), high=Math.max(...values);let pad=(high-low)*.08||1;low-=pad;high+=pad;
- const x=i=>64+i/(Math.max(1,data.length-1))*718,y=v=>230-(v-low)/(high-low)*210;
- const add=(tag,attrs,text)=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);if(text!=null)n.textContent=text;svg.append(n);return n;};
+ const [lo,hi]=chartRange||[0,data.length-1],visible=data.slice(lo,hi+1),size=hi-lo+1,hidden=hiddenSeries[id];
+ const labels=chartDefinitions[id].labels;
+ const active=keys.filter(k=>!hidden.has(k));
+ let values=visible.flatMap(p=>(active.length?active:keys).map(k=>p[k])).filter(Number.isFinite);
+ let low=Math.min(...values),high=Math.max(...values);const pad=(high-low)*.08||1;low-=pad;high+=pad;
+ const x=i=>64+(i-lo)/Math.max(1,hi-lo)*718,y=v=>230-(v-low)/(high-low)*210;
+ const add=(tag,attrs,text,parent=svg)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!=null)n.textContent=text;parent.append(n);return n;};
  for(let i=0;i<5;i++){const v=low+(high-low)*i/4,yy=y(v);add('line',{x1:64,x2:782,y1:yy,y2:yy,class:'grid'});add('text',{x:55,y:yy+3,'text-anchor':'end'},v.toLocaleString('en-US',{maximumFractionDigits:1}));}
- keys.forEach((key,k)=>{let d='';data.forEach((p,i)=>{if(Number.isFinite(p[key]))d+=(d?' L':'M')+x(i).toFixed(2)+','+y(p[key]).toFixed(2);});add('path',{d,stroke:colors[k]});});
- [0,Math.floor((data.length-1)/2),data.length-1].forEach((i,k)=>add('text',{x:x(i),y:256,'text-anchor':k===0?'start':k===2?'end':'middle'},data[i].date));
+ keys.forEach((key,k)=>{
+  if(hidden.has(key))return;
+  let d='';visible.forEach((p,j)=>{if(Number.isFinite(p[key]))d+=(d?' L':'M')+x(lo+j).toFixed(2)+','+y(p[key]).toFixed(2);});
+  add('path',{d,stroke:colors[k]});
+ });
+ [lo,Math.floor((lo+hi)/2),hi].forEach((i,k)=>add('text',{x:x(i),y:256,'text-anchor':k===0?'start':k===2?'end':'middle'},data[i].date));
+ const panel=svg.closest('.chart-panel'),tooltip=$(id+'-hover');
+ $(id+'-window').textContent=data[lo].date+' → '+data[hi].date+' · '+size+' trading observations';
+ tooltip.textContent='Hover or tap the chart to inspect a trading session.';
+ panel.querySelectorAll('[data-chart-action]').forEach(b=>{
+  b.disabled=(b.dataset.chartAction==='in'&&size<=2)||(b.dataset.chartAction==='out'&&size===data.length)||(b.dataset.chartAction==='left'&&lo===0)||(b.dataset.chartAction==='right'&&hi===data.length-1);
+ });
+ panel.querySelectorAll('[data-series]').forEach(button=>{
+  const key=button.dataset.series;button.setAttribute('aria-pressed',String(!hidden.has(key)));
+  button.onclick=()=>{hidden.has(key)?hidden.delete(key):hidden.add(key);drawCharts();};
+ });
+ const cross=add('g',{'pointer-events':'none',visibility:'hidden'});
+ const crossLine=add('line',{x1:64,x2:64,y1:20,y2:230,stroke:'#80958c','stroke-dasharray':'4 3'},null,cross);
+ const dots=keys.map((key,k)=>add('circle',{r:4,fill:colors[k],stroke:'#fff','stroke-width':1},null,cross));
+ const fraction=e=>Math.max(0,Math.min(1,((e.clientX-svg.getBoundingClientRect().left)/svg.getBoundingClientRect().width*800-64)/718));
+ function hover(e){
+  const i=Math.round(lo+fraction(e)*(hi-lo)),point=data[i];cross.setAttribute('visibility','visible');
+  crossLine.setAttribute('x1',x(i));crossLine.setAttribute('x2',x(i));
+  const text=[point.date];
+  keys.forEach((key,k)=>{const v=point[key],show=!hidden.has(key)&&Number.isFinite(v);dots[k].setAttribute('visibility',show?'visible':'hidden');if(show){dots[k].setAttribute('cx',x(i));dots[k].setAttribute('cy',y(v));text.push(labels[k]+': $'+v.toLocaleString('en-US',{maximumFractionDigits:4}));}});
+  tooltip.textContent=text.join(' · ');
+ }
+ svg.onpointerdown=e=>{
+  if(e.button!==0&&e.pointerType==='mouse')return;
+  chartDrag={id,startX:e.clientX,range:[lo,hi]};svg.setPointerCapture(e.pointerId);hover(e);
+ };
+ svg.onpointermove=e=>{
+  if(chartDrag&&chartDrag.id===id){
+   const range=chartDrag.range,span=range[1]-range[0]+1;
+   const delta=(e.clientX-chartDrag.startX)/svg.getBoundingClientRect().width*800/718*Math.max(1,span-1);
+   setChartRange(range[0]-delta,span);
+  } else hover(e);
+ };
+ svg.onpointerup=e=>{chartDrag=null;if(svg.hasPointerCapture(e.pointerId))svg.releasePointerCapture(e.pointerId);hover(e);};
+ svg.onpointercancel=()=>{chartDrag=null;};
+ svg.onpointerleave=()=>{if(!chartDrag){cross.setAttribute('visibility','hidden');tooltip.textContent='Hover or tap the chart to inspect a trading session.';}};
+ svg.onwheel=e=>{if(e.ctrlKey||e.metaKey){e.preventDefault();zoomCharts(e.deltaY<0?.8:1.25,fraction(e));}};
+ svg.ondblclick=()=>chartAction('reset');
+ svg.onkeydown=e=>{
+  const actions={'+':'in','=':'in','-':'out',ArrowLeft:'left',ArrowRight:'right',Home:'reset'};
+  if(actions[e.key]){e.preventDefault();chartAction(actions[e.key]);}
+ };
 }
+
 $('download').addEventListener('click',()=>{
  if(!current)return;
  const r=current, lines=['date,adjusted_close,fast_sma,slow_sma,sma2_nav,one_share_benchmark'];

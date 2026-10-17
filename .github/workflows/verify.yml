@@ -40,6 +40,10 @@ jobs:
         run: node --check src/main/resources/web/app.js
       - name: Verify the SMA2 web API offline
         run: python3 web/smoke.py
+      - name: Verify report navigation and interactive charts in Chrome
+        run: |
+          npm install --prefix "$RUNNER_TEMP/sma2-browser" --no-save --ignore-scripts playwright@1.62.1
+          NODE_PATH="$RUNNER_TEMP/sma2-browser/node_modules" CHROME_BIN="$(command -v google-chrome)" node web/browser-smoke.cjs
       - name: Verify Yahoo-backed web backtest on an explicit manual run
         if: github.event_name == 'workflow_dispatch'
         run: python3 web/smoke.py --live

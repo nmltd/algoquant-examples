@@ -9,7 +9,7 @@ env.pop('SMA2_REPORT_BUCKET',None)
 if not live: env['SMA2_DATA_MODE'] = 'synthetic'
 else: env.pop('SMA2_DATA_MODE', None)
 proc = subprocess.Popen(['java','-Djava.awt.headless=true','-Dlogback.configurationFile=web/logback.xml',
-    '-cp','target/classes:target/lib/*','tech.nmfin.algoquant.web.Sma2Web'], env=env)
+    '-cp','target/classes:target/lib/*','tech.nmfin.algoquant.web.sma2.Sma2Web'], env=env)
 base='http://127.0.0.1:'+port
 
 def request(path, fields=None):
@@ -26,7 +26,7 @@ try:
         except OSError: pass
         time.sleep(.1)
     else: raise RuntimeError('Server did not start')
-    for path in ['/','/sma2','/sma2/','/sma2/style.css','/sma2/app.js','/sma2/api/stocks']:
+    for path in ['/','/sma2','/sma2/','/tools.css','/sma2/style.css','/sma2/app.js','/sma2/api/stocks']:
         status,headers,body=request(path); assert status==200 and body,path
         assert 'nosniff'==headers.get('X-Content-Type-Options')
     assert b'Open SMA2' in request('/')[2]

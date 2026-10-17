@@ -20,7 +20,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
     return route.fulfill({json:report});
    }
    if(path==='/api/backtest'){posts++;return route.fulfill({json:report});}
-   const file=path==='/app.js'?'app.js':path==='/style.css'?'style.css':incoming==='/'?'tools.html':'index.html';
+   const file=path==='/app.js'?'sma2/app.js':path==='/style.css'?'sma2/style.css':path==='/tools.css'?'tools.css':incoming==='/'?'tools.html':'sma2/index.html';
    return route.fulfill({body:fs.readFileSync('src/main/resources/web/'+file),contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html'});
   });
   await page.goto('http://sma2.test/');
@@ -37,7 +37,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   await page.locator('.comparison-legend button').first().click();
   assert.equal(await page.locator('.comparison-legend button').first().getAttribute('aria-pressed'),'false');
   await page.locator('.comparison-legend button').first().click();
-  await page.locator('#market-history > summary').click();
+  assert.equal(await page.locator('#market-history').getAttribute('open'),'');
   const full=await page.locator('#prices-window').textContent();
   await page.locator('.chart-panel').first().getByRole('button',{name:'Zoom in +',exact:true}).click();
   const zoom=await page.locator('#prices-window').textContent();

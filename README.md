@@ -75,3 +75,7 @@ The example sources retain their original copyright and license notices. The und
 ## SMA2 web application
 
 An interactive US-stock SMA2 backtest application is included separately from the six demos. See [web setup and Cloud Run deployment](web/README.md). Intended hostname: `optim.nmfin.tech`.
+
+### Web application folders
+
+SMA2 server code lives in `src/main/java/tech/nmfin/algoquant/web/sma2`, its tests in the matching test package, and its frontend in `src/main/resources/web/sma2`. Shared tools-directory resources remain in `src/main/resources/web`. Give each future application its own folder under `web`.

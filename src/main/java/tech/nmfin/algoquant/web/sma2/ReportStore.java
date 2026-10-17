@@ -1,4 +1,4 @@
-package tech.nmfin.algoquant.web;
+package tech.nmfin.algoquant.web.sma2;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

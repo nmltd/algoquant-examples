@@ -25,7 +25,8 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
     return route.fulfill({json:report});
    }
    if(path==='/api/backtest'){posts++;return route.fulfill({json:report});}
-   const file=path==='/app.js'?'sma2/app.js':path==='/style.css'?'sma2/style.css':path==='/tools.css'?'tools.css':incoming==='/'?'tools.html':'sma2/index.html';
+   const sharedFile=incoming.startsWith('/shared/')?incoming.slice(1):null;
+   const file=sharedFile||(path==='/app.js'?'sma2/app.js':path==='/style.css'?'sma2/style.css':path==='/tools.css'?'tools.css':incoming==='/'?'tools.html':'sma2/index.html');
    return route.fulfill({body:fs.readFileSync('src/main/resources/web/'+file),contentType:file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html'});
   });
   await page.goto('http://sma2.test/');

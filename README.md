@@ -1,8 +1,9 @@
 # AlgoQuant examples
 
-Runnable Java examples and a web backtesting application built with [AlgoQuant](https://nmfin.tech/products/algoquant).
+Runnable Java examples and web analysis applications built with [AlgoQuant](https://nmfin.tech/products/algoquant).
 
 - **[Open the SMA2 strategy lab](https://tools.nmfin.tech/sma2/)** — compare an SMA crossover strategy with buy-and-hold of the selected stock and the S&P 500.
+- **[Performance Analyzer](https://tools.nmfin.tech/performance/)** — import a public Google Sheet or CSV of daily NAV/price levels and compare accounts with an input or downloaded S&P 500 benchmark.
 - **[Tools directory](https://tools.nmfin.tech/)** — the front page for this and future applications.
 - **[Web application setup and deployment](web/README.md)** — local execution, saved reports, exports, shared components and Cloud Run.
 
@@ -76,6 +77,10 @@ Open [http://localhost:8080/sma2/](http://localhost:8080/sma2/) for SMA2, or [ht
 The web app downloads Yahoo data by default. For explicitly labeled offline verification, set `SMA2_DATA_MODE=synthetic`. There is no automatic synthetic fallback on download failure.
 
 See [the web README](web/README.md) for environment variables, API routes, testing and deployment.
+
+## Performance Analyzer
+
+Open [Performance Analyzer](https://tools.nmfin.tech/performance/) or see [its input format, assumptions and API](web/performance/README.md). Supply a public Google Sheet or direct HTTPS CSV with `Date` followed by one or more NAV/price columns. An S&P 500 column is reused; otherwise Yahoo `^GSPC` is downloaded and simulated. The report aligns common dates and rebases each account to 10,000 normalized units. It does not infer trades or remove deposits/withdrawals. Shared classes support both apps, including AlgoQuant statistics, snapshot storage, CSV/Excel exports and report components.
 
 ## Six command-line technical examples
 

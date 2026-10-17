@@ -82,10 +82,7 @@ public final class SMA2App {
         public String benchmarkSource;
     }
 
-    public static final class StrategyStatistics {
-        public double finalNav, pnl, totalReturn, maxDrawdown;
-        public Double annualizedVolatility, sharpe, cagr;
-    }
+    public static final class StrategyStatistics extends tech.nmfin.algoquant.web.PerformanceStatistics.Values {}
 
     public Result run(Request req) {
         Stock stock = USDStock.newInstance(req.symbol, Exchange.NEW_YORK);
@@ -224,21 +221,9 @@ public final class SMA2App {
         return out;
     }
     static StrategyStatistics statistics(List<Point> series,boolean buyHold) {
-        StrategyStatistics stats=new StrategyStatistics();
-        double previous=CAPITAL,peak=CAPITAL,mean=0,sum=0;List<Double> returns=new ArrayList<>();
-        for(Point point:series) {
-            double nav=buyHold?point.benchmark:point.nav;
-            peak=Math.max(peak,nav);stats.maxDrawdown=Math.max(stats.maxDrawdown,(peak-nav)/peak);
-            double value=nav/previous-1;returns.add(value);mean+=value;previous=nav;
-        }
-        stats.finalNav=previous;stats.pnl=previous-CAPITAL;stats.totalReturn=previous/CAPITAL-1;
-        mean/=returns.size();for(double value:returns)sum+=(value-mean)*(value-mean);
-        double sd=Math.sqrt(sum/(returns.size()-1));
-        if(Double.isFinite(sd))stats.annualizedVolatility=sd*Math.sqrt(252);
-        if(sd>0&&Double.isFinite(mean/sd))stats.sharpe=mean/sd*Math.sqrt(252);
-        long days=ChronoUnit.DAYS.between(LocalDate.parse(series.get(0).date),LocalDate.parse(series.get(series.size()-1).date));
-        if(days>0&&previous>0) {double annual=Math.pow(previous/CAPITAL,365.2425/days)-1;if(Double.isFinite(annual))stats.cagr=annual;}
-        return stats;
+        List<String> dates=new ArrayList<>();List<Double> nav=new ArrayList<>();
+        for(Point point:series){dates.add(point.date);nav.add(buyHold?point.benchmark:point.nav);}
+        return tech.nmfin.algoquant.web.PerformanceStatistics.compute(dates,nav,CAPITAL,new StrategyStatistics());
     }
     private static double average(List<Double> values, int lag) {
         double sum = 0; for (int i = values.size() - lag; i < values.size(); i++) sum += values.get(i); return sum / lag;

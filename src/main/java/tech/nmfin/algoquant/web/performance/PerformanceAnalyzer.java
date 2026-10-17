@@ -79,15 +79,12 @@ public final class PerformanceAnalyzer {
     /**
      * Report payload; the HTTP layer fills in persistent report identifiers and revision metadata.
      */
-    public static final class Result {
+    public static final class Result extends tech.nmfin.algoquant.web.SavedReport {
         public String app = "performance";
         public String sourceUrl;
         public String start;
         public String end;
         public String generatedAt;
-        public String reportId;
-        public String reportPath;
-        public String appRevision;
         public String benchmarkSource;
         public int reportSchemaVersion = 1;
         public int sourceRows;

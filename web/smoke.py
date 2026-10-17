@@ -9,7 +9,7 @@ env.pop('SMA2_REPORT_BUCKET',None)
 if not live: env['SMA2_DATA_MODE'] = 'synthetic'
 else: env.pop('SMA2_DATA_MODE', None)
 proc = subprocess.Popen(['java','-Djava.awt.headless=true','-Dlogback.configurationFile=web/logback.xml',
-    '-cp','target/classes:target/lib/*','tech.nmfin.algoquant.web.sma2.Sma2Web'], env=env)
+    '-cp','target/classes:target/lib/*','tech.nmfin.algoquant.web.ToolsWeb'], env=env)
 base='http://127.0.0.1:'+port
 
 def request(path, fields=None):

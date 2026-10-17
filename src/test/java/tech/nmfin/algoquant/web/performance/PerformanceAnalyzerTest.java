@@ -29,7 +29,7 @@ public class PerformanceAnalyzerTest {
   r.reportId="11111111111111111111111111111111";r.reportPath="/performance/reports/"+r.reportId;r.appRevision="fixture";
   Path dir=Paths.get("target/web-reports");Files.createDirectories(dir);
   Files.write(dir.resolve("performance.json"),new Gson().toJson(r).getBytes(StandardCharsets.UTF_8));
-  Files.write(dir.resolve("performance.xlsx"),PerformanceRoutes.workbook(r));
+  Files.write(dir.resolve("performance.xlsx"),PerformanceWorkbook.export(r));
  }
  @Test public void appendMissingBenchmarkWithoutInventingTrades()throws Exception {
   BuyAndHoldBenchmark market=new BuyAndHoldBenchmark((stock,start,end)->{
@@ -68,7 +68,7 @@ public class PerformanceAnalyzerTest {
  @Test public void httpReportsAndExportsUseStoredSnapshot()throws Exception {
   AtomicInteger downloads=new AtomicInteger();Path dir=Files.createTempDirectory("performance-test-");
   PerformanceAnalyzer analyzer=new PerformanceAnalyzer(url->{downloads.incrementAndGet();return sample();},new BuyAndHoldBenchmark((s,a,b)->{throw new AssertionError();}));
-  SnapshotStore store=new SnapshotStore(dir);PerformanceRoutes routes=new PerformanceRoutes(analyzer,store,new Semaphore(1));
+  ReportStore store=new ReportStore(dir);PerformanceRoutes routes=new PerformanceRoutes(analyzer,store,new Semaphore(1));
   HttpServer server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
   server.createContext("/",x->{try{routes.handle(x);}finally{x.close();}});server.start();
   try{
@@ -79,7 +79,7 @@ public class PerformanceAnalyzerTest {
    assertEquals(200,connection.getResponseCode());String body=read(connection.getInputStream());
    PerformanceAnalyzer.Result r=new Gson().fromJson(body,PerformanceAnalyzer.Result.class);
    assertTrue(r.reportPath.startsWith("/performance/reports/"));
-   assertEquals(body,new SnapshotStore(dir).read(r.reportId));
+   assertEquals(body,new ReportStore(dir).read(r.reportId,"performance"));
    try(InputStream in=new URL(base+"/performance/api/reports/"+r.reportId).openStream()){assertEquals(body,read(in));}
    try(InputStream in=new URL(base+"/performance/api/reports/"+r.reportId+"/report.xlsx").openStream()){assertEquals('P',in.read());assertEquals('K',in.read());}
    try(InputStream in=new URL(base+"/performance/api/reports/"+r.reportId+"/series-0.csv").openStream()){assertTrue(read(in).startsWith("Product,"));}

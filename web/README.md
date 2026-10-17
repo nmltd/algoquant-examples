@@ -23,7 +23,7 @@ Configure Maven authentication and an external NM license as described in the [r
 ```bash
 mvn -U clean verify
 java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml \
-  -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.sma2.Sma2Web
+  -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.ToolsWeb
 ```
 
 Open [http://localhost:8080/](http://localhost:8080/) for the tools directory or [http://localhost:8080/sma2/](http://localhost:8080/sma2/) for the app. On Windows, replace the classpath separator `:` with `;`.
@@ -170,9 +170,9 @@ Production currently uses `gs://servers-227017-sma2-reports`. Snapshots have **n
 | [BuyAndHoldBenchmark.java](../src/main/java/tech/nmfin/algoquant/web/BuyAndHoldBenchmark.java) | Reusable independent `^GSPC` simulation, NAV, executions, statistics and benchmark lookup |
 | [AllPerformanceMeasures.java](../src/main/java/tech/nmfin/algoquant/web/AllPerformanceMeasures.java) | Shared scalar-measure catalog |
 | [SMA2App.java](../src/main/java/tech/nmfin/algoquant/web/sma2/SMA2App.java) | SMA2 strategy, underlying account and report assembly |
-| [Sma2Web.java](../src/main/java/tech/nmfin/algoquant/web/sma2/Sma2Web.java) | HTTP routes and export responses |
-| [ReportStore.java](../src/main/java/tech/nmfin/algoquant/web/sma2/ReportStore.java) | Immutable local/GCS snapshots |
-| [PerformanceCsv.java](../src/main/java/tech/nmfin/algoquant/web/sma2/PerformanceCsv.java) | Library CSV exporter adapter |
+| [ToolsWeb.java](../src/main/java/tech/nmfin/algoquant/web/ToolsWeb.java) | Shared HTTP host, app registration and server lifecycle |
+| [ReportStore.java](../src/main/java/tech/nmfin/algoquant/web/ReportStore.java) | Immutable local/GCS snapshots |
+| [PerformanceCsv.java](../src/main/java/tech/nmfin/algoquant/web/PerformanceCsv.java) | Library CSV exporter adapter |
 | [PerformanceWorkbook.java](../src/main/java/tech/nmfin/algoquant/web/sma2/PerformanceWorkbook.java) | Combined Excel export |
 | [Frontend](../src/main/resources/web/sma2/) | Page, chart interactions and PDF print layout |
 
@@ -244,3 +244,29 @@ Deployment checks health, a real-data AAPL backtest, independently funded `^GSPC
 Verify ownership of `nmfin.tech` with Google, map `tools.nmfin.tech` to `sma2-web` in `us-central1`, and apply **the exact DNS records Google returns**. Wait for the managed certificate and domain mapping to become ready before checking HTTPS. The root page lists applications; SMA2 is served at `/sma2/`.
 
 The existing hostname uses Google's domain mapping. See [Cloud Run custom domains](https://docs.cloud.google.com/run/docs/mapping-custom-domains) for current supported options, and [Cloud Run secrets](https://docs.cloud.google.com/run/docs/configuring/services/secrets) and [GitHub OIDC authentication](https://github.com/google-github-actions/auth) for the underlying setup.
+
+## Shared web architecture
+
+The entry point is `tech.nmfin.algoquant.web.ToolsWeb`. It owns the tools homepage,
+health checks, shared assets, license setup, executor and app registration. Each app
+implements `ToolRoutes`: `sma2/Sma2Routes` and `performance/PerformanceRoutes` handle
+only their own endpoints (SMA2 also retains its historical root API aliases).
+
+Common Java classes live directly in `tech.nmfin.algoquant.web`:
+
+- `HttpSupport`: bounded forms, method checks, resource responses and attachments.
+- `SavedReport`, `ReportStore`, `SnapshotStore`: common metadata, app-scoped reads,
+  JSON serialization and immutable local/GCS storage. Existing report URLs and JSON
+  fields are preserved, including snapshots created before the refactor.
+- `PerformanceStatistics`: daily returns and headline statistics used by both apps
+  and the independent `BuyAndHoldBenchmark` simulation.
+- `AllPerformanceMeasures`, `NavSeriesAnalysis`: AlgoQuant measures and NAV-only analysis.
+- `PerformanceCsv`, `SpreadsheetWorkbook`: CSV export and Excel cells/layout.
+
+Each app retains its strategy/import logic and `PerformanceWorkbook` sheet selection;
+no app maintains a duplicate CSV writer or snapshot adapter. Shared browser comparison,
+statistics, print and formatting code remains in `resources/web/shared`.
+New apps should reuse these modules, register a `ToolRoutes` implementation in `ToolsWeb`,
+and include a direct link to their implementation source.
+
+Cloud configuration retains the existing `SMA2_*` environment variable names for compatibility.

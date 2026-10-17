@@ -79,5 +79,5 @@ jobs:
         run: |
           gcloud run services describe sma2-web --project="$PROJECT" --region=us-central1 --format='yaml(status,spec.traffic)'
           gcloud run revisions list --service=sma2-web --project="$PROJECT" --region=us-central1 --limit=3 --format='yaml(metadata.name,status.conditions,status.imageDigest)'
-          gcloud --quiet beta run domain-mappings describe --domain=optim.nmfin.tech --project="$PROJECT" --region=us-central1 --format='yaml(status.resourceRecords,status.conditions)'
-          curl --silent --show-error --max-time 25 --write-out '\nHTTP %{http_code}\n' https://optim.nmfin.tech/api/health || true
+          gcloud --quiet beta run domain-mappings describe --domain=tools.nmfin.tech --project="$PROJECT" --region=us-central1 --format='yaml(status.resourceRecords,status.conditions)'
+          curl --silent --show-error --max-time 25 --write-out '\nHTTP %{http_code}\n' https://tools.nmfin.tech/sma2/api/health || true

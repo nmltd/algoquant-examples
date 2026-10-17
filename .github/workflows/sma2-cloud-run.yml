@@ -1,15 +1,21 @@
 name: Deploy SMA2 web to Cloud Run
 on:
   workflow_dispatch:
+    inputs:
+      diagnose:
+        description: Read Cloud Run status without deploying
+        type: boolean
+        default: false
 permissions:
   contents: read
   packages: read
   id-token: write
 concurrency:
-  group: sma2-cloud-run-production
+  group: sma2-cloud-run-${{ inputs.diagnose && 'diagnostics' || 'production' }}
   cancel-in-progress: false
 jobs:
   deploy:
+    if: ${{ !inputs.diagnose }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -53,3 +59,23 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v3
       - name: Build container and deploy production service
         run: bash web/deploy.sh
+
+  diagnostics:
+    if: ${{ inputs.diagnose }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Read service and revision status
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          gcloud run services describe sma2-web --project="$PROJECT" --region=us-central1 --format='yaml(status,spec.traffic)'
+          gcloud run revisions list --service=sma2-web --project="$PROJECT" --region=us-central1 --limit=3 --format='yaml(metadata.name,status.conditions,status.imageDigest)'

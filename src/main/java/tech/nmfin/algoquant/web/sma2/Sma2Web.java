@@ -1,4 +1,4 @@
-package tech.nmfin.algoquant.web;
+package tech.nmfin.algoquant.web.sma2;
 
 import com.google.gson.Gson;
 import com.sun.net.httpserver.*;
@@ -73,8 +73,8 @@ public final class Sma2Web {
                     } catch(IOException ex) { send(e,503,error("Saved report storage is temporarily unavailable. Please retry.")); }
                 } else if ("/api/health".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,"{\"status\":\"ok\"}");
                 else if ("/api/stocks".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,JSON.toJson(SMA2App.SYMBOLS));
-                else if ((Arrays.asList("/", "/app.js", "/style.css").contains(path) || path.matches("/reports/[a-f0-9]{32}")) && "GET".equals(e.getRequestMethod())) {
-                    String file = "/".equals(path) ? (sma2Path ? "index.html" : "tools.html") : path.startsWith("/reports/") ? "index.html" : path.substring(1);
+                else if ((Arrays.asList("/", "/app.js", "/style.css", "/tools.css").contains(path) || path.matches("/reports/[a-f0-9]{32}")) && "GET".equals(e.getRequestMethod())) {
+                    String file = "/".equals(path) ? (sma2Path ? "sma2/index.html" : "tools.html") : "/tools.css".equals(path) ? "tools.css" : path.startsWith("/reports/") ? "sma2/index.html" : "sma2/" + path.substring(1);
                     try (InputStream in = Sma2Web.class.getResourceAsStream("/web/" + file)) {
                         if (in == null) { send(e,404,error("Not found.")); return; }
                         ByteArrayOutputStream body = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n;

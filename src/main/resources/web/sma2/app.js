@@ -328,3 +328,28 @@ function comparisonChart(title,unit,rows,names){
  }
  draw();return panel;
 }
+
+let printState=null;
+window.addEventListener('beforeprint',()=>{
+ if(!current||printState)return;
+ printState={
+  title:document.title,filter:$('measure-filter').value,groups:allGroupsOpen,
+  details:new Map([...document.querySelectorAll('#report details')].map(d=>[d.querySelector('summary')?.textContent,d.open])),
+  range:chartRange,prices:new Set(hiddenSeries.prices),nav:new Set(hiddenSeries.nav),
+  comparison:[...document.querySelectorAll('.comparison-legend button')].map(b=>b.getAttribute('aria-pressed'))
+ };
+ document.title=current.symbol+' SMA2 backtest '+current.start+' to '+current.end;
+ $('pdf-report-url').textContent='Saved report: '+new URL(reportPath(current),location.origin).href;
+ $('measure-filter').value='';allGroupsOpen=true;renderLibrary(current);
+ document.querySelectorAll('#report details').forEach(d=>{d.open=true;});
+ chartRange=null;hiddenSeries.prices.clear();hiddenSeries.nav.clear();drawCharts();renderComparison(current);
+});
+window.addEventListener('afterprint',()=>{
+ if(!printState)return;
+ const saved=printState;printState=null;document.title=saved.title;
+ $('measure-filter').value=saved.filter;allGroupsOpen=saved.groups;renderLibrary(current);
+ document.querySelectorAll('#report details').forEach(d=>{d.open=saved.details.get(d.querySelector('summary')?.textContent)??false;});
+ chartRange=saved.range;hiddenSeries.prices=saved.prices;hiddenSeries.nav=saved.nav;drawCharts();
+ document.querySelectorAll('.comparison-legend button').forEach((b,i)=>{if(saved.comparison[i]==='false')b.click();});
+});
+$('export-pdf').addEventListener('click',()=>{if(current)window.print();});

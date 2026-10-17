@@ -12,3 +12,34 @@
 @media(max-width:650px){.comparison-grid{grid-template-columns:1fr}.paired-metric strong{font-size:16px}.paired-line{flex-wrap:wrap}}
 
 .strategy-c{color:#426db4}.comparison-legend .strategy-c{color:#426db4}.comparison-table{min-width:1100px}
+
+.pdf-only{display:none}
+@media print{
+ @page{size:A4 landscape;margin:12mm}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ body{background:white;color:#172e33}
+ header{height:12mm;padding:0;border:0}header>a:last-child,header .tag{display:none}
+ main{max-width:none;padding:0}.intro,.layout>aside,#empty,footer{display:none!important}
+ .layout{display:block}#output{width:100%}#report[hidden]{display:none!important}
+ .pdf-only{display:block;font-size:9px;overflow-wrap:anywhere}
+ .report-heading{display:block}.report-heading h2{font-size:22px}
+ .measure-tools,.chart-controls,.chart-hover,.comparison-hover,#measure-count{display:none!important}
+ #report button,#report a.secondary{display:none!important}
+ .comparison-legend button,.legend button{display:inline-block!important;cursor:default;border:0;background:transparent;padding:0 8px 0 0}
+ .panel{box-shadow:none;padding:12px;border-radius:4px;margin-bottom:12px}
+ .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+ .metric{break-inside:avoid}.paired-metric strong{font-size:15px}
+ .comparison-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .comparison-chart,.chart-panel{break-inside:avoid}
+ .comparison-panel{break-inside:auto}.comparison-chart svg{width:100%;height:auto}
+ .market-history>summary{border:0;padding:8px 0}
+ .table-wrap{overflow:visible;max-height:none}
+ .comparison-table{min-width:0;width:100%;table-layout:fixed}
+ .comparison-table th,.comparison-table td{font-size:8px;padding:5px;white-space:normal!important;overflow-wrap:anywhere;vertical-align:top}
+ .comparison-table th:first-child{width:20%}.comparison-table th:last-child{width:30%}
+ .comparison-table p,.comparison-table code{font-size:8px}
+ thead{display:table-header-group}tr{break-inside:avoid}
+ details.measure-group{break-inside:auto}details.measure-group>summary{break-after:avoid}
+ .library-panel{break-before:page}
+ h2,h3{break-after:avoid}
+}

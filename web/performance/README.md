@@ -52,7 +52,7 @@ Anyone with a report URL can read the saved data. Only submit data you intend to
 
 ## Shared implementation
 
-Both apps use `PerformanceStatistics`, `AllPerformanceMeasures`, `SnapshotStore`, `HttpSupport`, `PerformanceCsv`, `SpreadsheetWorkbook` and `BuyAndHoldBenchmark` in `tech.nmfin.algoquant.web`. Imported NAV calculations live in `NavSeriesAnalysis`; URL loading is isolated in `PublicCsvSource`. SMA2 adapters preserve existing routes, snapshot fields and export layouts.
+Both apps use `PerformanceStatistics`, `AllPerformanceMeasures`, `SnapshotStore`, `HttpSupport`, `PerformanceCsv`, `SpreadsheetWorkbook` and `BuyAndHoldBenchmark` in `tech.nmfin.algoquant.web`. Imported NAV calculations live in `NavSeriesAnalysis`; URL loading is isolated in `PublicCsvSource`. `ToolsWeb` hosts both apps through `ToolRoutes`; shared `SavedReport` and `ReportStore` assign metadata and isolate saved reports by app. App-specific `PerformanceWorkbook` classes choose sheets using the shared writer. Existing routes, snapshot fields and export layouts are preserved.
 
 Frontend report components and theme live in `src/main/resources/web/shared/`. Performance Analyzer lives in `src/main/java/tech/nmfin/algoquant/web/performance/` and `src/main/resources/web/performance/`.
 

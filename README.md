@@ -69,7 +69,7 @@ From the repository root:
 ```bash
 mvn -U clean verify
 java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml \
-  -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.sma2.Sma2Web
+  -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.ToolsWeb
 ```
 
 Open [http://localhost:8080/sma2/](http://localhost:8080/sma2/) for SMA2, or [http://localhost:8080/](http://localhost:8080/) for the tools directory. The command above uses Unix classpath separators; use `;` instead of `:` on Windows.

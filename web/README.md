@@ -2,7 +2,7 @@
 
 A separate web application in this examples project. The six technical demos are unchanged.
 
-Choose one of twenty US stocks, inclusive start/end dates, and fast/slow SMA observation counts. The server runs the published AlgoQuant SMA2 and returns adjusted-price/SMA charts, NAV versus one-share buy-and-hold, monetary P&L, account return, maximum drawdown, annualized volatility, a zero-risk-free-rate Sharpe ratio, executions and NAV CSV download.
+Choose one of twenty US stocks, inclusive start/end dates, and fast/slow SMA observation counts. The server runs the AlgoQuant moving-average crossover signal and simulator with full-equity sizing and returns adjusted-price/SMA charts, NAV versus fully invested buy-and-hold, monetary P&L, account return, maximum drawdown, annualized volatility, a zero-risk-free-rate Sharpe ratio, executions and NAV CSV download.
 
 ## Run locally
 
@@ -19,12 +19,12 @@ Open http://localhost:8080. `PORT` overrides the port and `NM_LICENSE_FILE` over
 
 ## Simulation conventions
 
-- Fixed $10,000 cash, USD, target +1 or -1 share. This preserves AlgoQuant SMA2 sizing; it is not a fully invested portfolio or long-only strategy.
+- USD 10,000 initial equity. At the first selected close enter the previous session's prevailing SMA direction; then reverse on crossovers. At entry/reversals use target shares = direction × current equity / simulated fill price, allowing fractional shares. Hold share quantities between signals; no daily rebalancing. Short-sale cash is offset by the short liability and is not extra equity. If equity becomes non-positive, close the position and stop trading.
 - The signal sees the previous session's adjusted close and trades at the current session's adjusted close. Warm-up history is loaded before the selected start and does not trade.
 - Dates are inclusive; incomplete daily bars are excluded by rejecting end dates on/after today in New York. Intervals are capped at roughly ten years and slow SMA at 250 observations.
 - Zero commissions, spread, slippage, financing and short-borrow costs. No forced terminal liquidation. Adjusted prices are used without separate dividend cash payments.
 - NAV is marked to market; P&L includes unrealized changes. Account returns use initial $10,000. Daily sample standard deviation and mean/std Sharpe use sqrt(252); undefined Sharpe is shown as N/A.
-- Benchmark holds one share bought at the first selected close, with remaining cash idle. This is not a fully invested benchmark.
+- Buy-and-hold invests all initial capital at the first selected adjusted close and holds fractional shares. Benchmark NAV = initial capital × adjusted close / first adjusted close, so its return equals the stock's adjusted-price return.
 - Yahoo availability, revisions and adjustments affect results. Cached responses are bounded to 32 intervals per process, volatile across restarts, and not shared across instances. Market-data caching is separate from the durable saved-report store.
 - At most one simulation runs at a time per process; a busy service responds 429. The stock allowlist and request/date/lag limits bound public work. For heavier use, add a queue, shared cache and edge rate limits.
 
@@ -65,7 +65,7 @@ Coverage includes balances/P&L, commissions and transaction fees, drawdowns and 
 
 All four PeriodByPeriodMeasure implementations are provided in calendar-daily, monthly and yearly tables. Page previews cap each table at 200 rows; all rows are retained in the full report JSON and combined measures CSV. The original NAV CSV is still available. Interface/abstract classes, factories, fee schemes, lookup interfaces and utility classes are supporting API components rather than additional statistics. RiskMeasures is a convenience collection of already-covered measures. Omega algorithms are shown as explicitly labeled variants of the Omega measures.
 
-**Conventions:** USD 10,000 account; zero fees and zero risk-free/target/loss-threshold returns. CAPM and excess-return measures use SPY adjusted prices with monthly CAPM sampling. BenchmarkCorrelation is a price/NAV **level** correlation. The existing chart benchmark remains one share of the selected stock. The report clearly labels a failed SPY download without substituting the selected stock. Synthetic verification labels the SPY series synthetic too.
+**Conventions:** USD 10,000 account; zero fees and zero risk-free/target/loss-threshold returns. CAPM and excess-return measures use SPY adjusted prices with monthly CAPM sampling. BenchmarkCorrelation is a price/NAV **level** correlation. The chart benchmark is fully invested buy-and-hold of the selected stock. The report clearly labels a failed SPY download without substituting the selected stock. Synthetic verification labels the SPY series synthetic too.
 
 Library calendar sampling differs from trading-session sampling. Partial edge periods are flat-padded under library conventions, without using future prices outside the selected period. Annual bucket compound returns are explicitly labeled as library annual averages, not exact elapsed-time CAGR. The six headline cards retain their original daily account-return conventions.
 
@@ -94,3 +94,7 @@ The application implementation is [SMA2App.java](../src/main/java/tech/nmfin/alg
 ## Interactive charts
 
 Both charts share a date window. Hover/tap shows exact session values with a crosshair; use zoom buttons or Ctrl/Command+wheel, drag horizontally to pan, and Reset view or double-click to return to full history. Focus a chart and use +/−, left/right arrows or Home. Click legend buttons to hide/show individual series. Y axes rescale to visible data; chart navigation changes only the view, never the saved results or exports.
+
+## Position-sizing version
+
+New reports use reportSchemaVersion 2 and sizingModel FULL_EQUITY_V1. The app uses the library moving-average signal and simulator with the app's full-equity allocation, replacing the library demo's fixed ±1-share allocation. Order quantities are determined at the simulated fill close; this idealized fractional-share model has no costs or borrow/margin constraints. There is no claim that these fills can be achieved live. Legacy stored snapshots without sizingModel remain byte-for-byte unchanged and the page labels them as one-share results; rerun to obtain a new full-equity report. New snapshots include benchmarkTotalReturn and a bankrupt flag.

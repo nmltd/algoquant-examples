@@ -36,6 +36,10 @@ try:
     status,_,body=request('/api/backtest',fields)
     assert status==200,(status,body)
     r=json.loads(body)
+    assert r['sizingModel']=='FULL_EQUITY_V1'
+    for p in r['series']:
+        assert abs(p['benchmark']/r['initialCapital']-p['close']/r['series'][0]['close'])<1e-10
+    assert abs(r['executions'][0]['quantity']*r['executions'][0]['price']-10000)<1e-7
     assert len(r['series'])>200 and len(r['executions'])>0
     assert ('SYNTHETIC' in r['source']) != live
     assert abs(r['finalNav']-10000-r['pnl'])<1e-7

@@ -31,6 +31,16 @@ function showError(msg){$('status').className='error';$('status').textContent=ms
 function render(r){
  allGroupsOpen=null;chartRange=null;chartDrag=null;
  $('measure-filter').value='';
+ const full=r.sizingModel==='FULL_EQUITY_V1';
+ $('report-sizing-note').textContent=full
+  ? 'Full-equity sizing: 100% long or short at entry/reversals; fractional shares. Buy & hold invests the full $10,000.'
+  : 'Legacy saved report: fixed ±1-share strategy and one-share buy & hold. These original numbers are unchanged. Run a new backtest for full-equity results.';
+ $('benchmark-legend').textContent=full?'Buy & hold · fully invested':'Buy & hold · one share (legacy)';
+ chartDefinitions.nav.labels[1]=full?'Fully invested buy & hold':'One-share buy & hold (legacy)';
+ $('nav').setAttribute('aria-label','SMA2 portfolio value versus '+(full?'fully invested':'legacy one-share')+' buy and hold');
+ $('benchmark-convention').textContent=full
+  ? 'Both start with $10,000. Buy & hold invests all capital at the first selected adjusted close and holds fractional shares. Its account return equals the stock’s adjusted-price return.'
+  : 'Legacy benchmark buys one share at the first selected close; remaining cash stays idle.';
  $('report-link').href=r.reportPath;
  $('saved-report-note').textContent='Saved '+r.generatedAt+' · Report '+r.reportId;
  $('report-title').textContent=r.symbol+' / SMA '+r.fast+' days × '+r.slow+' days';
@@ -38,6 +48,7 @@ function render(r){
  $('fast-legend').textContent='Fast SMA · '+r.fast+' days';
  $('slow-legend').textContent='Slow SMA · '+r.slow+' days';
  const values=[['Net profit / loss',usd(r.pnl)],['Total return',pct(r.totalReturn)],['Maximum drawdown',pct(r.maxDrawdown)],['Final portfolio value',usd(r.finalNav)],['Annualized volatility',r.annualizedVolatility==null?'N/A':pct(r.annualizedVolatility)],['Sharpe · risk-free rate 0',r.sharpe==null?'N/A':r.sharpe.toFixed(2)]];
+ values.push(['Buy & hold return',pct(r.series[r.series.length-1].benchmark/r.initialCapital-1)]);
  $('metrics').replaceChildren(...values.map(([title,value])=>{const d=document.createElement('div');d.className='metric';const p=document.createElement('p');p.textContent=title;const s=document.createElement('strong');s.textContent=value;d.append(p,s);return d;}));
  renderLibrary(r);
  chart('prices',r.series,['close','fast','slow'],['#344a52','#188663','#cf9647']);
@@ -45,7 +56,7 @@ function render(r){
  $('fill-count').textContent='('+r.executions.length+')';
  $('fills').replaceChildren(...r.executions.map(f=>{const tr=document.createElement('tr');for(const value of [f.date.replace('T',' '),f.side,f.quantity.toString(),usd(f.price)]){const td=document.createElement('td');td.textContent=value;tr.append(td);}return tr;}));
  $('fill-note').textContent=r.executions.length?'Executions are fills, not completed round-trip trades.':'No crossovers produced executions in this period.';
- $('provenance').textContent='Generated '+r.generatedAt+' · Simple daily returns; sample volatility and Sharpe annualized with 252 sessions. Returns use the full $10,000 starting account, not a fully invested stock position. Prices are adjusted; distributions are not modeled as separate cash payments.';
+ $('provenance').textContent='Generated '+r.generatedAt+' · Simple daily returns; sample volatility and Sharpe annualized with 252 sessions. Account returns use $10,000 initial equity. Position sizing is stated above. Prices are adjusted; distributions are not modeled as separate cash payments.';
  $('empty').hidden=true;$('report').hidden=false;
 }
 // Shared date window keeps the price and NAV charts aligned.
@@ -138,7 +149,7 @@ function chart(id,data,keys,colors){
 
 $('download').addEventListener('click',()=>{
  if(!current)return;
- const r=current, lines=['date,adjusted_close,fast_sma,slow_sma,sma2_nav,one_share_benchmark'];
+ const r=current, lines=['date,adjusted_close,fast_sma,slow_sma,sma2_nav,'+(r.sizingModel==='FULL_EQUITY_V1'?'fully_invested_buy_hold_nav':'legacy_one_share_benchmark')];
  r.series.forEach(p=>lines.push([p.date,p.close,p.fast,p.slow,p.nav,p.benchmark].join(',')));
  const url=URL.createObjectURL(new Blob([lines.join('\r\n')],{type:'text/csv'}));
  const a=document.createElement('a');a.href=url;a.download=r.symbol+'-sma2-'+r.fast+'-'+r.slow+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -151,7 +162,7 @@ function readableMeasureValue(m){
 }
 function element(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;}
 function renderLibrary(r){
- $('measure-benchmark').textContent=r.benchmarkSource+' The chart benchmark remains one share of the selected stock.';
+ $('measure-benchmark').textContent=r.benchmarkSource+' The chart benchmark is '+(r.sizingModel==='FULL_EQUITY_V1'?'fully invested buy & hold of the selected stock.':'legacy one-share buy & hold of the selected stock.');
  const query=$('measure-filter').value.trim().toLowerCase(),groups=new Map();
  $('clear-search').disabled=!$('measure-filter').value;
  const measures=r.performanceMeasures||[];

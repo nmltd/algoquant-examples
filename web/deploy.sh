@@ -15,3 +15,18 @@ gcloud run deploy sma2-web --project="$GCP_PROJECT_ID" --region="$region" --imag
 url="$(gcloud run services describe sma2-web --project="$GCP_PROJECT_ID" --region="$region" --format='value(status.url)')"
 curl --fail --retry 5 --retry-delay 3 "$url/healthz"
 printf '\nDeployed: %s\n' "$url"
+
+# Verify the deployed service with the runtime license and real Yahoo data, not just process health.
+report="$(mktemp)"
+trap 'rm -f "$report"' EXIT
+curl --fail --show-error --max-time 150 --retry 2 --retry-delay 2 \
+  -X POST -d 'symbol=AAPL&start=2020-01-01&end=2020-12-31&fast=5&slow=20' \
+  "$url/api/backtest" -o "$report"
+python3 - "$report" <<'PY'
+import json, sys
+r = json.load(open(sys.argv[1]))
+assert r["source"] == "Yahoo Finance daily adjusted close"
+assert len(r["series"]) > 200 and len(r["executions"]) > 0
+assert abs(r["finalNav"] - 10000 - r["pnl"]) < 1e-7
+print("LIVE DEPLOYMENT VERIFIED:", r["symbol"], len(r["series"]), "NAV observations;", len(r["executions"]), "executions")
+PY

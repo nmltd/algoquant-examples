@@ -2,6 +2,7 @@ package tech.nmfin.algoquant.web.sma2;
 
 import dev.nm.misc.license.License;
 import java.io.File;
+import tech.nmfin.algoquant.web.AllPerformanceMeasures;
 import org.junit.*;
 import static org.junit.Assert.*;
 

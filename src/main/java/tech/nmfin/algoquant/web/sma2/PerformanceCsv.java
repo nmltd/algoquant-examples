@@ -1,6 +1,7 @@
 package tech.nmfin.algoquant.web.sma2;
 
 import java.io.*;
+import tech.nmfin.algoquant.web.AllPerformanceMeasures;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;

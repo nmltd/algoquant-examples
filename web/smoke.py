@@ -39,6 +39,14 @@ try:
     assert status==200,(status,body)
     r=json.loads(body)
     assert r['sizingModel']=='FULL_EQUITY_V1'
+    sp=r['sp500']
+    assert sp['symbol']=='^GSPC' and sp['start']==r['start'] and sp['end']==r['end']
+    assert len(sp['performanceMeasures'])==len(r['performanceMeasures']) and len(sp['executions'])==1
+    assert abs(sp['executions'][0]['quantity']*sp['executions'][0]['price']-r['initialCapital'])<1e-7
+    for point in sp['series']:
+        assert abs(point['nav']/r['initialCapital']-point['close']/sp['series'][0]['close'])<1e-10
+    assert abs(sp['statistics']['totalReturn']-(sp['series'][-1]['close']/sp['series'][0]['close']-1))<1e-10
+    assert sp['statistics']['totalReturn']!=r['buyHoldStatistics']['totalReturn']
     for p in r['series']:
         assert abs(p['benchmark']/r['initialCapital']-p['close']/r['series'][0]['close'])<1e-10
     assert abs(r['executions'][0]['quantity']*r['executions'][0]['price']-10000)<1e-7
@@ -83,7 +91,7 @@ try:
     with zipfile.ZipFile(io.BytesIO(xlsx)) as z:
         shared=[''.join(si.itertext()) for si in ET.fromstring(z.read('xl/sharedStrings.xml'))] if 'xl/sharedStrings.xml' in z.namelist() else []
         sheets=ET.fromstring(z.read('xl/workbook.xml')).findall('s:sheets/s:sheet',ns)
-        assert [s.attrib['name'] for s in sheets]==['SMA2 statistics','Buy and hold statistics','Daily data']
+        assert [s.attrib['name'] for s in sheets]==['SMA2 statistics','Buy and hold statistics','S&P 500 statistics','Daily data']
         def cells(index):
             root=ET.fromstring(z.read('xl/worksheets/sheet'+str(index)+'.xml'))
             assert root.find('s:sheetViews/s:sheetView/s:pane',ns).attrib['state']=='frozen'
@@ -94,14 +102,14 @@ try:
                 if cell.attrib.get('t')=='inlineStr':result[cell.attrib['r']]=''.join(cell.find('s:is',ns).itertext())
                 elif v is not None:result[cell.attrib['r']]=shared[int(v.text)] if cell.attrib.get('t')=='s' else float(v.text)
             return result
-        for sheet,key in [(1,'performanceMeasures'),(2,'buyHoldPerformanceMeasures')]:
+        for sheet,metrics in [(1,r['performanceMeasures']),(2,r['buyHoldPerformanceMeasures']),(3,sp['performanceMeasures'])]:
             values=cells(sheet)
-            for index,m in enumerate(r[key],2):
+            for index,m in enumerate(metrics,2):
                 assert values['A'+str(index)]==m['label']
                 expected=m.get('value') if m['status']=='ok' else None
                 actual=values['B'+str(index)]
                 assert (actual=='N/A' if expected is None else math.isclose(actual,expected,rel_tol=1e-12,abs_tol=1e-12))
-        daily=cells(3)
+        daily=cells(4)
         assert [daily[c+'1'] for c in 'ABCDEF']==['date','adjusted_close','fast_sma','slow_sma','sma2_nav','fully_invested_buy_hold_nav']
         for index,p in enumerate(r['series'],2):
             assert daily['A'+str(index)]==(datetime.date.fromisoformat(p['date'])-datetime.date(1899,12,30)).days

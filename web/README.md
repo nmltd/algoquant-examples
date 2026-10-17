@@ -1,126 +1,244 @@
 # SMA2 web application
 
-A separate web application in this examples project. The six technical demos are unchanged.
+**[Open SMA2](https://tools.nmfin.tech/sma2/)** · **[Tools directory](https://tools.nmfin.tech/)** · **[Repository setup](../README.md)**
 
-Choose one of twenty US stocks, inclusive start/end dates, and fast/slow SMA observation counts. The server runs the AlgoQuant moving-average crossover signal and simulator with full-equity sizing and returns adjusted-price/SMA charts, NAV versus fully invested buy-and-hold, monetary P&L, account return, maximum drawdown, annualized volatility, a zero-risk-free-rate Sharpe ratio, executions and NAV CSV download.
+SMA2 is a Java 8 web application built on AlgoQuant. Choose one of twenty supported US stocks, an inclusive period and two SMA periods in **trading days**. Each successful backtest compares three independently funded $10,000 accounts:
+
+1. Full-equity long/short SMA2.
+2. Buy-and-hold of the selected stock.
+3. Buy-and-hold of the S&P 500 price index, downloaded from Yahoo as `^GSPC`.
+
+The report provides seven headline statistics per account, four interactive summary-comparison charts, 187 configured scalar performance results per account, price/SMA and portfolio-history charts, executions, saved URLs and Excel/PDF/CSV/JSON exports. Long daily/monthly/yearly statistics tables and an S&P 500 time-series chart are not added to the webpage.
+
+The six command-line technical demos remain separate and are described in the [root README](../README.md#six-command-line-technical-examples).
+
+The [tools homepage disclaimer](https://tools.nmfin.tech/#disclaimer) applies to all hosted tools, applications and outputs. It states the educational/informational purpose, no warranties, use at your own risk and liability limits, while preserving rights and liabilities that cannot legally be excluded.
 
 ## Run locally
 
-Use the root README's Maven authentication and a valid external NM license:
+Configure Maven authentication and an external NM license as described in the [root README](../README.md#setup). From the repository root:
 
 ```bash
-mvn clean verify
-java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.sma2.Sma2Web
+mvn -U clean verify
+java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml \
+  -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.sma2.Sma2Web
 ```
 
-Open http://localhost:8080 for the tools directory, or http://localhost:8080/sma2 for SMA2. `PORT` overrides the port and `NM_LICENSE_FILE` overrides `license/nm.lic`. Production defaults to Yahoo downloads. `SMA2_DATA_MODE=synthetic` is explicitly for offline verification and labels every report SYNTHETIC. There is no automatic synthetic fallback when Yahoo fails.
+Open [http://localhost:8080/](http://localhost:8080/) for the tools directory or [http://localhost:8080/sma2/](http://localhost:8080/sma2/) for the app. On Windows, replace the classpath separator `:` with `;`.
 
-`python3 web/smoke.py` tests offline HTTP behavior; `python3 web/smoke.py --live` tests the Yahoo path. Both write JSON reports under `target/web-reports/`. Unit tests check invalid input, invariance to future data, and NAV against an independent execution ledger.
+| Environment variable | Behavior |
+| --- | --- |
+| `PORT` | HTTP port; default `8080` |
+| `NM_LICENSE_FILE` | External license path; default `license/nm.lic` |
+| `SMA2_DATA_MODE` | Set exactly `synthetic` for explicitly labeled offline fixtures; otherwise download Yahoo data |
+| `SMA2_REPORT_DIRECTORY` | Local snapshot directory; default `reports/`, which is gitignored |
+| `SMA2_REPORT_BUCKET` | Private Google Cloud Storage bucket for production snapshots |
+| `SMA2_APP_REVISION` | Revision recorded in saved reports; the deployment sets the Git commit SHA |
+
+There is no automatic synthetic fallback. A failed S&P 500 download/simulation fails a new backtest rather than silently omitting the market comparison.
 
 ## Simulation conventions
 
-- USD 10,000 initial equity. At the first selected close enter the previous session's prevailing SMA direction; then reverse on crossovers. At entry/reversals use target shares = direction × current equity / simulated fill price, allowing fractional shares. Hold share quantities between signals; no daily rebalancing. Short-sale cash is offset by the short liability and is not extra equity. If equity becomes non-positive, close the position and stop trading.
-- The signal sees the previous session's adjusted close and trades at the current session's adjusted close. Warm-up history is loaded before the selected start and does not trade.
-- Dates are inclusive; incomplete daily bars are excluded by rejecting end dates on/after today in New York. Intervals are capped at roughly ten years and slow SMA at 250 observations.
-- Zero commissions, spread, slippage, financing and short-borrow costs. No forced terminal liquidation. Adjusted prices are used without separate dividend cash payments.
-- NAV is marked to market; P&L includes unrealized changes. Account returns use initial $10,000. Daily sample standard deviation and mean/std Sharpe use sqrt(252); undefined Sharpe is shown as N/A.
-- Buy-and-hold invests all initial capital at the first selected adjusted close and holds fractional shares. Benchmark NAV = initial capital × adjusted close / first adjusted close, so its return equals the stock's adjusted-price return.
-- Yahoo availability, revisions and adjustments affect results. Cached responses are bounded to 32 intervals per process, volatile across restarts, and not shared across instances. Market-data caching is separate from the durable saved-report store.
-- At most one simulation runs at a time per process; a busy service responds 429. The stock allowlist and request/date/lag limits bound public work. For heavier use, add a queue, shared cache and edge rate limits.
+### SMA2 mechanics
+
+- Initial equity is **USD 10,000**. The first selected close enters the prevailing trend from the previous session. Later crossovers reverse the position.
+- Fast SMA above slow SMA targets **100% of equity long**; fast below slow targets **100% short**. At entry/reversal, target shares = direction × current equity ÷ current simulated fill price. Fractional shares are allowed.
+- Signals use the **previous session's adjusted close** and fill at the **current session's adjusted close**. This is a delayed-close model, not a next-open model.
+- Warm-up observations before the selected start initialize the SMAs without trading. Positions are held between signals; there is no daily rebalancing.
+- Short-sale proceeds are offset by the short liability and do not create extra equity. If equity becomes non-positive, the model closes the position and stops trading.
+- Open positions remain marked to market at the end; there is no forced terminal liquidation.
+
+### Dates, prices and costs
+
+Dates are inclusive and use available trading sessions. Start must be in 2000 or later, the requested interval cannot exceed 3,660 calendar days, and SMA periods must satisfy `1 <= fast < slow <= 250`. The server rejects end dates on or after today in **America/New_York**, excluding incomplete current-day bars. The default End date is the previous Monday–Friday date in New York; it skips weekends, not exchange holidays.
+
+Stock inputs are Yahoo adjusted closes. Corporate-action/dividend adjustments are incorporated into those prices; separate dividend cash flows are not paid again. All accounts assume zero commissions, spread, slippage, financing and short-borrow costs, with no live margin or borrowing constraints.
+
+### Independent buy-and-hold accounts
+
+The underlying-stock account buys fractional shares with all $10,000 at the first selected adjusted close and holds them. Its NAV equals initial capital × current adjusted close ÷ first selected adjusted close.
+
+The S&P 500 account runs through its **own AlgoQuant simulator**, buys hypothetical fractional index units once and holds them over the requested period. Its NAV tracks `^GSPC` from its first selected index close. This is a **price-index benchmark without reinvested dividends**, not a directly tradable ETF or a total-return index. Its dividend convention differs from adjusted stock prices.
+
+All three accounts use the same scalar-measure catalog and zero-cost assumptions. Benchmark-relative measures use the `^GSPC` lookup; monthly CAPM sampling and the zero risk-free rate are stated in the report. Measures requiring completed round-trip trades may be N/A for buy-and-hold accounts.
+
+### Statistics and interpretation
+
+The seven headline measures are total return, CAGR, maximum drawdown, annualized volatility, Sharpe ratio, final NAV and profit/loss. Daily volatility uses sample standard deviation × √252; daily Sharpe uses mean ÷ sample standard deviation × √252. CAGR uses the elapsed calendar days between the first and last selected closes, with 365.2425 days per year.
+
+The 187 configured scalar results cover 52 concrete library `PerformanceMeasure` implementations, supporting standalone algorithms and parameter variants. They include balances/P&L, fees, exposures, drawdowns/durations, return statistics, CAPM, information/Omega ratios, rolling annual-return summaries, VaR/CVaR and per-trade distributions. The [shared catalog](../src/main/java/tech/nmfin/algoquant/web/AllPerformanceMeasures.java) specifies the actual parameters.
+
+Library calendar-period sampling differs from trading-session sampling. Partial edge periods follow the library's flat-padding conventions. Library annual return averages, monthly Sortino and annual Calmar conventions are labeled separately from elapsed-time CAGR. VaR/CVaR are signed lower-tail **returns**, not positive dollar losses.
+
+Undefined, infinite and unavailable outputs keep their status and explanation. JSON numeric fields are finite or absent, and display fields retain N/A or infinity. Individual undefined statistics do not discard a completed simulation, and missing values are not replaced with zero. Differences are SMA2 minus the comparison account; a positive difference does not automatically mean better performance.
+
+Yahoo availability and revisions affect results. Market-data cache entries are bounded to 32 intervals per app process and disappear on restart. This cache is separate from saved-report storage. Simulations are educational and do not establish executable fills or statistically significant performance.
+
+## Webpage controls
+
+- Summary cards/charts compare **SMA2**, **underlying buy-and-hold**, and **S&P 500**. Hover/focus a bar for its value; use legend buttons to hide/show an account.
+- **Explore price and portfolio history** is expanded by default. The price/SMA and stock-account NAV charts share a date window. Zoom with buttons or Ctrl/Command+wheel, drag to pan, and use Reset view/double-click to restore history. Keyboard controls are +/−, left/right and Home.
+- Search scalar measures, or use **Expand all**, **Collapse all**, and **Clear search**.
+- Use **Copy report link**, **Open saved report**, or **New backtest** to navigate saved results.
+
+Chart navigation changes the view, not stored values or exports.
+
+## Exports
+
+All exports use the saved snapshot without downloading prices or rerunning the backtest.
+
+### Excel
+
+**Download Excel report** creates a single `.xlsx` with four tabs:
+
+| Tab | Contents |
+| --- | --- |
+| SMA2 statistics | All saved SMA2 scalar measures |
+| Buy and hold statistics | Selected-stock buy-and-hold scalar measures |
+| S&P 500 statistics | Independent `^GSPC` account's scalar measures |
+| Daily data | Selected-stock prices/SMAs and all three account NAVs, aligned by trading date |
+
+Statistics are arranged one measure per row with value, unit, status, group, library class and parameters/explanation. **Daily data** contains these columns, in order:
+
+```text
+date
+adjusted_close
+fast_sma
+slow_sma
+sma2_nav
+fully_invested_buy_hold_nav
+sp500_close
+sp500_nav
+```
+
+The two index columns join the independently simulated S&P 500 observations by date, not array position. Missing observations remain blank; there is no forward fill. Dates/numbers are native Excel values, headers are frozen, and filters are enabled. Numeric displays use two decimals, including percentage formatting where appropriate, while cell values retain full precision.
+
+`PerformanceWorkbook` writes the workbook using Java ZIP/XML APIs. It uses the scalar values serialized by AlgoQuant's `PerformanceReportCsvExporter`; no desktop spreadsheet runtime is required.
+
+### PDF
+
+Click **Export to PDF**, then select **Save as PDF** in the browser print dialog. The A4 landscape print layout includes the saved-report URL, comparisons, charts, all scalar groups, executions and strategy explanation.
+
+Printing temporarily clears measure filters, expands report groups, restores the full history window and shows chart series. Closing the dialog restores the screen's filters, expanded groups, chart window and legend visibility. Interactive controls and the backtest form are hidden from the printed report.
+
+### CSV and JSON
+
+The page offers **SMA2 performance CSV**, **Buy & hold performance CSV**, and **Full report JSON**. An S&P 500 CSV is also available through the API below.
+
+`PerformanceCsv` adapts saved scalar results to `PerformanceReport`, then calls AlgoQuant's **`PerformanceReportCsvExporter`** to write a temporary file on the server. Each CSV has one account-level `Total` row. Column headings include units, parameters and availability status. Undefined scalar values are `NaN`; explanations remain in the headings and JSON. Temporary CSV files are deleted after reading.
+
+The former browser-built NAV CSV has been replaced by the Excel **Daily data** tab. Complete stored series remain in JSON. CSV/JSON retain raw precision.
+
+## Saved reports and API
+
+Every successful `POST /sma2/api/backtest` writes an immutable JSON snapshot and returns `reportId` and `reportPath`. The browser navigates to `/sma2/reports/<32-hex-id>`. New runs always receive independent IDs, even with identical inputs.
+
+Snapshots retain inputs, generation time, app revision, schema, prices, NAV, executions and saved statistics for all three accounts. Refreshing a saved URL retrieves the snapshot without rerunning the strategies. Current assets render the page, but the saved numbers are not recomputed. Anyone with a report URL can read it; there is no public report-listing API.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/` | Tools directory |
+| GET | `/sma2/` | SMA2 application |
+| GET | `/sma2/api/health` | Health probe |
+| GET | `/sma2/api/stocks` | Supported stock symbols |
+| POST | `/sma2/api/backtest` | Run/save a backtest; form fields `symbol`, `start`, `end`, `fast`, `slow` |
+| GET | `/sma2/reports/<id>` | Saved report page |
+| GET | `/sma2/api/reports/<id>` | Original JSON snapshot |
+| GET | `/sma2/api/reports/<id>/report.xlsx` | Combined Excel workbook |
+| GET | `/sma2/api/reports/<id>/sma2.csv` | SMA2 scalar CSV |
+| GET | `/sma2/api/reports/<id>/buy-hold.csv` | Underlying buy-and-hold scalar CSV |
+| GET | `/sma2/api/reports/<id>/sp500.csv` | S&P 500 scalar CSV, when saved |
+
+`/sma2` redirects to `/sma2/`. Legacy `/reports/<id>` URLs redirect to the canonical app route; root `/api` aliases remain for compatibility, including `/api/health` for probes.
+
+Current new snapshots use **schema 4** and `sizingModel=FULL_EQUITY_V1`. Older snapshots may lack full-equity sizing, underlying comparison statistics, or the S&P 500 account. The page labels those limitations. Old one-share reports keep their original values and use a legacy benchmark column name in Excel. Missing S&P daily observations stay blank; a missing statistics tab explains that a new run is needed. Existing snapshots that already include S&P data get the new daily columns when Excel is downloaded again.
+
+At most one simulation runs per process; a busy process returns HTTP 429. The allowlist and date/lag limits bound requests.
+
+### Storage and retention
+
+Local snapshots use `reports/` or `SMA2_REPORT_DIRECTORY`. Cloud Run requires `SMA2_REPORT_BUCKET` and uses the private bucket through its attached runtime identity; it refuses to fall back to local disk.
+
+Production currently uses `gs://servers-227017-sma2-reports`. Snapshots have **no automatic expiry policy** and remain until deleted or a lifecycle policy is configured. Runtime access is limited to bucket-scoped object creation and viewing. The bucket is private even though the app serves reports to people with their URLs. No service-account key is needed.
+
+## Shared code and application folders
+
+| Source | Responsibility |
+| --- | --- |
+| [BuyAndHoldBenchmark.java](../src/main/java/tech/nmfin/algoquant/web/BuyAndHoldBenchmark.java) | Reusable independent `^GSPC` simulation, NAV, executions, statistics and benchmark lookup |
+| [AllPerformanceMeasures.java](../src/main/java/tech/nmfin/algoquant/web/AllPerformanceMeasures.java) | Shared scalar-measure catalog |
+| [SMA2App.java](../src/main/java/tech/nmfin/algoquant/web/sma2/SMA2App.java) | SMA2 strategy, underlying account and report assembly |
+| [Sma2Web.java](../src/main/java/tech/nmfin/algoquant/web/sma2/Sma2Web.java) | HTTP routes and export responses |
+| [ReportStore.java](../src/main/java/tech/nmfin/algoquant/web/sma2/ReportStore.java) | Immutable local/GCS snapshots |
+| [PerformanceCsv.java](../src/main/java/tech/nmfin/algoquant/web/sma2/PerformanceCsv.java) | Library CSV exporter adapter |
+| [PerformanceWorkbook.java](../src/main/java/tech/nmfin/algoquant/web/sma2/PerformanceWorkbook.java) | Combined Excel export |
+| [Frontend](../src/main/resources/web/sma2/) | Page, chart interactions and PDF print layout |
+
+`BuyAndHoldBenchmark` has a default Yahoo source and accepts an injectable `PriceSource` for shared caching or deterministic fixtures. Its `run(start, end, capital)` returns the independent account and a transient benchmark lookup. SMA2 supplies its cached price loader and runs the benchmark for every new backtest.
+
+Keep future application-specific Java, tests and assets in matching `web/<app>` folders. Shared Java belongs in `tech.nmfin.algoquant.web`; the tools-directory HTML/styles remain at `src/main/resources/web/`.
+
+## Verification
+
+From the repository root after configuring Maven and the license:
+
+```bash
+mvn -U clean verify
+bash scripts/run-offline.sh
+python3 web/smoke.py
+# Explicit network-dependent check:
+python3 web/smoke.py --live
+```
+
+The smoke checks write reports under `target/web-reports/`. They validate allocation/index-return identities, every CSV/worksheet value, daily date alignment, saved-report identity after restart, and invalid/missing report behavior.
+
+The [verification workflow](../.github/workflows/verify.yml) also runs Chrome interaction/download/print checks, generates a real PDF, and builds the production container with an Excel download check. It uses the built-in GitHub token for public Maven artifacts and an already-public starter trial license. The separate deployment workflow verifies a live Yahoo-backed simulation, S&P account and four-tab Excel export.
 
 ## Cloud Run deployment
 
-Live application: **https://tools.nmfin.tech**.
+Current service: **`sma2-web`**, project **`servers-227017`**, region **`us-central1`**. The public application is [https://tools.nmfin.tech/sma2/](https://tools.nmfin.tech/sma2/); `optim.nmfin.tech` is retired.
 
-The manual GitHub workflow `.github/workflows/sma2-cloud-run.yml` builds/tests the app, builds a Docker image, pushes to Artifact Registry, and deploys `sma2-web` in `us-central1`. It uses GitHub OIDC Workload Identity Federation; no Google private key is required. Runtime license is mounted from Secret Manager, never copied into the container or public source.
+The manual [Deploy SMA2 web to Cloud Run](../.github/workflows/sma2-cloud-run.yml) workflow builds/tests the app, pushes its image to Artifact Registry and deploys the service. Authentication uses GitHub OIDC Workload Identity Federation. The runtime license is mounted from Secret Manager at `/secrets/nm.lic`, never copied into the container or committed to source.
 
-One-time setup in **Google Cloud Shell**, signed into your intended project with permission to enable services and configure IAM:
+### One-time setup
 
-1. Clone this public repository and authenticate GitHub CLI (`gh auth login`) with repository administration access for setting repository variables.
-2. Upload a valid server license into Cloud Shell privately. Do not add it to Git. Set:
+Run in Google Cloud Shell as the intended project's owner, with billing enabled and permission to configure services/IAM. Authenticate `gh auth login` with access to manage the repository variables, clone this repository, and upload a valid server license privately.
 
 ```bash
+git clone https://github.com/nmltd/algoquant-examples.git
+cd algoquant-examples
 export GCP_PROJECT_ID=YOUR_PROJECT_ID
 export NM_LICENSE_FILE=/absolute/path/to/nm.lic
 bash web/bootstrap-cloud.sh
+bash web/setup-report-storage.sh
 ```
 
-The script creates Artifact Registry, the runtime/deployer service accounts, a Secret Manager license version and a WIF provider restricted to this repository's numeric ID, owner ID, main branch and deployment workflow. It sets four GitHub Actions repository variables. Review the script before running against an existing project; billing must already be enabled. Remove your temporary Cloud Shell license copy afterward.
+The bootstrap script targets `nmltd/algoquant-examples`. Adapt that repository name and the workflow restrictions if deploying a fork. Review the scripts before using another existing project. The script creates/uses the registry, runtime/deployer accounts, license secret and WIF provider restricted to the numeric repository/owner IDs, `main` and the deployment workflow. Each bootstrap invocation adds a license secret version; it is a setup operation, not a prerequisite for every deploy.
 
-3. Create the private report bucket with \`bash web/setup-report-storage.sh\` (same project-owner Cloud Shell session; no license required for this step).
-4. Run **Deploy SMA2 web to Cloud Run** on `main` in GitHub Actions. Defaults: one CPU, 1 GiB, zero minimum instances, two maximum instances, one concurrent request per instance, 180-second request timeout. Registry storage, Secret Manager and usage may incur charges. The service is publicly invokable; cold starts are possible.
-5. Verify the returned `run.app` URL and run a real-data backtest.
+It sets these GitHub Actions repository variables:
 
-### tools.nmfin.tech
+- `GCP_PROJECT_ID`
+- `GCP_RUNTIME_SERVICE_ACCOUNT`
+- `GCP_DEPLOY_SERVICE_ACCOUNT`
+- `GCP_WIF_PROVIDER`
 
-After verifying ownership of `nmfin.tech` in Google Search Console, map the hostname in Cloud Run's domain-mapping UI in `us-central1`, selecting service `sma2-web`. Apply **the exact DNS records Google returns** at your DNS provider. Do not guess an IP address or overwrite other domain records. Wait for managed TLS and mapping readiness, then check HTTPS and the live backtest. Direct Cloud Run domain mappings have preview/production limitations; use an external Application Load Balancer if production-grade domain features are required.
+The storage script creates the private `<project>-sma2-reports` bucket and grants the runtime object creation/viewing. Remove the temporary uploaded license from Cloud Shell when setup is complete.
 
-Sources: [Cloud Run secrets](https://docs.cloud.google.com/run/docs/configuring/services/secrets), [GitHub OIDC authentication](https://github.com/google-github-actions/auth), [custom domains](https://docs.cloud.google.com/run/docs/mapping-custom-domains).
+### Deploy and verify
 
-## Comprehensive library performance report
+For an already configured installation, run the workflow on `main`:
 
-The detailed web report represents all **52 concrete PerformanceMeasure implementations** in AlgoQuant's performance-measure packages, plus the standalone HistoricalVaR, ConditionalVaR and InformationRatio algorithms. Configurable implementations are evaluated with explicit defaults and useful variants; arbitrary parameter combinations are not enumerated.
+```bash
+gh workflow run sma2-cloud-run.yml --ref main --repo nmltd/algoquant-examples
+gh run list --workflow sma2-cloud-run.yml --repo nmltd/algoquant-examples
+```
 
-Coverage includes balances/P&L, commissions and transaction fees, drawdowns and long/short/total exposures, daily/monthly/yearly return statistics, Sharpe/Sortino/Calmar/Treynor, CAPM alpha/beta/R-squared and benchmark level correlation, information/Omega/Sharpe-Omega ratios, 1- and 3-year rolling-return summaries, 95%/99% historical/normal/conditional VaR, and every built-in PerTradeValue.Common × StatOnDistribution.Common combination.
+Defaults are one CPU, 1 GiB memory, zero minimum/two maximum instances, one concurrent request per instance and a 180-second timeout. The service is publicly invokable and can cold-start. Report storage, registry, secrets and compute incur normal Google Cloud usage costs.
 
-Long calendar-daily/monthly/yearly period tables are omitted from new reports and the webpage. Return histories are still used internally to calculate summary statistics. The original NAV CSV is still available. Interface/abstract classes, factories, fee schemes, lookup interfaces and utility classes are supporting API components rather than additional statistics. RiskMeasures is a convenience collection of already-covered measures. Omega algorithms are shown as explicitly labeled variants of the Omega measures.
+Deployment checks health, a real-data AAPL backtest, independently funded `^GSPC` simulation, saved-report retrieval and the four-tab Excel download. The optional workflow `diagnose` input reads service/domain status; runtime log reads additionally require logging permissions not granted by the bootstrap script.
 
-**Conventions:** USD 10,000 account; zero fees and zero risk-free/target/loss-threshold returns. CAPM and excess-return measures use SPY adjusted prices with monthly CAPM sampling. BenchmarkCorrelation is a price/NAV **level** correlation. The chart benchmark is fully invested buy-and-hold of the selected stock. The report clearly labels a failed SPY download without substituting the selected stock. Synthetic verification labels the SPY series synthetic too.
+### Custom domain
 
-Library calendar sampling differs from trading-session sampling. Partial edge periods are flat-padded under library conventions, without using future prices outside the selected period. Annual bucket compound returns are explicitly labeled as library annual averages, not exact elapsed-time CAGR. The six headline cards retain their original daily account-return conventions.
+Verify ownership of `nmfin.tech` with Google, map `tools.nmfin.tech` to `sma2-web` in `us-central1`, and apply **the exact DNS records Google returns**. Wait for the managed certificate and domain mapping to become ready before checking HTTPS. The root page lists applications; SMA2 is served at `/sma2/`.
 
-VaR/CVaR output is the library's **signed lower-tail return** at alpha 0.05 or 0.01, displayed as a percentage return. It is not relabeled as a positive USD loss. Drawdown/trade durations use their stated elapsed/calendar units. SMA inputs continue to mean trading days.
-
-Undefined or infinite values retain their status and explanatory text; JSON numeric fields are finite or absent, while display fields preserve Infinity/N/A. A failed individual calculation is shown as unavailable and does not discard the rest of the backtest. No zero is substituted for an unavailable result.
-
-Not-applicable rows are retained for DividendAdjustedProfitLoss (separate dividend cash flows are not supplied with adjusted-price input), PerTradePairReturn (two traded legs required), InformationRatioForZeroInvestment (this is a cash-funded strategy), PartialPerformanceMeasure (custom execution/tag filter required), and LinearlyCombinedPerformanceMeasure (custom coefficients required).
-
-The library rolling annual-return implementation was corrected to append results to its output list, handle insufficient history and include an exact anniversary endpoint. Source/obfuscated tests validate that fix before the updated public SNAPSHOT is used.
-
-Tests enforce representation of every concrete measure class, consistency of library P&L/balances/execution counts with the simulation, safe JSON for short/undefined samples, and unchanged trade timing/NAV. This is an educational report, not a claim of realistic execution costs or statistically significant strategy performance.
-
-## Saved report pages
-
-Every successful POST /sma2/api/backtest writes an immutable JSON snapshot and returns reportId and reportPath. The browser moves to /sma2/reports/<32-hex-id>. Refreshing or sharing that URL fetches the saved JSON from GET /sma2/api/sma2/reports/<id>, without market-data downloads or simulation. New runs always get independent IDs, even with identical inputs. Use Copy report link, Open saved report, or New backtest. Anyone with the URL can read a report; report IDs are random and there is no public listing.
-
-The snapshot retains input parameters, generation time, application revision, schema version, prices, NAV, executions, both portfolios' scalar measures and summary statistics. Rendering uses the current page assets; the underlying saved numbers are not recomputed.
-
-Cloud Run uses the private bucket <project>-sma2-reports through its attached runtime identity. Run web/setup-report-storage.sh once in Cloud Shell with GCP_PROJECT_ID set before deploying this feature. The runtime receives bucket-scoped objectCreator and objectViewer only. No service-account key or public bucket access is needed; there is no automatic report-expiry policy. Storage/read costs follow Cloud Storage usage. Cloud Run refuses to use local disk when SMA2_REPORT_BUCKET is missing.
-
-Local runs use reports/ (gitignored); SMA2_REPORT_DIRECTORY can choose another persistent local directory. Container smoke tests use /tmp/sma2-reports explicitly; that is testing storage, not production persistence. Tests verify snapshot identity after store/server recreation, independent IDs, invalid/missing IDs, GCS create-only upload and authenticated retrieval, and write-failure handling.
-
-The application implementation is [SMA2App.java](../src/main/java/tech/nmfin/algoquant/web/sma2/SMA2App.java).
-
-## Interactive charts
-
-Both charts share a date window. Hover/tap shows exact session values with a crosshair; use zoom buttons or Ctrl/Command+wheel, drag horizontally to pan, and Reset view or double-click to return to full history. Focus a chart and use +/−, left/right arrows or Home. Click legend buttons to hide/show individual series. Y axes rescale to visible data; chart navigation changes only the view, never the saved results or exports.
-
-## Position-sizing version
-
-New reports use reportSchemaVersion 2 and sizingModel FULL_EQUITY_V1. The app uses the library moving-average signal and simulator with the app's full-equity allocation, replacing the library demo's fixed ±1-share allocation. Order quantities are determined at the simulated fill close; this idealized fractional-share model has no costs or borrow/margin constraints. There is no claim that these fills can be achieved live. Legacy stored snapshots without sizingModel remain byte-for-byte unchanged and the page labels them as one-share results; rerun to obtain a new full-equity report. New snapshots include benchmarkTotalReturn and a bankrupt flag.
-
-## Tools directory and application routes
-
-The root / lists available applications; SMA2 lives at /sma2 (redirects to /sma2/). Assets and app APIs are under /sma2/, and saved pages use /sma2/reports/<id>. New tools can add their own route and directory entry. Existing /reports/<id> links redirect to /sma2/reports/<id>; old stored JSON remains unchanged and the browser builds the new canonical link from reportId. Root /api aliases remain available for compatibility and /api/health for infrastructure probes. The storage bucket is unchanged.
-
-To add the hostname, create a Cloud Run mapping for tools.nmfin.tech to the existing sma2-web service in servers-227017/us-central1, apply the DNS records returned by Google and wait for TLS. Keep optim.nmfin.tech mapped if old shared links should continue to work.
-
-## Side-by-side portfolio comparison
-
-Schema 3 reports run fully funded buy-and-hold as a separate portfolio in the same AlgoQuant simulator, using the same stock, dates, $10,000 capital, adjusted prices and zero-cost assumptions. It buys fractional shares once at the first close and does not force a final sale. Both portfolios are evaluated through the same AllPerformanceMeasures catalog and SPY benchmark. Buy-and-hold's closed-trade measures are N/A when there are no round trips.
-
-The report begins with paired summary cards and four comparison charts: growth/return, risk, risk-adjusted ratios, and portfolio value/P&L. Bars support hover/focus and legend toggles. Full summary-measure groups show SMA2, buy-and-hold, and SMA2-minus-buy-and-hold differences (percentage points for percentages). Higher is not automatically better, so differences are not ranked as wins. Display precision remains two decimal places; CSV/JSON retain raw precision.
-
-CAGR is based on elapsed calendar time between first and last selected closes (365.2425 days per year); daily volatility and Sharpe use sample returns and sqrt(252). Library Sortino/Calmar have separately labelled monthly/annual conventions. New reports omit long period tables; price/NAV history is available in an optional collapsed section. Comparison CSV contains scalar rows for both strategies. Older snapshots are not recomputed: the UI asks for a new run if buy-and-hold summary statistics were not saved.
-
-### Performance CSV downloads
-
-The SMA2 and buy-and-hold buttons call the server's saved-report CSV endpoints. `PerformanceCsv` adapts the saved scalar measures to `PerformanceReport`, and AlgoQuant's `PerformanceReportCsvExporter` writes the CSV file. Each CSV contains one account-level `Total` row, with units, parameters and availability status in the column headings. Undefined measures are `NaN`; reasons remain in the headings and report JSON. Downloads preserve full numeric precision and work after restart without rerunning the strategy. Long time series remain available in the full report JSON.
-
-### Combined Excel report
-
-Download Excel report creates one `.xlsx` for the saved simulation: SMA2 statistics, Buy and hold statistics, and Daily data. Both statistics tabs use the values serialized by `PerformanceReportCsvExporter`, arranged one measure per row with units/status/parameters. Daily data restores date, adjusted_close, fast_sma, slow_sma, sma2_nav and fully_invested_buy_hold_nav. Dates and numbers are native Excel values, numeric displays use two decimals, and full precision is retained. Header filters and frozen rows make long tables navigable. Legacy one-share snapshots retain an explicit legacy benchmark heading; missing old buy-and-hold measures are explained rather than recomputed.
-
-### Shared S&P 500 benchmark
-
-`tech.nmfin.algoquant.web.BuyAndHoldBenchmark` independently simulates a fully funded fractional-unit buy-and-hold account in Yahoo `^GSPC` for the requested inclusive dates. It accepts a reusable `PriceSource` for cached data or deterministic test fixtures; its default constructor downloads Yahoo data. It returns simulated NAV, executions, 187 scalar measures, summary statistics and a transient lookup for benchmark-relative measures. `AllPerformanceMeasures` now resides in the shared web package. New SMA2 reports require a successful index simulation, use it for CAPM/excess-return measures, compare three accounts on summary charts/tables and include S&P 500 statistics in Excel. The price index excludes reinvested dividends and is a hypothetical benchmark rather than a directly tradable ETF. Old saved reports remain immutable and explain when an S&P comparison was not saved. No long index time series is added to webpage charts.
+The existing hostname uses Google's domain mapping. See [Cloud Run custom domains](https://docs.cloud.google.com/run/docs/mapping-custom-domains) for current supported options, and [Cloud Run secrets](https://docs.cloud.google.com/run/docs/configuring/services/secrets) and [GitHub OIDC authentication](https://github.com/google-github-actions/auth) for the underlying setup.

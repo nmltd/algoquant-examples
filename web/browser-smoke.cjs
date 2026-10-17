@@ -125,6 +125,18 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   assert.equal(printCheck.filter,'');assert.equal(printCheck.closed,0);assert.match(printCheck.url,new RegExp(report.reportId));
   assert.equal(await page.locator('#measure-filter').inputValue(),'Sortino');
   await page.locator('#clear-search').click();
+  await page.emulateMedia({media:'print'});
+  await page.evaluate(()=>window.dispatchEvent(new Event('beforeprint')));
+  const printLayout=await page.evaluate(()=>({
+   bounded:[...document.querySelectorAll('.measure-group .table-wrap')].some(e=>getComputedStyle(e).maxHeight!=='none'),
+   libraryBottom:document.querySelector('.library-panel').getBoundingClientRect().bottom,
+   executionTop:document.querySelector('.execution-panel').getBoundingClientRect().top,
+   legend:getComputedStyle(document.querySelector('.comparison-legend button')).display
+  }));
+  assert.equal(printLayout.bounded,false);assert.ok(printLayout.executionTop>=printLayout.libraryBottom);
+  assert.notEqual(printLayout.legend,'none');
+  await page.evaluate(()=>window.dispatchEvent(new Event('afterprint')));
+  await page.emulateMedia({media:null});
   const pdf=await page.pdf({path:'target/web-reports/report.pdf',format:'A4',landscape:true,printBackground:true});
   assert.equal(pdf.subarray(0,4).toString(),'%PDF');assert.ok(pdf.length>10000);
   assert.deepEqual(errors,[]);

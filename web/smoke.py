@@ -26,7 +26,7 @@ try:
         except OSError: pass
         time.sleep(.1)
     else: raise RuntimeError('Server did not start')
-    for path in ['/','/sma2','/sma2/','/sma2/style.css','/sma2/app.js','/sma2/api/stocks']:
+    for path in ['/','/sma2','/sma2/','/tools.css','/sma2/style.css','/sma2/app.js','/sma2/api/stocks']:
         status,headers,body=request(path); assert status==200 and body,path
         assert 'nosniff'==headers.get('X-Content-Type-Options')
     assert b'Open SMA2' in request('/')[2]

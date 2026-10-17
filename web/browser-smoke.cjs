@@ -37,7 +37,7 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   await page.locator('.comparison-legend button').first().click();
   assert.equal(await page.locator('.comparison-legend button').first().getAttribute('aria-pressed'),'false');
   await page.locator('.comparison-legend button').first().click();
-  await page.locator('#market-history > summary').click();
+  assert.equal(await page.locator('#market-history').getAttribute('open'),'');
   const full=await page.locator('#prices-window').textContent();
   await page.locator('.chart-panel').first().getByRole('button',{name:'Zoom in +',exact:true}).click();
   const zoom=await page.locator('#prices-window').textContent();

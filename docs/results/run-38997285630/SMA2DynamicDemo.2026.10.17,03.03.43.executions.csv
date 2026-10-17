@@ -1,0 +1,2 @@
+rebalance period,data window,Time,Side,Symbol,Quantity,Price
+P1M,P3M,2016-02-01T15:00,SELL,000001.SS,1.0,156.09821212290476

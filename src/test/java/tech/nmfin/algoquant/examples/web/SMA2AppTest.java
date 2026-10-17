@@ -113,7 +113,7 @@ public class SMA2AppTest {
             assertEquals(p.close/first-1,p.benchmark/SMA2App.CAPITAL-1,1e-12);
         assertEquals(r.benchmarkTotalReturn,r.series.get(r.series.size()-1).benchmark/SMA2App.CAPITAL-1,1e-12);
         assertEquals("FULL_EQUITY_V1",r.sizingModel);
-        assertEquals(2,r.reportSchemaVersion);
+        assertEquals(3,r.reportSchemaVersion);
     }
     @Test public void initialEntryDeploysCapitalAndSubsequentDaysHoldShares() {
         SMA2App.Result r=new SMA2App(true).run(new SMA2App.Request("AAPL","2020-01-01","2020-12-31",5,20));

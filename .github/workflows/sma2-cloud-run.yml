@@ -81,3 +81,11 @@ jobs:
           gcloud run revisions list --service=sma2-web --project="$PROJECT" --region=us-central1 --limit=3 --format='yaml(metadata.name,status.conditions,status.imageDigest)'
           gcloud --quiet beta run domain-mappings describe --domain=tools.nmfin.tech --project="$PROJECT" --region=us-central1 --format='yaml(status.resourceRecords,status.conditions)'
           curl --silent --show-error --max-time 25 --write-out '\nHTTP %{http_code}\n' https://tools.nmfin.tech/sma2/api/health || true
+
+      - name: Inspect Excel export and runtime errors
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          curl --silent --show-error --max-time 60 --write-out '\nHTTP %{http_code}\n' https://tools.nmfin.tech/sma2/api/reports/9b5c3b7131b24850a4a8c03a19de9963/report.xlsx --output /tmp/report-response
+          head -c 300 /tmp/report-response | strings
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="sma2-web" AND severity>=ERROR' --project="$PROJECT" --freshness=20m --limit=20 --format='value(textPayload,jsonPayload.message)' || true

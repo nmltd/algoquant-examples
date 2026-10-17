@@ -93,4 +93,15 @@ public class BacktestServiceTest {
         new com.google.gson.JsonParser().parse(new com.google.gson.Gson().toJson(r));
     }
 
+
+    @Test public void longHistoryComputesRollingAndBenchmarkMeasures() {
+        BacktestService.Result r=new BacktestService(true).run(new BacktestService.Request("AAPL","2016-01-01","2020-12-31",5,20));
+        for(AllPerformanceMeasures.Metric m:r.performanceMeasures) {
+            assertFalse(m.label+": "+m.detail,"unavailable".equals(m.status));
+            if(m.sourceClass.startsWith("RollingAnnualReturn") || m.sourceClass.equals("TreynorRatio"))
+                assertEquals(m.label+": "+m.detail,"ok",m.status);
+        }
+        for(AllPerformanceMeasures.PeriodTable t:r.periodMeasures)
+            assertFalse(t.label+": "+t.detail,"unavailable".equals(t.status));
+    }
 }

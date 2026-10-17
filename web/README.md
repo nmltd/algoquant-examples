@@ -55,3 +55,25 @@ The script creates Artifact Registry, the runtime/deployer service accounts, a S
 After verifying ownership of `nmfin.tech` in Google Search Console, map the hostname in Cloud Run's domain-mapping UI in `us-central1`, selecting service `sma2-web`. Apply **the exact DNS records Google returns** at your DNS provider. Do not guess an IP address or overwrite other domain records. Wait for managed TLS and mapping readiness, then check HTTPS and the live backtest. Direct Cloud Run domain mappings have preview/production limitations; use an external Application Load Balancer if production-grade domain features are required.
 
 Sources: [Cloud Run secrets](https://docs.cloud.google.com/run/docs/configuring/services/secrets), [GitHub OIDC authentication](https://github.com/google-github-actions/auth), [custom domains](https://docs.cloud.google.com/run/docs/mapping-custom-domains).
+
+## Comprehensive library performance report
+
+The detailed web report represents all **52 concrete PerformanceMeasure implementations** in AlgoQuant's performance-measure packages, plus the standalone HistoricalVaR, ConditionalVaR and InformationRatio algorithms. Configurable implementations are evaluated with explicit defaults and useful variants; arbitrary parameter combinations are not enumerated.
+
+Coverage includes balances/P&L, commissions and transaction fees, drawdowns and long/short/total exposures, daily/monthly/yearly return statistics, Sharpe/Sortino/Calmar/Treynor, CAPM alpha/beta/R-squared and benchmark level correlation, information/Omega/Sharpe-Omega ratios, 1- and 3-year rolling-return summaries, 95%/99% historical/normal/conditional VaR, and every built-in PerTradeValue.Common × StatOnDistribution.Common combination.
+
+All four PeriodByPeriodMeasure implementations are provided in calendar-daily, monthly and yearly tables. Page previews cap each table at 200 rows; all rows are retained in the full report JSON and combined measures CSV. The original NAV CSV is still available. Interface/abstract classes, factories, fee schemes, lookup interfaces and utility classes are supporting API components rather than additional statistics. RiskMeasures is a convenience collection of already-covered measures. Omega algorithms are shown as explicitly labeled variants of the Omega measures.
+
+**Conventions:** USD 10,000 account; zero fees and zero risk-free/target/loss-threshold returns. CAPM and excess-return measures use SPY adjusted prices with monthly CAPM sampling. BenchmarkCorrelation is a price/NAV **level** correlation. The existing chart benchmark remains one share of the selected stock. The report clearly labels a failed SPY download without substituting the selected stock. Synthetic verification labels the SPY series synthetic too.
+
+Library calendar sampling differs from trading-session sampling. Partial edge periods are flat-padded under library conventions, without using future prices outside the selected period. Annual bucket compound returns are explicitly labeled as library annual averages, not exact elapsed-time CAGR. The six headline cards retain their original daily account-return conventions.
+
+VaR/CVaR output is the library's **signed lower-tail return** at alpha 0.05 or 0.01, displayed as a percentage return. It is not relabeled as a positive USD loss. Drawdown/trade durations use their stated elapsed/calendar units. SMA inputs continue to mean trading days.
+
+Undefined or infinite values retain their status and explanatory text; JSON numeric fields are finite or absent, while display fields preserve Infinity/N/A. A failed individual calculation is shown as unavailable and does not discard the rest of the backtest. No zero is substituted for an unavailable result.
+
+Not-applicable rows are retained for DividendAdjustedProfitLoss (separate dividend cash flows are not supplied with adjusted-price input), PerTradePairReturn (two traded legs required), InformationRatioForZeroInvestment (this is a cash-funded strategy), PartialPerformanceMeasure (custom execution/tag filter required), and LinearlyCombinedPerformanceMeasure (custom coefficients required).
+
+The library rolling annual-return implementation was corrected to append results to its output list, handle insufficient history and include an exact anniversary endpoint. Source/obfuscated tests validate that fix before the updated public SNAPSHOT is used.
+
+Tests enforce representation of every concrete measure class, consistency of library P&L/balances/execution counts with the simulation, safe JSON for short/undefined samples, and unchanged trade timing/NAV. This is an educational report, not a claim of realistic execution costs or statistically significant strategy performance.

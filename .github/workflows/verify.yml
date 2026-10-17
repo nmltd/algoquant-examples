@@ -36,6 +36,8 @@ jobs:
         run: mvn -B -ntp -U -Dmaven.repo.local="$RUNNER_TEMP/m2" clean verify
       - name: Run every example with synthetic data and no desktop or market-data service
         run: bash scripts/run-offline.sh
+      - name: Check browser JavaScript syntax
+        run: node --check src/main/resources/web/app.js
       - name: Verify the SMA2 web API offline
         run: python3 web/smoke.py
       - name: Verify Yahoo-backed web backtest on an explicit manual run

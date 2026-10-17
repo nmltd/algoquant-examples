@@ -57,4 +57,40 @@ public class BacktestServiceTest {
         assertTrue(checked>2);
     }
 
+    @Test public void comprehensiveLibraryResultsAreSerializableAndMatchLedger() {
+        BacktestService.Result r=new BacktestService(true).run(new BacktestService.Request("AAPL","2020-01-01","2020-12-31",5,20));
+        assertTrue(r.performanceMeasures.size()>150);
+        assertEquals(12,r.periodMeasures.size());
+        java.util.Map<String,AllPerformanceMeasures.Metric> byClass=new java.util.HashMap<>();
+        for(AllPerformanceMeasures.Metric m:r.performanceMeasures) {
+            assertNotNull(m.label);assertNotNull(m.sourceClass);assertNotNull(m.status);
+            if(m.value!=null) assertTrue(Double.isFinite(m.value));
+            byClass.put(m.sourceClass,m);
+        }
+        assertEquals(r.pnl,byClass.get("ProfitLoss").value,1e-7);
+        assertEquals(r.finalNav,byClass.get("EndBalance").value,1e-7);
+        assertEquals((double)r.executions.size(),byClass.get("ExecutionCount").value,0);
+        for(String required:new String[]{"SortinoRatio","AlphaCAPM","BetaCAPM","RSquaredCAPM",
+                "TreynorRatio","HistoricalVaR","AnalyticVaR","ConditionalVaR","PerTradeStat",
+                "RollingAnnualReturnAverage","RollingAnnualReturnMin","RollingAnnualReturnMax"})
+            assertTrue("Missing "+required,byClass.containsKey(required));
+        for(String name:java.util.Arrays.asList("AlphaCAPM","AverageAnnualRateOfReturn","BenchmarkCorrelation","BetaCAPM","CalmarRatio","Commission","CommissionProfitRatio","CumulativeReturn","DividendAdjustedProfitLoss","DownsideDeviation","EndBalance","ExecutionCount","LinearlyCombinedPerformanceMeasure","MaxDrawdown","MaxDrawdownDuration","MaxDrawdownPercentage","MaxExposure","PeriodReturnsAverage","PeriodReturnsBest","PeriodReturnsCompound","PeriodReturnsNegative","PeriodReturnsPositive","PeriodReturnsStdev","PeriodReturnsWorst","ProfitAfterTransactionFee","ProfitLoss","ProfitLossRealized","ProfitNoTransactionFee","ProfitOverMaxExposure","RSquaredCAPM","RollingAnnualReturnAverage","RollingAnnualReturnMax","RollingAnnualReturnMin","SharpeRatioMonthlyAnnualized","SortinoRatio","SortinoRatioMonthlyAnnualized","StartBalance","SumReturn","TransactionFeeByContract","TransactionFeeByPercentage","TreynorRatio","WinLossRatio","WinLossSizeRatio","PartialPerformanceMeasure","InformationRatioForPeriods","InformationRatioForTrades","InformationRatioForZeroInvestment","OmegaForPeriods","OmegaForTrades","PerTradePairReturn","PerTradeStat","AnalyticVaR"))
+            assertTrue("Unrepresented concrete library measure: "+name,byClass.containsKey(name));
+        assertEquals("not_applicable",byClass.get("PerTradePairReturn").status);
+        assertEquals("not_applicable",byClass.get("DividendAdjustedProfitLoss").status);
+        String json=new com.google.gson.Gson().toJson(r);
+        new com.google.gson.JsonParser().parse(json);
+        for(AllPerformanceMeasures.PeriodTable t:r.periodMeasures)
+            for(AllPerformanceMeasures.PeriodValue p:t.values)
+                if(p.value!=null)assertTrue(Double.isFinite(p.value));
+    }
+    @Test public void shortPeriodKeepsUndefinedStatisticsWithoutBreakingReport() {
+        BacktestService.Result r=new BacktestService(true).run(new BacktestService.Request("AAPL","2020-01-02","2020-01-10",5,20));
+        assertTrue(r.series.size()>1);
+        assertTrue(r.performanceMeasures.stream().anyMatch(m->!"ok".equals(m.status)));
+        for(AllPerformanceMeasures.Metric m:r.performanceMeasures)
+            if(m.value!=null)assertTrue(Double.isFinite(m.value));
+        new com.google.gson.JsonParser().parse(new com.google.gson.Gson().toJson(r));
+    }
+
 }

@@ -11,7 +11,7 @@ docker push "$image"
 gcloud run deploy sma2-web --project="$GCP_PROJECT_ID" --region="$region" --image="$image" \
   --service-account="$GCP_RUNTIME_SERVICE_ACCOUNT" --allow-unauthenticated \
   --port=8080 --cpu=1 --memory=1Gi --concurrency=1 --min-instances=0 --max-instances=2 \
-  --timeout=180 --set-env-vars=SMA2_DATA_MODE=live --set-secrets=/secrets/nm.lic=sma2-nm-license:latest --quiet
+  --timeout=180 --set-env-vars=SMA2_DATA_MODE=live,SMA2_REPORT_BUCKET=$GCP_PROJECT_ID-sma2-reports,SMA2_APP_REVISION=${GITHUB_SHA:-manual} --set-secrets=/secrets/nm.lic=sma2-nm-license:latest --quiet
 url="$(gcloud run services describe sma2-web --project="$GCP_PROJECT_ID" --region="$region" --format='value(status.url)')"
 printf 'Service URL: %s\n' "$url"
 curl --fail --show-error --max-time 30 --retry 8 --retry-all-errors --retry-delay 5 "$url/api/health"
@@ -23,8 +23,8 @@ trap 'rm -f "$report"' EXIT
 curl --fail --show-error --max-time 150 --retry 2 --retry-delay 2 \
   -X POST -d 'symbol=AAPL&start=2016-01-01&end=2020-12-31&fast=5&slow=20' \
   "$url/api/backtest" -o "$report"
-python3 - "$report" <<'PY'
-import json, sys
+python3 - "$report" "$url" <<'PY'
+import json, sys, urllib.request
 r = json.load(open(sys.argv[1]))
 assert r["source"] == "Yahoo Finance daily adjusted close"
 assert len(r["series"]) > 1000 and len(r["executions"]) > 0
@@ -35,6 +35,11 @@ for m in measures:
     assert m["status"] != "unavailable", (m["label"], m["detail"])
     if m["sourceClass"].startswith("RollingAnnualReturn") or m["sourceClass"] == "TreynorRatio":
         assert m["status"] == "ok", (m["label"], m["detail"])
+with urllib.request.urlopen(sys.argv[2]+"/api/reports/"+r["reportId"],timeout=30) as saved:
+    assert json.load(saved) == r
+with urllib.request.urlopen(sys.argv[2]+r["reportPath"],timeout=30) as page:
+    assert page.status == 200
+print("SAVED REPORT VERIFIED:", sys.argv[2]+r["reportPath"])
 print("LIBRARY MEASURES VERIFIED:", len(measures), "scalar results;", len(r["periodMeasures"]), "period tables")
 print("LIVE DEPLOYMENT VERIFIED:", r["symbol"], len(r["series"]), "NAV observations;", len(r["executions"]), "executions")
 PY

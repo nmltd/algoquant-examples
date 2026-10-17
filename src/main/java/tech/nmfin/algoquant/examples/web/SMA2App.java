@@ -21,7 +21,7 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
 import tech.nmfin.algoquant.model.signal.technical.crossover.sma2.SMA2;
 
 /** Runs the published AlgoQuant strategy, keeping mutable simulation state per request. */
-public final class BacktestService {
+public final class SMA2App {
     public static final double CAPITAL = 10000;
     public static final List<String> SYMBOLS = Collections.unmodifiableList(Arrays.asList(
         "AAPL", "MSFT", "AMZN", "GOOGL", "META", "NVDA", "TSLA", "AMD", "INTC", "NFLX",
@@ -32,7 +32,7 @@ public final class BacktestService {
     };
 
     /** Synthetic mode is only enabled by explicit server configuration for offline verification. */
-    public BacktestService(boolean synthetic) { this.synthetic = synthetic; }
+    public SMA2App(boolean synthetic) { this.synthetic = synthetic; }
 
     public static final class Request {
         public final String symbol;
@@ -62,6 +62,8 @@ public final class BacktestService {
     }
     public static final class Result {
         public String symbol, start, end, source, generatedAt;
+        public String reportId, reportPath, appRevision;
+        public int reportSchemaVersion = 1;
         public int fast, slow; public double initialCapital = CAPITAL, finalNav, pnl, totalReturn, maxDrawdown;
         public Double annualizedVolatility, sharpe;
         public List<Point> series = new ArrayList<>(); public List<Fill> executions = new ArrayList<>();

@@ -17,12 +17,15 @@ public final class Sma2Web {
         if (!license.isFile()) throw new IllegalStateException("Configure NM_LICENSE_FILE with a valid server license.");
         License.setLicenseFile(license);
         boolean synthetic = "synthetic".equals(System.getenv("SMA2_DATA_MODE"));
-        HttpServer server = create(Integer.parseInt(System.getenv().getOrDefault("PORT", "8080")), new BacktestService(synthetic));
+        HttpServer server = create(Integer.parseInt(System.getenv().getOrDefault("PORT", "8080")), new SMA2App(synthetic));
         server.start();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(2)));
         System.out.println("SMA2 web listening on " + server.getAddress() + "; synthetic=" + synthetic);
     }
-    static HttpServer create(int port, BacktestService service) throws IOException {
+    static HttpServer create(int port, SMA2App service) throws IOException {
+        return create(port,service,ReportStore.fromEnvironment());
+    }
+    static HttpServer create(int port, SMA2App service, ReportStore reports) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 32);
         Semaphore running = new Semaphore(1);
         server.setExecutor(new ThreadPoolExecutor(4, 4, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(32),
@@ -35,19 +38,37 @@ public final class Sma2Web {
                     String type = e.getRequestHeaders().getFirst("Content-Type");
                     if (type == null || !type.startsWith("application/x-www-form-urlencoded")) { send(e, 415, error("Use form-encoded input.")); return; }
                     Map<String, String> form = form(readLimited(e.getRequestBody()));
-                    BacktestService.Request req;
-                    try { req = new BacktestService.Request(required(form,"symbol"), required(form,"start"), required(form,"end"),
+                    SMA2App.Request req;
+                    try { req = new SMA2App.Request(required(form,"symbol"), required(form,"start"), required(form,"end"),
                         Integer.parseInt(required(form,"fast")), Integer.parseInt(required(form,"slow"))); }
                     catch (IllegalArgumentException ex) { send(e, 400, error(ex.getMessage())); return; }
                     if (!running.tryAcquire()) { e.getResponseHeaders().set("Retry-After", "5"); send(e, 429, error("A backtest is running. Please try again shortly.")); return; }
-                    try { send(e, 200, JSON.toJson(service.run(req))); }
+                    try {
+                        SMA2App.Result result=service.run(req);
+                        String snapshot;
+                        try { snapshot=reports.save(result); }
+                        catch(IOException storageError) {
+                            System.err.println("Report storage failed: "+storageError.getClass().getSimpleName());
+                            send(e,503,error("The backtest completed but its report could not be saved. Please retry later."));return;
+                        }
+                        e.getResponseHeaders().set("Location",result.reportPath);
+                        send(e, 200, snapshot);
+                    }
                     catch (IllegalArgumentException ex) { send(e, 400, error(ex.getMessage())); }
                     catch (Exception ex) { System.err.println("Backtest failed: " + ex.getClass().getSimpleName()); send(e, 502, error("The data provider or simulation could not complete this run. Try another period or retry later.")); }
                     finally { running.release(); }
+                } else if (path.startsWith("/api/reports/") && "GET".equals(e.getRequestMethod())) {
+                    String id=path.substring("/api/reports/".length());
+                    ReportStore.validateId(id);
+                    try {
+                        String snapshot=reports.read(id);
+                        if(snapshot==null)send(e,404,error("Saved report not found."));
+                        else send(e,200,snapshot);
+                    } catch(IOException ex) { send(e,503,error("Saved report storage is temporarily unavailable. Please retry.")); }
                 } else if ("/api/health".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,"{\"status\":\"ok\"}");
-                else if ("/api/stocks".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,JSON.toJson(BacktestService.SYMBOLS));
-                else if (Arrays.asList("/", "/app.js", "/style.css").contains(path) && "GET".equals(e.getRequestMethod())) {
-                    String file = "/".equals(path) ? "index.html" : path.substring(1);
+                else if ("/api/stocks".equals(path) && "GET".equals(e.getRequestMethod())) send(e,200,JSON.toJson(SMA2App.SYMBOLS));
+                else if ((Arrays.asList("/", "/app.js", "/style.css").contains(path) || path.matches("/reports/[a-f0-9]{32}")) && "GET".equals(e.getRequestMethod())) {
+                    String file = ("/".equals(path) || path.startsWith("/reports/")) ? "index.html" : path.substring(1);
                     try (InputStream in = Sma2Web.class.getResourceAsStream("/web/" + file)) {
                         if (in == null) { send(e,404,error("Not found.")); return; }
                         ByteArrayOutputStream body = new ByteArrayOutputStream(); byte[] b = new byte[8192]; int n;

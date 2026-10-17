@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Exercise the real HTTP app. Default: deterministic offline prices; --live: Yahoo."""
-import json, os, subprocess, sys, time, urllib.request, urllib.parse, urllib.error
+import json, os, subprocess, sys, time, tempfile, shutil, urllib.request, urllib.parse, urllib.error
 live = '--live' in sys.argv
 port = '18081' if live else '18080'
-env = dict(os.environ, PORT=port)
+report_dir=tempfile.mkdtemp(prefix='sma2-smoke-reports-')
+env = dict(os.environ, PORT=port, SMA2_REPORT_DIRECTORY=report_dir)
+env.pop('SMA2_REPORT_BUCKET',None)
 if not live: env['SMA2_DATA_MODE'] = 'synthetic'
 else: env.pop('SMA2_DATA_MODE', None)
 proc = subprocess.Popen(['java','-Djava.awt.headless=true','-Dlogback.configurationFile=web/logback.xml',
@@ -43,6 +45,25 @@ try:
     assert all(p['date']>='2020-01-01' and p['date']<='2020-12-31' for p in r['series'])
     status,_,body=request('/api/backtest',fields)
     assert status==200 and json.loads(body)['series']==r['series']
+    assert json.loads(body)['reportId'] != r['reportId']
+    assert request(r['reportPath'])[0] == 200
+    assert json.loads(request('/api/reports/'+r['reportId'])[2]) == r
+    assert request('/api/reports/00000000000000000000000000000000')[0] == 404
+    assert request('/api/reports/invalid-id')[0] == 400
+    # Restart the actual HTTP process; the original snapshot must still load unchanged.
+    command=proc.args
+    proc.terminate();proc.wait(timeout=5)
+    proc=subprocess.Popen(command,env=env)
+    for _ in range(100):
+        try:
+            if request('/api/health')[0]==200:break
+        except OSError:pass
+        time.sleep(.1)
+    else:raise RuntimeError('Server did not restart')
+    status,_,saved=request('/api/reports/'+r['reportId'])
+    assert status==200 and json.loads(saved)==r
+    assert request(r['reportPath'])[0]==200
+    print('Saved report survived server restart:',r['reportPath'])
     os.makedirs('target/web-reports',exist_ok=True)
     with open('target/web-reports/'+('live' if live else 'offline')+'.json','w') as f: json.dump(r,f,indent=2)
     print('HTTP smoke passed:',r['source'],len(r['series']),'NAV observations;',len(r['executions']),'executions')
@@ -50,3 +71,4 @@ finally:
     proc.terminate()
     try: proc.wait(timeout=5)
     except subprocess.TimeoutExpired: proc.kill(); proc.wait()
+    shutil.rmtree(report_dir)

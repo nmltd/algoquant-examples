@@ -8,7 +8,9 @@ const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
 $('end').max = yesterday.toISOString().slice(0,10);
 $('start').max = $('end').max;
 fetch('/api/stocks').then(r=>{if(!r.ok)throw Error('Stock list unavailable.');return r.json();}).then(stocks=>{
- $('symbol').replaceChildren(...stocks.map(s=>new Option(s,s))); $('run').disabled=false;
+ $('symbol').replaceChildren(...stocks.map(s=>new Option(s,s)));
+ $('run').disabled=false;
+ if(location.pathname.startsWith('/reports/'))return loadSavedReport();
  $('status').textContent='Ready. Historical prices are downloaded when you run.';
 }).catch(e=>{$('status').textContent=e.message; $('status').className='error';});
 $('backtest').addEventListener('submit',async e=>{
@@ -20,6 +22,7 @@ $('backtest').addEventListener('submit',async e=>{
  try{
   const r=await fetch('/api/backtest',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(new FormData($('backtest'))),signal:controller.signal});
   const data=await r.json(); if(!r.ok)throw Error(data.error||'Backtest failed.');
+  history.pushState(null,'',data.reportPath);
   current=data; render(data); $('status').textContent='Complete · '+data.series.length+' trading observations.';
  }catch(err){showError(err.name==='AbortError'?'The request timed out. Please retry with a shorter period.':err.message);}
  finally{clearTimeout(timer);$('run').disabled=false;}
@@ -27,6 +30,9 @@ $('backtest').addEventListener('submit',async e=>{
 function showError(msg){$('status').className='error';$('status').textContent=msg;}
 function render(r){
  allGroupsOpen=null;
+ $('measure-filter').value='';
+ $('report-link').href=r.reportPath;
+ $('saved-report-note').textContent='Saved '+r.generatedAt+' · Report '+r.reportId;
  $('report-title').textContent=r.symbol+' / SMA '+r.fast+' days × '+r.slow+' days';
  $('report-meta').textContent=r.start+' → '+r.end+' · USD · '+r.source;
  $('fast-legend').textContent='Fast SMA · '+r.fast+' days';
@@ -120,4 +126,29 @@ $('clear-search').addEventListener('click',()=>{
  $('measure-filter').value='';
  if(current)renderLibrary(current);
  $('measure-filter').focus();
+});
+
+async function loadSavedReport(){
+ $('run').disabled=true;$('status').className='';$('status').textContent='Loading saved report…';
+ try{
+  const id=location.pathname.split('/')[2];
+  if(!/^[a-f0-9]{32}$/.test(id))throw Error('Invalid report link.');
+  const response=await fetch('/api/reports/'+id);
+  const report=await response.json();if(!response.ok)throw Error(report.error||'Saved report unavailable.');
+  current=report;
+  for(const field of ['start','end','fast','slow'])$(field).value=report[field];
+  $('symbol').value=report.symbol;
+  render(report);$('status').textContent='Saved report loaded · '+report.series.length+' trading observations.';
+ }catch(e){current=null;$('report').hidden=true;$('empty').hidden=false;showError(e.message);}
+ finally{$('run').disabled=false;}
+}
+window.addEventListener('popstate',()=>{
+ if(location.pathname.startsWith('/reports/'))loadSavedReport();
+ else{current=null;$('report').hidden=true;$('empty').hidden=false;$('status').textContent='Ready for a new backtest.';}
+});
+$('copy-report-link').addEventListener('click',async()=>{
+ if(!current)return;
+ const link=new URL(current.reportPath,location.origin).href;
+ try{await navigator.clipboard.writeText(link);$('status').className='';$('status').textContent='Saved report link copied.';}
+ catch(e){$('status').textContent='Copy the saved report link: '+link;}
 });

@@ -99,7 +99,8 @@ public final class Sma2Web {
                     }
                 } else send(e,404,error("Not found."));
             } catch (IllegalArgumentException ex) { send(e,400,error(ex.getMessage())); }
-            catch (Exception ex) { System.err.println("HTTP error: " + ex.getClass().getSimpleName()); }
+            catch (Exception ex) { ex.printStackTrace(System.err); send(e,500,error("Report export failed. Please retry.")); }
+            catch (LinkageError ex) { ex.printStackTrace(System.err); send(e,500,error("Report export runtime unavailable.")); }
             finally { e.close(); }
         });
         return server;

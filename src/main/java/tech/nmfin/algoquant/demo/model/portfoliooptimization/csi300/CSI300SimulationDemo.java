@@ -28,7 +28,15 @@ import dev.nm.nmutils.NMUtils;
 import dev.nm.nmutils.plot.api.Chart;
 import dev.nm.solver.multivariate.constrained.general.penaltymethod.PenaltyMethodMinimizer;
 import java.io.File;
-import java.nio.file.Paths;
+import tech.nmfin.algoquant.data.cache.BufferCache;
+import tech.nmfin.algoquant.data.cache.SequentialCacheFactory;
+import tech.nmfin.algoquant.execution.datatype.StockEOD;
+import tech.nmfin.algoquant.execution.datatype.product.ListedProduct;
+import tech.nmfin.algoquant.execution.datatype.product.stock.SimpleStock;
+import tech.nmfin.algoquant.execution.datatype.product.stock.Exchange;
+import tech.nmfin.algoquant.data.historicaldata.china.index.EastmoneyIndexEODWebDownloader;
+import tech.nmfin.algoquant.data.historicaldata.china.index.SinaIndexEODWebDownloader;
+import tech.nmfin.algoquant.data.historicaldata.china.zqf.stock.csi300.CSI300DataProvider;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -57,13 +65,14 @@ import tech.nmfin.portfoliooptimization.corvalan2005.diversification.ProductOfWe
  * <p><b>Using this example.</b>
  * Configures CSI 300 constituents and local adjusted-price files for a portfolio simulation.
  * The constituent CSV and price directory are independent inputs and must cover compatible
- * dates. Set {@code -Dcsi300.indexCsv=/path/to/index.csv} to a genuine CSI300
- * history with header {@code date,close} and ISO dates. Optional properties
- * {@code csi300.constituents} and {@code csi300.prices} override local paths.
+ * dates. The index is downloaded from Eastmoney by default; select Sina with
+ * {@code -Dcsi300.indexSource=sina}. Optional properties {@code csi300.constituents}
+ * and {@code csi300.prices} override the local constituent-data paths. The index
+ * history is validated for calibration coverage before any simulation begins.
  * The default runs buy-and-hold and equal-weight baselines only; opt into the
  * expensive 990-optimizer sweep with {@code -Dcsi300.fullGrid=true}.
- * No network data is downloaded. Reported risk-free rates are assumed zero.
- * Set {@code csi300.showCharts=true} to open chart windows; PNG export is automatic.
+ * Reported risk-free rates are assumed zero. Set {@code csi300.showCharts=true}
+ * to open chart windows; PNG export is automatic.
  * </p>
  *
  * <p><b>Model and publication.</b>
@@ -94,20 +103,50 @@ public class CSI300SimulationDemo {
     }
 
     private final LocalDateTimeInterval interval;
-    private final LocalCSI300DataProvider dataProvider;
+    private final CSI300DataProvider dataProvider;
+    private static final SimpleStock INDEX = new SimpleStock("000300.SS", Exchange.SS);
+    private BufferCache<Double> indexHistory;
 
     public CSI300SimulationDemo(LocalDateTimeInterval interval) throws IOException {
+        this(interval, selectIndexSource());
+    }
+
+    private static SequentialCacheFactory<ListedProduct, StockEOD> selectIndexSource() {
+        String sourceName = System.getProperty("csi300.indexSource", "eastmoney");
+        SequentialCacheFactory<ListedProduct, StockEOD> source;
+        if ("eastmoney".equalsIgnoreCase(sourceName)) {
+            source = new EastmoneyIndexEODWebDownloader();
+        } else if ("sina".equalsIgnoreCase(sourceName)) {
+            source = new SinaIndexEODWebDownloader();
+        } else {
+            throw new IllegalArgumentException("csi300.indexSource must be eastmoney or sina");
+        }
+        LOGGER.info("CSI300 index source: {}; report risk-free rate assumed zero", sourceName);
+        return source;
+    }
+
+    /**
+     * Uses a caller-supplied index feed, for reproducible offline tests or another provider.
+     * @param interval simulation dates
+     * @param source daily CSI300 index observations including calibration history
+     * @throws IOException if constituent membership cannot be read
+     */
+    public CSI300SimulationDemo(LocalDateTimeInterval interval,
+        SequentialCacheFactory<ListedProduct, StockEOD> source) throws IOException {
         this.interval = interval;
-        this.dataProvider = new LocalCSI300DataProvider(
+        this.dataProvider = new CSI300DataProvider(
             System.getProperty("csi300.constituents", "./test-data/china/constituent_index_300.csv"),
             System.getProperty("csi300.prices", "./test-data/china/20070104-20171027/adjust_prices"),
-            Paths.get(System.getProperty("csi300.indexCsv", "./test-data/china/csi300-index.csv")),
-            interval
+            true,
+            LocalDateTimeInterval.of(interval.start().minusYears(1).minusWeeks(2), interval.end()),
+            false,
+            source
         );
     }
 
     public int run() throws IOException {
-        LOGGER.info("CSI300 tutorial: local data only; full research grid enabled={}",
+        validateIndexHistory();
+        LOGGER.info("CSI300 tutorial: full research grid enabled={}",
             Boolean.getBoolean("csi300.fullGrid"));
         Map<NamedParam, Results> results = new LinkedHashMap<>();
 
@@ -130,6 +169,33 @@ public class CSI300SimulationDemo {
         plotCurves(profitCurves);
 
         return results.size();
+    }
+
+    private void validateIndexHistory() throws IOException {
+        LocalDateTime requiredStart = interval.start().minusYears(1).minusWeeks(2);
+        indexHistory = BufferCache.fromSequentialCache(dataProvider.getCache(INDEX,
+            LocalDateTimeInterval.of(requiredStart, interval.end())));
+        if (indexHistory.size() < 2
+                || indexHistory.firstEntry().time().isAfter(requiredStart.plusDays(14))
+                || indexHistory.lastEntry().time().isBefore(interval.end().minusDays(14))) {
+            throw new IOException("CSI300 index history does not cover calibration/simulation: "
+                + requiredStart + " to " + interval.end());
+        }
+        for (TimedEntry<Double> observation : indexHistory) {
+            if (!Double.isFinite(observation.data()) || observation.data() <= 0) {
+                throw new IOException("Invalid CSI300 index value at " + observation.time());
+            }
+        }
+        LOGGER.info("Loaded {} CSI300 index observations: {} to {}", indexHistory.size(),
+            indexHistory.firstEntry().time(), indexHistory.lastEntry().time());
+    }
+
+    private double indexValueAt(LocalDateTime time) {
+        TimedEntry<Double> observation = indexHistory.get(time);
+        if (observation == null || observation.time().isBefore(time.minusDays(14))) {
+            throw new IllegalStateException("Missing or stale CSI300 index observation at " + time);
+        }
+        return observation.data();
     }
 
     private Map<NamedParam, Results> simulateBaseline(LocalDateTimeInterval interval) {
@@ -453,7 +519,7 @@ public class CSI300SimulationDemo {
                     false
                 );
             // Use the actual CSI300 benchmark rather than the simulation's SP500/Yahoo defaults.
-            sim.setBenchmarkLookupFactory("CSI300", ignored -> dataProvider::indexValueAt);
+            sim.setBenchmarkLookupFactory("CSI300", ignored -> this::indexValueAt);
             // Explicit tutorial assumption: zero risk-free rate (not a downloaded US bill yield).
             sim.setRiskFreeRateLookup(time -> 0.0);
             String algoName = param.value("algorithm");
@@ -535,4 +601,5 @@ public class CSI300SimulationDemo {
     }
 
 }
+
 

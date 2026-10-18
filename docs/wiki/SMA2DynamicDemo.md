@@ -42,4 +42,4 @@ Captured total and product P&L: `-1.6673265308268128`. Maximum drawdown: `14.999
 
 Information ratios, Omega and win/loss ratios are `NaN` in this short run. There was only one execution, so these values must not be presented as meaningful risk-adjusted estimates or replaced with zero.
 
-The CSV exports contain performance measures, executions and trades. Permanent copies are under [docs/results/run-38997285630](https://github.com/nmltd/algoquant-examples/tree/main/docs/results/run-38997285630); the original [simulation-reports artifact](https://github.com/nmltd/algoquant-examples/actions/runs/38997285630/artifacts/12087263668) includes logs but is subject to GitHub retention.
+The CSV exports contain performance measures, executions and trades. Permanent copies are under [GitHub Release assets](https://github.com/nmltd/algoquant-examples/releases/tag/demo-results-20261017-run-38997285630); the original [simulation-reports artifact](https://github.com/nmltd/algoquant-examples/actions/runs/38997285630/artifacts/12087263668) includes logs but is subject to GitHub retention.

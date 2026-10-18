@@ -58,6 +58,26 @@ import tech.nmfin.algoquant.execution.performance.measure.byperiod.PeriodByPerio
  */
 public class FactorModelUtils {
 
+    /**
+     * Uses the same supplied HSI history as the Compustat market database.
+     * This keeps historical factor tutorials reproducible without a live Yahoo
+     * request. The configured HSI.csv.zip must cover the requested period.
+     *
+     * @param interval the reporting period
+     * @return an as-of lookup of the local HSI index level
+     * @throws java.io.IOException if the configured archive cannot be read
+     * @throws java.text.ParseException if the archive has invalid dates
+     */
+    public static BenchmarkLookup newHsiBenchmark(LocalDateTimeInterval interval)
+        throws java.io.IOException, java.text.ParseException {
+        String folder = tech.nmfin.algoquant.util.config.AQConfig.defaultConfig()
+            .getString(tech.nmfin.algoquant.util.config.ConfigProperties.DATA_FOLDER.propertyName());
+        BufferCache<Double> cache = BufferCache.fromSequentialCache(
+            new tech.nmfin.algoquant.data.historicaldata.hk.HSIReader(folder + "/HSI.csv.zip")
+                .newInstance(null, LocalDateTimeInterval.of(interval.start().minusMonths(1), interval.end())));
+        return time -> cache.get(time).data();
+    }
+
     public static BenchmarkLookup newBenchmark(String symbol, LocalDateTimeInterval interval) {
         BufferCache<StockEOD> cache
             = BufferCache.fromSequentialCache(

@@ -72,11 +72,13 @@ public class CoinBacktestDemo {
     private static final Logger LOGGER = NMUtils.getClassLogger();
 
     public static void main(String[] args) throws IOException {
+        // The two active algorithms do not use risk aversion or shrinkage.
+        // Sweep the 15 distinct rebalance/window combinations, rather than
+        // executing each experiment nine times with unused parameter labels.
+        // Restore those axes if enabling the commented risk-based estimators.
         Collection<NamedParam> params = new NamedParamFactory()
             .forValues("rebalance", new Period[]{Period.ofMonths(1), Period.ofMonths(3), Period.ofMonths(6), Period.ofMonths(9), Period.ofMonths(12)})
             .forValues("window", new Period[]{Period.ofMonths(3), Period.ofMonths(6), Period.ofMonths(12)})
-            .forDoubleValues("riskAverse", new double[]{500, 1000, 10000})
-            .forDoubleValues("shrinkage", new double[]{0.0, 0.5, 1.0})
             .params();
 
         LocalDateTimeInterval interval
@@ -136,24 +138,32 @@ public class CoinBacktestDemo {
                 //                new MktCapFilter(1e9), // mktcap in USD
                 new MktCapInBTCFilter(1e6, t -> btcEODs.get(t).data().close()) // mktcap in BTC
             );
+        // Preload only products that can pass the point-in-time filter on some
+        // EOD date. BTC covers the daily calendar of this supplied dataset.
+        // The chooser still applies the filter independently at every rebalance;
+        // this union controls data loading, never the trading decision.
+        java.util.Set<CoinProduct> possibleProducts = new java.util.LinkedHashSet<>();
+        for (java.util.Iterator<tech.nmfin.algoquant.data.cache.TimedEntry<EODMktCap>> it
+            = btcEODs.iteratorBetween(interval); it.hasNext();) {
+            possibleProducts.addAll(dataProvider.chooseProducts(it.next().time()));
+        }
+
         SimulationResultsExporter exporter = new SimulationResultsExporter();
         WeightsHistoriesExporter weightsExporter = new WeightsHistoriesExporter();
         params.forEach(param -> {
             try {
                 OptimizationAlgorithmComparisonSimulation sim
                     = new OptimizationAlgorithmComparisonSimulation(
-                        dataProvider.allProducts(interval),
+                        possibleProducts,
                         dataProvider,
                         dataProvider,
                         param.value("rebalance"),
                         param.value("window"),
-                        param.value("riskAverse"),
+                        0., // unused by the active bitcoin-only and equal-weight algorithms
                         String.format(
-                            "Portfolio Optimization Algorithms (%s,%s,%.2f,%.2f)",
+                            "Portfolio Optimization Algorithms (%s,%s)",
                             param.value("rebalance"),
-                            param.value("window"),
-                            param.value("riskAverse"),
-                            param.value("shrinkage")
+                            param.value("window")
                         )
                     );
 

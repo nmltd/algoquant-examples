@@ -181,7 +181,7 @@ public class FundamentalModelStrategyDemo {
         final double initialCapital = param.initialCapital();
         final double transactionFeeRate = param.transactionFeeRate();
 
-        BenchmarkLookup benchmarkLookup = FactorModelUtils.newBenchmark("^HSI", interval);
+        BenchmarkLookup benchmarkLookup = FactorModelUtils.newHsiBenchmark(interval);
         SimulatorBuilder builder0
             = new SimpleSimulatorBuilder()
                 // Initial cash funds the account; order quantities are determined by the strategy.

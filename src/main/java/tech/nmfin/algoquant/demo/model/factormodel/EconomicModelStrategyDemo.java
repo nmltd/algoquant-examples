@@ -396,7 +396,7 @@ public class EconomicModelStrategyDemo {
                     }
                 };
             case HK_23_QUANT:
-                return FactorModelUtils.newBenchmark("^HSI", interval);
+                return FactorModelUtils.newHsiBenchmark(interval);
             default:
                 throw new IllegalArgumentException(
                     "unsupported data source: " + dataSource

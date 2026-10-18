@@ -53,7 +53,7 @@ def classify(code, timed_out, text):
         if re.search(pattern, text):
             return status, explanation
     if code == 0 and 'DEMO_RUNNER_MAIN_RETURNED' in text:
-        if re.search(r'(?:^|\n)(?:.*\bERROR\b.*|[\w.$]+Exception:.*|\s+at [\w.$]+\([^\n]*\.java:\d+\))', text):
+        if re.search(r'(?:^|\n)(?:.*\bERROR\b.*|.*\bWARN\b.*failed to compute.*|[\w.$]+Exception:.*|\s+at [\w.$]+\([^\n]*\.java:\d+\))', text):
             return 'completed-with-errors', 'The main returned but logged a calculation error or stack trace; this is not a verified numerical result.'
         return 'completed', 'The original main returned successfully without a detected calculation error. Read its assumptions before interpreting it.'
     return 'failed', 'The demo raised an exception or did not return normally. This is not a verified numerical result.'

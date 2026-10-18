@@ -97,6 +97,7 @@ def execute(item, output, seconds, heap):
                 # Yahoo cache ZIPs are inputs, not outputs for redistribution.
                 if any(part.lower() in ['yahoo', 'holidays'] for part in path.relative_to(work).parts): continue
                 if path.suffix.lower() == '.zip' and not re.search(r'(?i)(report|performance|pnl|corr|execution|trade)', path.name): continue
+                if 'constituent' in path.name.lower(): continue
                 if path.stat().st_size > 20*1024*1024: continue
                 target = destination/'files'/path.relative_to(work)
                 target.parent.mkdir(parents=True, exist_ok=True)

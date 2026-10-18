@@ -106,6 +106,11 @@ public class CSI300SimulationDemo {
     }
 
     public int run() throws IOException {
+        // A constituent workbook is not the official index price history.
+        // Validate the benchmark before launching the expensive parameter grid;
+        // never publish an empty-history buy-and-hold account as a CSI300 result.
+        dataProvider.getCache(new tech.nmfin.algoquant.execution.datatype.product.stock.SimpleStock(
+            "000300.SS", tech.nmfin.algoquant.execution.datatype.product.stock.Exchange.SS), interval);
         Map<NamedParam, Results> results = new LinkedHashMap<>();
 
         results.putAll(simulateBaseline(interval));

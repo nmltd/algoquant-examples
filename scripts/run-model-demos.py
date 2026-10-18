@@ -42,6 +42,7 @@ def classify(code, timed_out, text):
     if timed_out:
         return 'timeout', 'The original main exceeded the configured execution limit; partial outputs are not a completed result.'
     patterns = [
+        (r'Required CSI300 index history is unavailable', 'blocked-data', 'The official CSI300 benchmark has no observations for the requested period. Supply its real historical price archive; constituents alone cannot reproduce the index.'),
         (r'External database access is not configured', 'blocked-data', 'Requires an explicitly configured database; legacy MySQL access was blocked before authentication.'),
         (r'(?i)(license|licence).*(expired|invalid|not found|not valid|error)', 'blocked-license', 'The external license was not accepted for this calculation.'),
         (r'FileNotFoundException|NoSuchFileException|(?i:does not exist|no such file|cannot find.*file)', 'blocked-data', 'A required local dataset or path is unavailable; see the exception and configured path.'),

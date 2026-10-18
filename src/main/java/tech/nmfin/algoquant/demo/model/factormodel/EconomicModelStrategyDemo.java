@@ -96,13 +96,16 @@ public class EconomicModelStrategyDemo {
 
     private static final Logger LOGGER = getClassLogger();
 
-    private static final SQLParam sqlParam
-        = new SQLParam(
-            "35.187.239.60:3306",
-            "compustat",
-            "quant23_010",
-            "q23010@)!&"
+    // The default HK example uses files. Optional USA data require a separately
+    // configured database; credentials must come from the caller's environment.
+    private static SQLParam sqlParam() {
+        return new SQLParam(
+            System.getenv("AQ_DATABASE_HOST"),
+            System.getenv("AQ_DATABASE_NAME"),
+            System.getenv("AQ_DATABASE_USER"),
+            System.getenv("AQ_DATABASE_PASSWORD")
         );
+    }
 
     public static void main(String[] args) throws Exception {
         /**
@@ -197,7 +200,9 @@ public class EconomicModelStrategyDemo {
         final LocalDateTimeInterval simInterval = simParam.simInterval();
         final LocalDateTimeInterval dataInterval
             = LocalDateTimeInterval.of(
-                simInterval.start().minus(strategyParam.dataWindow()),
+                // Extra snapshots cover lagged factor returns at the estimation boundary.
+                simInterval.start().minus(strategyParam.dataWindow())
+                    .minus(strategyParam.rebalanceFreq().multipliedBy(2)),
                 simInterval.end()
             );
 
@@ -226,6 +231,7 @@ public class EconomicModelStrategyDemo {
 
         FactorStrategy strategy
             = new FactorStrategy(strategyParam);
+        strategy.warmUp(marketHistory, simInterval.start());
 
         OrderBookCaches orderBookCaches
             = MarketSnapshotUtils.getOrderBookCaches(
@@ -285,7 +291,7 @@ public class EconomicModelStrategyDemo {
 
         // run the strategy
         // run delivers events and applies the configured execution model; inspect fills as well as NAV.
-        PerformanceReport report = simulator.run(strategy, dataInterval);
+        PerformanceReport report = simulator.run(strategy, simInterval);
 
         Map<PeriodByPeriodMeasure, List<IntervalValue>> byPeriodMeasures
             = byPeriodMeasures(
@@ -357,7 +363,7 @@ public class EconomicModelStrategyDemo {
                 );
             case USA_23_QUANT:
                 return new MarketDB_US_Compustat(
-                    sqlParam,
+                    sqlParam(),
                     dataInterval,
                     rebalanceFreq,
                     simParam.priceMin(),
@@ -382,7 +388,7 @@ public class EconomicModelStrategyDemo {
         switch (dataSource) {
             case USA_23_QUANT:
                 RandomAccessCache<Double> marketValues
-                    = new CompustatSQLSP500(sqlParam).getMarketValues(interval);
+                    = new CompustatSQLSP500(sqlParam()).getMarketValues(interval);
                 return new BenchmarkLookup() {
                     @Override
                     public double valueAt(LocalDateTime t) {

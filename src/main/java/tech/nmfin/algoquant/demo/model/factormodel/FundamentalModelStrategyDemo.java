@@ -146,7 +146,8 @@ public class FundamentalModelStrategyDemo {
     ) throws Exception {
         final LocalDateTimeInterval dataInterval
             = LocalDateTimeInterval.of(
-                interval.start().minus(param.dataWindow()),
+                interval.start().minus(param.dataWindow())
+                    .minus(param.rebalanceFreq().multipliedBy(2)),
                 interval.end()
             );
 
@@ -155,7 +156,7 @@ public class FundamentalModelStrategyDemo {
 
         MarketHistory marketHistory
             = MarketHistoryProcessor.process(marketHistory0)
-                .by(new EquiTimeSampler<>(interval.start(), param.rebalanceFreq()))
+                .by(new EquiTimeSampler<>(dataInterval.start(), param.rebalanceFreq()))
                 .save();
 
         int count = 0;
@@ -167,6 +168,8 @@ public class FundamentalModelStrategyDemo {
 
         FactorStrategy strategy
             = new FactorStrategy(param);
+        // Deliver calibration observations without allowing any pre-period trades.
+        strategy.warmUp(marketHistory, interval.start());
 
         OrderBookCaches orderBookCaches
             = MarketSnapshotUtils.getOrderBookCaches(

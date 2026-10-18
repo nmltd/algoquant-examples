@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Keep numerical reports and all warnings/errors; avoid per-event DEBUG output and rolling ZIP compression in batch runs. -->
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>%date{HH:mm:ss.SSS} [%thread] %-5level %logger{48} - %msg%n</pattern></encoder>
+    </appender>
+    <root level="INFO"><appender-ref ref="CONSOLE"/></root>
+</configuration>

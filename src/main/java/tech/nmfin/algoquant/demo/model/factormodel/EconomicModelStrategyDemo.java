@@ -200,9 +200,9 @@ public class EconomicModelStrategyDemo {
         final LocalDateTimeInterval simInterval = simParam.simInterval();
         final LocalDateTimeInterval dataInterval
             = LocalDateTimeInterval.of(
-                // Extra snapshots cover lagged factor returns at the estimation boundary.
+                // Include six-month accounting lags, factor holding periods and sampling boundaries.
                 simInterval.start().minus(strategyParam.dataWindow())
-                    .minus(strategyParam.rebalanceFreq().multipliedBy(2)),
+                    .minus(Period.ofYears(1)).minus(strategyParam.rebalanceFreq()),
                 simInterval.end()
             );
 

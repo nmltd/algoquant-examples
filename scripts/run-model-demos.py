@@ -70,6 +70,7 @@ def execute(item, output, seconds, heap):
     (work / 'log/demo').mkdir(exist_ok=True)
     cp = os.pathsep.join([str(ROOT/'target/model-runner'), str(ROOT/'target/classes'), str(ROOT/'target/lib/*')])
     command = ['xvfb-run', '-a', 'java', '-Xmx' + heap, '-Djava.awt.headless=false',
+               '-Dlogback.configurationFile=' + str(ROOT/'config/model-demo-logback.xml'),
                '-Dsun.net.client.defaultConnectTimeout=20000', '-Dsun.net.client.defaultReadTimeout=30000',
                '-Dnm.license=' + os.environ.get('NM_LICENSE_FILE', str(ROOT/'license/nm.lic')),
                '-cp', cp, 'ModelDemoRunner', item['class']]

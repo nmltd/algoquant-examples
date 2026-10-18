@@ -124,7 +124,8 @@ public class FundamentalModelStrategyDemo {
                 factors,
                 dataWindow,
                 riskParameter,
-                new FundamentalFactorModel(factors, returnCalc)
+                // Fit monthly observations across three years, independently of the rebalance period.
+                new FundamentalFactorModel(factors, returnCalc, dataWindow)
             );
         param.setRebalanceFreq(rebalanceFreq);
         param.setInitialCapital(initialCapital);
@@ -147,7 +148,7 @@ public class FundamentalModelStrategyDemo {
         final LocalDateTimeInterval dataInterval
             = LocalDateTimeInterval.of(
                 interval.start().minus(param.dataWindow())
-                    .minus(param.rebalanceFreq().multipliedBy(2)),
+                    .minus(Period.ofYears(1)).minus(param.rebalanceFreq()),
                 interval.end()
             );
 

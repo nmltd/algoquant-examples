@@ -70,7 +70,7 @@ if __name__=='__main__':
               'runnable_count':len(expected),'support_classes':[x for x in inventory if not x['runnable']],
               'results':records}
     (RESULTS/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    summary='# Quantitative model demo run results\n\n'
+    summary='# AlgoQuant example execution records\n\n'
     summary+='Run ['+RUN+']('+REPO+'/actions/runs/'+RUN+'), generated '+UTC+'. Source: `'+SHA+'`.\n\n'
     summary+='This run attempted **%d runnable demos**; **%d support classes** have no main entry point.\n\n'%(len(records),len(manifest['support_classes']))
     summary+='| Outcome | Count |\n| --- | ---: |\n'+''.join('| '+status+' | '+str(count)+' |\n' for status,count in sorted(counts.items()))
@@ -82,8 +82,8 @@ if __name__=='__main__':
     summary+='| Demo tutorial | Status | Seconds | Data mode |\n| --- | --- | ---: | --- |\n'
     for item in sorted(records,key=lambda x:x['source']):
         slug='Model-'+item['name'];summary+='| ['+item['name']+']('+WIKI_URL+slug+') | '+item['status']+' | %.2f | '%item['seconds']+item['mode']+' |\n'
-        page='# '+item['name']+' — quantitative model tutorial\n\n'
-        page+='[All quantitative model results]('+WIKI_URL+'Home#model-demo-results) · [Pinned source]('+REPO+'/blob/'+SHA+'/'+item['source']+') · [Javadoc](https://nmltd.github.io/algoquant-examples/'+item['class'].replace('.','/')+'.html)\n\n'
+        page='# '+item['name']+' — AlgoQuant example\n\n'
+        page+='[Tutorials and quantitative model references]('+WIKI_URL+'Home) · [Pinned source]('+REPO+'/blob/'+SHA+'/'+item['source']+') · [Javadoc](https://nmltd.github.io/algoquant-examples/'+item['class'].replace('.','/')+'.html)\n\n'
         intro=introductions[item['name']]
         page+='<!-- MODEL_INTRO_START -->\n## '+intro['heading']+'\n\n'+intro['text'].strip()+'\n<!-- MODEL_INTRO_END -->\n\n'
         page+='## What this example teaches\n\n'+narrative(item['source'])+'\n\n'

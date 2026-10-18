@@ -125,6 +125,7 @@ if __name__ == '__main__':
     parser.add_argument('--seconds', type=int, default=180)
     parser.add_argument('--workers', type=int, default=2)
     parser.add_argument('--heap', default='1200m')
+    parser.add_argument('--historical-resources', action='store_true', help='Use the documented larger limits for long historical demonstrations')
     parser.add_argument('--only', help='Run one class by its simple or qualified name')
     args=parser.parse_args()
     output=(ROOT/args.output).resolve();output.mkdir(parents=True,exist_ok=True)
@@ -134,5 +135,13 @@ if __name__ == '__main__':
         runs=[x for x in runs if args.only in [x['name'],x['class']]]
         if not runs: parser.error('No matching runnable demo')
     with ThreadPoolExecutor(args.workers) as pool:
-        results=list(pool.map(lambda item:execute(item, output, args.seconds, args.heap),runs))
+        large = {'CoinBacktestDemo', 'CSI300SimulationDemo', 'MultiPeriodKagiMRStrategyDemo',
+                 'KagiMRBasketSimulationDemo', 'EconomicModelStrategyDemo', 'FundamentalModelStrategyDemo'}
+        def run(item):
+            historical = args.historical_resources and item['name'] in large
+            return execute(item, output, 1800 if historical else args.seconds,
+                           '6g' if historical else args.heap)
+        if args.historical_resources and args.workers != 1:
+            parser.error('--historical-resources requires --workers 1 to keep total heap bounded')
+        results=list(pool.map(run,runs))
     (output/('shard-%d.json'%args.shard)).write_text(json.dumps(results,indent=2)+'\n')

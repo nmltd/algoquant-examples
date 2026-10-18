@@ -175,10 +175,22 @@ class Charts:
                 text=text.replace(str(horizon)+':\nPerformance Report:', '\n'+str(horizon)+':\nPerformance Report:')
         self.reports(table_blocks(text),source)
         vectors=[]
-        for match in re.finditer(r'(optimal weights|diversified weights|full w|w|x1|x2|Markowitz model weights):\s*\[([^\]]+)\]',text):
+        for match in re.finditer(r'([A-Za-z0-9][A-Za-z0-9-]* model weights|optimal weights|diversified weights|full w|w|x1|x2):\s*\[([^\]]+)\]',text):
             values=[number(v) for v in match[2].split(',')]
             vectors.append((match[1],list(range(1,len(values)+1)),values))
         if vectors:self.save('Optimizer allocation vectors',vectors,source,kind='line' if max(len(v[1]) for v in vectors)>30 else 'bar',note='Input asset-column indices; weights are fractions, not monetary P/L. Printed precision is retained.')
+        # Each scenario has its own scale; compare estimators within a case,
+        # without pooling distances from differently scaled random inputs.
+        covariance_errors=re.findall(r'distances/errors:\s*\[([^\]]+)\]',text)
+        covariance_panels=[]
+        for index, values in enumerate(covariance_errors,1):
+            cells=values.split(',')
+            if len(cells)==3:
+                covariance_panels.append(('Scenario '+str(index),
+                    ['Sample covariance','Linear shrinkage','Nonlinear shrinkage'],cells))
+        if covariance_panels:
+            self.save('Covariance eigenvalue estimation errors',covariance_panels,source,
+                note='Euclidean distance between covariance eigenvalue vectors. Scenario order follows main; dimensions, distributions and scales differ. These errors are not investment returns and do not establish a universal estimator ranking.')
         dated=re.findall(r'^([0-9]{4}-[0-9]{2}-[0-9]{2}):\s*('+NUMBER+r')\s*$',text,re.M)
         if dated:self.save('Printed daily account series',[('Value as printed',[r[0] for r in dated],[r[1] for r in dated])],source,kind='line',note='Uses only the values actually printed; a flat zero series remains flat and is not evidence of profitable trading.')
         # OU diagnostic paths reset their time index for each demonstration path.

@@ -41,7 +41,7 @@ jobs:
   demos:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       max-parallel: 6
@@ -67,7 +67,7 @@ jobs:
       - name: Execute each assigned demo and record actual results
         env:
           NM_LICENSE_FILE: ${{ github.workspace }}/license/nm.lic
-        run: python3 scripts/run-model-demos.py --shard ${{ matrix.shard }} --shards 6 --workers 2 --seconds 180 --heap 1200m
+        run: python3 scripts/run-model-demos.py --shard ${{ matrix.shard }} --shards 6 --workers 1 --historical-resources
       - uses: actions/upload-artifact@v4
         if: always()
         with:

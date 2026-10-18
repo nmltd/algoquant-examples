@@ -139,6 +139,16 @@ def apply(wiki,introductions):
         text=text.replace(BASE+'Home#model-demo-results',BASE+'Home')
         text=text.replace(BASE+'Model-demo-results',BASE+'Execution-records')
         path.write_text(text)
+    # Keep old technical-run URLs useful, while directing learners to the
+    # maintained tutorial pages and identifying the historical outputs as such.
+    for name,_,_ in TUTORIALS[:6]:
+        legacy_page=wiki/(name+'.md')
+        if legacy_page.exists():
+            text=legacy_page.read_text()
+            if '<!-- LEGACY_TUTORIAL_NOTE -->' not in text:
+                first,rest=text.split('\n\n',1)
+                text=first+'\n\n<!-- LEGACY_TUTORIAL_NOTE -->\nThis is an earlier **AlgoQuant usage tutorial** record. Its numerical results are irrelevant to the teaching purpose. See the [maintained tutorial]('+BASE+'Model-'+name+') and the [learning directory]('+BASE+'Tutorials).\n\n'+rest
+                legacy_page.write_text(text)
     index.write_text('# Example execution records\n\nStart with the [wiki home]('+BASE+'Home) for tutorials first, followed by quantitative model references. The complete measured run inventory is retained under [Execution records]('+BASE+'Execution-records).\n')
     sidebar='# AlgoQuant\n\n[Home]('+BASE+'Home)\n\n## Learn the framework\n\n[Tutorial directory]('+BASE+'Tutorials)\n\n'
     sidebar+=''.join('- ['+name+']('+BASE+'Model-'+name+')\n' for name,_,_ in TUTORIALS[:6])

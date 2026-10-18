@@ -66,6 +66,19 @@ def apply(wiki, introductions):
     sidebar=wiki/'_Sidebar.md'
     if sidebar.exists():
         sidebar.write_text(sidebar.read_text().replace('[[Model demo results|Model-demo-results]]','[Model demo results]('+HOME+')'))
+    # Keep the original results anchor usable after changing visible headings.
+    for path in [home_path,index,sidebar]+paths:
+        if not path.exists():continue
+        text=path.read_text()
+        text=text.replace('# AlgoQuant model tutorials','# AlgoQuant quantitative model tutorials')
+        text=text.replace('Explore the models,','Explore quantitative models,')
+        text=text.replace('## Model demo results','<a id="model-demo-results"></a>\\n## Quantitative model demo results')
+        text=text.replace('# Model demo results','# Quantitative model demo results')
+        text=text.replace('[Model demo results]','[Quantitative model demo results]')
+        text=text.replace('[All model results]','[All quantitative model results]')
+        text=text.replace('all 41 model tutorials','all 41 quantitative model tutorials')
+        text=text.replace(' — execution tutorial',' — quantitative model tutorial')
+        path.write_text(text)
     assert home_path.read_text().count('| Demo tutorial | Status |')==1
     assert all((wiki/('Model-'+name+'.md')).read_text().count(INTRO_START)==1 for name in data)
     print('Merged results into Home; updated %d model tutorial introductions.'%len(data))

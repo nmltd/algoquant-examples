@@ -8,3 +8,6 @@ web/build/
 gha-creds-*.json
 
 reports/
+
+# Generated tutorial outputs are archived as GitHub Release assets.
+/docs/results/

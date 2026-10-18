@@ -150,3 +150,32 @@ The [tools homepage disclaimer](https://tools.nmfin.tech/#disclaimer) covers all
 [AlgoQuant Javadoc](https://nmltd.github.io/algoquant/) · [Minimal starter](https://github.com/nmltd/new-algoquant-project) · [Public distributions](https://github.com/nmltd/maven-packages) · [Example results Wiki](https://github.com/nmltd/algoquant-examples/wiki)
 
 The example sources retain their original copyright and license notices. The underlying AlgoQuant/NM Dev libraries require a valid NM license.
+
+## Complete demo collection
+
+The remaining 57 Java demo/support files from `nmltd/algoquant/demo` are now alongside
+the existing technical examples under `src/main/java/tech/nmfin/algoquant/demo`.
+Their packages and class names are preserved. Configuration, the historical-data
+fixtures (about 334 MB) and IB container assets live at `config/`, `test-data/`
+and `ibdemo/`, so relative data paths still work from this repository's root.
+The old private demo POM is superseded by this repository's standalone public-consumer POM.
+
+Compile and package all examples without running tests:
+
+```bash
+mvn -B -ntp -Dmaven.test.skip=true clean package
+```
+
+Run a selected class from the repository root with your NM license on the classpath:
+
+```bash
+java -cp 'license:target/classes:target/lib/*' tech.nmfin.algoquant.demo.model.tutorial.TutorialStrategyDemo
+```
+
+The imported demos cover charts, historical data, IB execution, simulation,
+mean reversion, factor models, portfolio optimization and volatility arbitrage.
+Unlike the six synthetic technical demos, many need a desktop, network data,
+database access, custom file paths or a configured broker. Read each class before
+running it; do not run `RunAllDemo` as an offline smoke test.
+
+See [the migration record](docs/demo-migration.md) for provenance and validation.

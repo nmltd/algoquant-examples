@@ -28,6 +28,13 @@ import java.io.IOException;
 import tech.nmfin.algoquant.execution.component.chart.ChartUtils;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Builds a chart from the small arrays embedded in main and saves log/multi.png. Follow the
+ * series labels and array ordering together when replacing the sample values; this example
+ * demonstrates rendering rather than strategy simulation.
+ * </p>
+ */
 @Demo
 public class MultiChartDemo {
 

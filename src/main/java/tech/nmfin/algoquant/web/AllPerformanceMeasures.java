@@ -20,7 +20,16 @@ import tech.nmfin.algoquant.execution.performance.measure.var.*;
 import tech.nmfin.algoquant.execution.performance.rolling.RollingMaxExposure.ExposureType;
 import tech.nmfin.returns.ReturnsCalculators;
 
-/** Explicit, reviewable library-measure catalog. No substitute formulas or silent zero fallbacks. */
+/**
+ * Explicit, reviewable library-measure catalog. No substitute formulas or silent zero fallbacks.
+ *
+ * <p><b>Using this example.</b>
+ * Construct the catalog with the actual interval, NAV history, cash balance, blotter and
+ * market caches, then evaluate the registered KeyedMeasure instances. Keep metric units and
+ * availability notes with the values: undefined ratios must not be replaced by zero. Trade
+ * measures require real executions and cannot be inferred from NAV alone.
+ * </p>
+ */
 public final class AllPerformanceMeasures {
     public static final class Metric {
         public String group, label, sourceClass, unit, detail, status, display;
@@ -48,6 +57,19 @@ public final class AllPerformanceMeasures {
     private final SimpleTradeCalculator trades = new SimpleTradeCalculator();
     private static final String PERIOD_NOTE = "Simple returns; calendar buckets with flat values outside partial edge periods. SMA lags, unlike these buckets, count trading sessions.";
 
+    /**
+     * Captures the inputs used by the library's performance-measure constructors.
+     *
+     * @param interval account measurement interval
+     * @param capital initial account balance in the example's USD convention
+     * @param nav chronological account NAV including the initial balance
+     * @param fills actual simulated executions; an empty list is not evidence of no trades
+     *              when analyzing an imported NAV-only account
+     * @param books product order books used by execution-dependent measures
+     * @param benchmark lookup used for CAPM comparisons
+     * @param benchmarkError explanation when benchmark-dependent results are unavailable
+     * @param daily successive daily simple returns, as fractions rather than percentages
+     */
     public AllPerformanceMeasures(LocalDateTimeInterval interval, double capital,
             SequentialCache<Double> nav, List<Execution> fills, OrderBookCaches books,
             BenchmarkLookup benchmark, String benchmarkError, double[] daily) {

@@ -60,6 +60,23 @@ import tech.nmfin.returns.ReturnsCalculators;
  * {@code --quick} reduces both the date range and parameter grid for a smoke run.
  * Defaults to synthetic data; {@code --live} enables Yahoo downloads.
  * Performance, execution and trade CSV files are written by SimulationResultsExporter.
+ *
+ * <p><b>Using this example.</b>
+ * Separates trailing-window calibration from subsequent strategy execution and exports results
+ * for multiple parameter combinations. Use --quick for the smaller example configuration.
+ * Repeated calibration requires fresh strategy state; report rows belong to their own
+ * parameter set and should not be concatenated into one account.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The signal compares a fast and a slow arithmetic mean of prices. A fast mean above or below
+ * the slow mean produces a directional target after the required history is available. Lag
+ * parameters count observations. SMA2DynamicDemo additionally recalibrates parameters on
+ * trailing windows; that procedure is separate from the crossover formula.
+ * </p>
  */
 @Demo
 public class SMA2DynamicDemo {
@@ -156,6 +173,7 @@ public class SMA2DynamicDemo {
 
         LOGGER.info("running strategy {}...", strategy);
 
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         // Check that simulation produced finite NAV values, then print its performance report.
         DemoSupport.verify(report);
@@ -167,6 +185,7 @@ public class SMA2DynamicDemo {
         return Arrays.asList(KeyedMeasure.measures(
             new ProfitLoss(),
             new InformationRatioForZeroInvestment(Period.ofYears(1), 0.),
+            // The period is a calendar return bucket; the constant benchmark is a return per bucket.
             new InformationRatioForPeriods(
                 Period.ofYears(1),
                 ReturnsCalculators.SIMPLE),
@@ -193,8 +212,11 @@ public class SMA2DynamicDemo {
                 interval
             );
         return new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
+            // Initial cash funds the account; order quantities are determined by the strategy.
             .withInitialCash(capital0)
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(measures)
             .build();
     }

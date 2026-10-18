@@ -63,6 +63,13 @@ import tech.nmfin.trend.kst1995.KnightSatchellTran1995;
  * This example, using Monte Carlo simulation, runs the {@linkplain GMA12}
  * strategy on returns generated from a {@linkplain KnightSatchellTran1995}
  * model. The results can then be compared to the analytical results.
+ *
+ * <p><b>Using this example.</b>
+ * Supplies MCSimulation with factories for generated order-book paths, strategies and
+ * simulators. AlwaysFillModel is an explicit optimistic execution assumption; the per-trade
+ * statistic uses SimpleTradeCalculator, whose trade definition differs from the cited model.
+ * Repeated runs are simulated scenarios, not out-of-sample evidence.
+ * </p>
  */
 @Demo
 public final class MCSimulationDemo {
@@ -157,6 +164,7 @@ public final class MCSimulationDemo {
                 public Simulator build() {
                     SimpleSimulator simulator
                         = builder
+                            // Explicit measures replace the default measure selection; keep these instances per run.
                             .withMeasures(MEASURE)
                             .useLimitOrderExecutionModel(new AlwaysFillModel())
                             .build();

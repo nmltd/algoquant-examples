@@ -37,6 +37,12 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Loads tick history from test-data/sgx/SiMSCI using SGXTickDataCacheFactory. Run from the
+ * repository root so the relative directory resolves; a cache factory selects and parses data,
+ * it does not submit orders.
+ * </p>
  * @author Haksun Li
  */
 @Demo

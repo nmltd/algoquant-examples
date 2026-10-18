@@ -34,7 +34,27 @@ import tech.nmfin.trend.kst1995.KnightSatchellTran1995MLE;
 /**
  * Compares the fitted model with the real model.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Generates observations from a configured Knight-Satchell-Tran model and fits its parameters
+ * by maximum likelihood. Compare fitted and generating parameters to understand the estimator;
+ * finite samples and random draws affect the result.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * The original model concerns asymmetric upward and downward returns. The publication identity
+ * was verified, but its full text was unavailable; distributional and estimator details below
+ * follow the code/API, not an asserted paper reproduction.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Generate N=100 returns from KnightSatchellTran1995, fit them with
+ * KnightSatchellTran1995MLE.fitModel and compare generating versus fitted parameters. The
+ * parameters supplied to the constructor govern the return generator; GMA12 then computes model-
+ * based holding-time and long-return statistics. These are analytical/simulation diagnostics
+ * without a funded trading account.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1080/13504869500000009">J. L. Knight, S. E. Satchell and K. C. Tran (1995), Statistical modelling of asymmetric risk in asset returns, Applied Mathematical Finance 2(3), 155–172</a>
  */
 @Demo
 public class KnightSatchellTran1995MLEDemo {

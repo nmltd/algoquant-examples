@@ -9,7 +9,16 @@ import tech.nmfin.algoquant.execution.performance.measure.BenchmarkLookup;
 import java.time.*;
 import java.util.*;
 
-/** Shared NAV-only analysis: do not manufacture trades, fees or positions from account values. */
+/**
+ * Shared NAV-only analysis: do not manufacture trades, fees or positions from account values.
+ *
+ * <p><b>Using this example.</b>
+ * Use this adapter for imported account values when there is no order or execution history.
+ * The NAV cache can support return and drawdown measures, but cannot establish commissions,
+ * positions or completed trades. Preserve that distinction in output labels and availability
+ * flags.
+ * </p>
+ */
 public final class NavSeriesAnalysis {
     public static List<AllPerformanceMeasures.Metric> metrics(
             List<String> dates, List<Double> values, double capital, BenchmarkLookup benchmark) {

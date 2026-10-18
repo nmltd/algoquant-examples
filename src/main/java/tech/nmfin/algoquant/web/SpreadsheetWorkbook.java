@@ -10,7 +10,15 @@ import java.util.zip.*;
 import org.supercsv.io.CsvListReader;
 import org.supercsv.prefs.CsvPreference;
 
-/** Small OOXML export of one immutable snapshot; no desktop or spreadsheet runtime required. */
+/**
+ * Small OOXML export of one immutable snapshot; no desktop or spreadsheet runtime required.
+ *
+ * <p><b>Using this example.</b>
+ * Packages existing snapshot data into OOXML worksheets and obtains scalar measure rows
+ * through PerformanceCsv. Numeric values remain numeric cells while display styles control
+ * decimal formatting. This utility writes exports without recalculating strategy performance.
+ * </p>
+ */
 public final class SpreadsheetWorkbook {
     public static final String MIME="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     public static final String NS="http://schemas.openxmlformats.org/spreadsheetml/2006/main";

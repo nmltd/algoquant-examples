@@ -57,6 +57,26 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Demonstrates another (simpler) way of coding
  * {@linkplain Elliott2005StrategyDemo1} using a template.
+ *
+ * <p><b>Using this example.</b>
+ * Expresses the Elliott example as a SimTemplateYahooEOD specification instead of assembling
+ * the simulator directly. SimTemplateUtils.run consumes the overridden strategy, products,
+ * measures and plotter. Compare this with Elliott2005StrategyDemo1 to learn the two setup
+ * styles.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * The linked publication supplies the noisy mean-reverting-spread framework. See
+ * Elliott2005StrategyDemo1 for the distinction between that framework and the selected
+ * customization.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The same strategy is assembled through SimTemplateYahooEOD overrides and SimTemplateUtils.run.
+ * Follow newStrategy() for the active coefficients and calibration window; measures and
+ * execution count are independent template choices. The template is a wiring abstraction, not a
+ * different statistical model.
+ * </p>
+ * @see <a href="https://doi.org/10.1080/14697680500149370">R. J. Elliott, J. van der Hoek and W. P. Malcolm (2005), Pairs trading, Quantitative Finance 5(3), 271–276</a>
  */
 @Demo
 public class Elliott2005StrategyDemo2 {
@@ -135,6 +155,7 @@ public class Elliott2005StrategyDemo2 {
                         Period.ofYears(1),
                         0.
                     ),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.ABSOLUTE,

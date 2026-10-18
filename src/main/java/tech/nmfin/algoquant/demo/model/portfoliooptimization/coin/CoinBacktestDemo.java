@@ -48,7 +48,24 @@ import tech.nmfin.algoquant.model.portfoliooptimization.simulation.PortfolioOpti
 /**
  * Compares the different asset allocation algorithms.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Loads the local crypto-markets CSV ZIP through JesseventCoinDataUtils and compares
+ * allocation algorithms. The dataset path is test-data/coin/crypto-markets.csv.zip; its
+ * historical coverage and constituent selection constrain the comparison.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Reuses asset-allocation algorithms on a historical crypto dataset; a crypto universe and
+ * rebalancing experiment are not a reproduction of Markowitz’s original illustrations. Inspect
+ * listing dates, missing observations and constituent selection before interpreting optimizer
+ * comparisons.
+ * </p>
  * @author Ken Yiu
+ * @see <a href="https://doi.org/10.1111/j.1540-6261.1952.tb01525.x">H. Markowitz (1952), Portfolio Selection, Journal of Finance 7(1), 77–91</a>
  */
 public class CoinBacktestDemo {
 

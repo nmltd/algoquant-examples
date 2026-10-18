@@ -38,6 +38,24 @@ import tech.nmfin.algoquant.execution.performance.measure.BenchmarkLookup;
 import tech.nmfin.algoquant.execution.performance.measure.byperiod.IntervalValue;
 import tech.nmfin.algoquant.execution.performance.measure.byperiod.PeriodByPeriodMeasure;
 
+/**
+ * <p><b>Using this example.</b>
+ * Supports factor-model demonstrations with benchmark and report utilities. Read the callers
+ * for the chosen currency and measurement period; a benchmark lookup is a comparison series,
+ * not an independently simulated strategy account.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * This is reporting/benchmark support for the factor examples, not an implementation of the
+ * Fama–French research portfolios.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * newBenchmark loads a comparison series, and byPeriodMeasures assembles report statistics.
+ * These helpers do not construct SMB/HML or estimate factor loadings; read the strategy demo and
+ * model objects for those steps.
+ * </p>
+ * @see <a href="https://doi.org/10.1016/0304-405X(93)90023-5">E. F. Fama and K. R. French (1993), Common risk factors in the returns on stocks and bonds, Journal of Financial Economics 33(1), 3–56</a>
+ */
 public class FactorModelUtils {
 
     public static BenchmarkLookup newBenchmark(String symbol, LocalDateTimeInterval interval) {

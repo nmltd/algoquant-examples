@@ -23,7 +23,16 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
 import java.time.*;
 import java.util.*;
 
-/** Reusable, independently funded S&P 500 price-index buy-and-hold simulation. */
+/**
+ * Reusable, independently funded S&amp;P 500 price-index buy-and-hold simulation.
+ *
+ * <p><b>Using this example.</b>
+ * Call run(start, end, capital) to obtain a separately simulated, funded S&amp;P 500 account and
+ * its statistics. The source is the Yahoo price index, not a dividend-reinvested total-return
+ * index. Reuse the same dates and capital when comparing another strategy; join daily output
+ * by date, not array position.
+ * </p>
+ */
 public final class BuyAndHoldBenchmark {
     public static final String SYMBOL = "^GSPC";
 

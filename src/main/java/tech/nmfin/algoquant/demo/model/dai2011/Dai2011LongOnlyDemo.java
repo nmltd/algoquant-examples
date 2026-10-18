@@ -50,6 +50,26 @@ import tech.nmfin.returns.ReturnsCalculators;
 
 /**
  * Demonstrates the Dai's optimal trend following trading strategy.
+ *
+ * <p><b>Using this example.</b>
+ * Constructs Dai2011LongOnly, supplies Yahoo order books and initial capital, then runs the
+ * simulator and reads its PerformanceReport. The plotter opens a desktop chart. Inspect the
+ * model parameters and trade sizing independently of the initial cash balance.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * The paper models bull/bear drift as an unobserved Markov state. A filtered bull probability
+ * drives entry and exit boundaries for a transaction-cost-aware stopping problem. The package’s
+ * 2011 label differs from the linked 2010 journal publication.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Dai2011LongOnly adapts the idea with a three-year burn-in, yearly recalibration, a
+ * 21-observation regime-identification window, threshold 0.10 and rho=0. These are example
+ * calibration choices, not the paper’s complete experiment. Read its additional sizing and stop
+ * logic before comparing results. Initial cash is 1,000,000; report measures mix SIMPLE
+ * information-ratio returns with ABSOLUTE Omega inputs, so their scales differ.
+ * </p>
+ * @see <a href="https://doi.org/10.1137/090770552">M. Dai, Q. Zhang and Q. J. Zhu (2010), Trend Following Trading under a Regime Switching Model, SIAM Journal on Financial Mathematics 1, 780–810</a>
  */
 @Demo
 public class Dai2011LongOnlyDemo {
@@ -100,7 +120,9 @@ public class Dai2011LongOnlyDemo {
             );
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches) // true price
+                // Initial cash funds the account; order quantities are determined by the strategy.
                 .withInitialCash(capital0)
                 .useExchangeRates(rates)
                 .useStrategyPlotter(
@@ -111,14 +133,17 @@ public class Dai2011LongOnlyDemo {
                         )
                     )
                 )
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(measures(
                     new ProfitLoss(),
                     new MaxDrawdownPercentage(),
+                    // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                     new InformationRatioForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.SIMPLE,
                         0.
                     ),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.ABSOLUTE,
@@ -126,6 +151,7 @@ public class Dai2011LongOnlyDemo {
                     ))
                 )
                 .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
 
         LOGGER.info(report.toString());

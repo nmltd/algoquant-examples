@@ -64,7 +64,29 @@ import tech.nmfin.returns.moments.ReturnsMoments;
  * regular smart beta algorithms don't exhibit usual behaviors when uncorrelated
  * normal distributions are assumed.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Feeds the same generated return matrix to several optimizer implementations to compare their
+ * weights. Rows are observations and columns are assets; keep this order when wrapping a
+ * result in PortfolioWeights. This is a numerical comparison without a transaction-cost or
+ * execution simulation.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Compares multiple optimizer families on one synthetic return matrix. Black–Litterman combines
+ * equilibrium information with views. The wrapper assumes equal market weights, sample means
+ * as views and tau=1/T; this demo supplies risk aversion rather than explicit investor views.
+ * Other branches use Markowitz, Corvalán, smart-beta assumptions and Lai-style resampling. These
+ * are separate models, not interchangeable solver settings.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://people.duke.edu/~charvey/Teaching/BA453_2006/Black_Litterman_Global_Portfolio_Optimization_1992.pdf">F. Black and R. Litterman (1992), Global Portfolio Optimization, Financial Analysts Journal 48(5), 28–43</a>
+ * @see <a href="https://doi.org/10.1111/j.1540-6261.1952.tb01525.x">H. Markowitz (1952), Portfolio Selection, Journal of Finance 7(1), 77–91</a>
+ * @see <a href="https://dialnet.unirioja.es/descarga/articulo/1364447.pdf">A. Corvalán (2005), Well Diversified Efficient Portfolios, Central Bank of Chile Working Paper 336</a>
+ * @see <a href="https://doi.org/10.1214/10-AOAS422">T. L. Lai, H. Xing and Z. Chen (2011), Mean–variance portfolio optimization when means and covariances are unknown, Annals of Applied Statistics 5(2A), 798–823</a>
  */
 @Demo
 public class PortfolioOptimComparisons1Demo {
@@ -85,21 +107,21 @@ public class PortfolioOptimComparisons1Demo {
         final Vector w0 = new DenseVector(returns.nCols());
 
         /**
-         * This is the most popular portfolio optimizer based of Prof.
-         * Markowitz's 1952 paper on modern portfolio theory (MPT). 1000+ papers
-         * and 60 years experience demonstrate that this theory has numerious
-         * problems. It has no practical value and should not be used for real
-         * world asset allocation.
+         * Markowitz mean-variance optimization uses estimated returns and covariance.
+         * Compare the resulting concentration with the alternatives below. Estimates,
+         * constraints and risk aversion affect stability; this synthetic comparison
+         * does not establish how any method performs on unseen market data.
          */
         PortfolioOptimizationAlgorithm model
             = getMarkowitz(RISK_AVERSE);
+        // The returned vector follows the input asset-column order; these are weights, not orders.
         Vector w1 = model.getOptimalWeights(returns, w0, null, null);
         LOGGER.info("Markowitz model weights: {}", w1.toString());
 
         /**
-         * This is the Black-Litterman's 1992 extension of MPT. It addresses the
-         * corner solution problem of MPT and gives out diversified portfolio
-         * based on market equilibrium. It also allows subjective views and
+         * This is the Black-Litterman's 1992 extension of MPT. It combines market-equilibrium
+         * expected returns with views; diversification depends on the inputs
+         * and is not guaranteed by the model name. It also allows subjective views and
          * opinions on the market to be incorporated into the model.
          */
         model = getBlackLitterman(RISK_AVERSE);

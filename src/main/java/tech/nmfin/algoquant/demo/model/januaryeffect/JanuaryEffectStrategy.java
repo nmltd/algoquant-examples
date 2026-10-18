@@ -44,6 +44,23 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
  *
  * We use this to exploit the January effect, which is the well-known
  * observation that stock prices tend to increase in early January.
+ *
+ * <p><b>Using this example.</b>
+ * Demonstrates timer-driven trading across a year boundary. initialize subscribes to the
+ * product and schedules a timer; each timer schedules the next day, buys one unit after
+ * buyTime and closes that unit after sellTime. A calendar timer is not itself a tradable
+ * market observation, and sendOrder does not guarantee a fill.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This is a calendar-rule illustration: schedule daily callbacks, open one unit near year-end
+ * and flatten after the configured new-year date. The code does not estimate a seasonal premium
+ * or implement a causal explanation of the January effect. It is not presented as a replication
+ * of a specific empirical publication.
+ * </p>
  */
 public class JanuaryEffectStrategy implements Strategy {
 
@@ -78,6 +95,7 @@ public class JanuaryEffectStrategy implements Strategy {
     @Override
     public void initialize(TraderContext ctx) {
         LOGGER.info("initialize at {}", ctx.now());
+        // Register a timer explicitly: price updates alone do not create TimerEvents.
         ctx.scheduler().schedule("my-timer", ctx.now());
 
         ctx.subscribePrice(product);
@@ -98,6 +116,7 @@ public class JanuaryEffectStrategy implements Strategy {
                 sell(ctx.tradeBlotter(), ctx.broker());
             }
 
+            // Timers are one-shot; reschedule to continue receiving daily callbacks.
             ctx.scheduler().schedule("my-timer", ctx.now().plusDays(1));
         }
     }

@@ -35,6 +35,24 @@ import tech.nmfin.algoquant.model.meanreversion.daspremont2008.simulation.MRSimP
 import tech.nmfin.algoquant.model.util.price.PriceMatrixFactory;
 import tech.nmfin.algoquant.model.util.price.PriceMatrixFactoryYahooEOD;
 
+/**
+ * <p><b>Using this example.</b>
+ * Provides shared S&amp;P 500 simulation settings for the Kagi basket examples, including the
+ * Yahoo price-matrix factory. Treat the embedded universe and dates as historical example
+ * settings, not a point-in-time constituent database.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Sparse basket selection is the research background; this class is configuration rather than a
+ * portfolio-selection algorithm.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Its overrides choose the stock pool, Yahoo price-matrix factory, estimation/trading windows,
+ * basket count and size. Changing these alters the experiment, so an S&amp;P 500 configuration
+ * should not be described as reproducing the paper’s swap-rate or FX datasets.
+ * </p>
+ * @see <a href="https://www.di.ens.fr/~aspremon/PDF/MeanRevVec.pdf">A. d’Aspremont (2008 preprint; published 2011), Identifying Small Mean Reverting Portfolios, Quantitative Finance 11(3), 351–364</a>
+ */
 public class MRSimParamSP500 implements MRSimParam {
 
     @Override

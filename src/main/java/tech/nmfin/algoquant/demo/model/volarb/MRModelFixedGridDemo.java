@@ -53,6 +53,26 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Builds a mean-reversion grid on local GainCapital FX history. The grid threshold is a
+ * price/spread distance, not a number of days. Basket coefficients, strategy scale and lot
+ * settings determine product exposure; inspect those before interpreting P/L.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The fixed-grid variant uses an estimated mean and a grid distance to update a discrete
+ * exposure state as the spread diverges or reverts.
+ * These are library-specific spread/grid trading policies. A basket converts product prices into
+ * a spread; the configured mean-reversion model maps its level or deviation into a desired
+ * state, and MeanReversionStrategy translates that state into product orders. Grid distance,
+ * periodic/ranged update behavior and scale are distinct controls. The folder name does not mean
+ * that option implied volatility is being traded. Mean reversion is an assumption to check, not
+ * a property guaranteed by this policy.
+ * </p>
  */
 @Demo
 public class MRModelFixedGridDemo {
@@ -101,17 +121,21 @@ public class MRModelFixedGridDemo {
 
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
             .useExchangeRates(rates)
             .useStrategyPlotter(
                 new SimpleStrategyPlotter("Fixed-Grid Mean Reversion on " + fxProduct)
             ) // new NoOpPlotter() // turn off plotting for faster performance
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(KeyedMeasure.measures(
                 new ProfitLoss(),
+                // This statistic samples completed trades, unlike calendar-period return statistics.
                 new InformationRatioForTrades(),
                 new OmegaForTrades()
             ))
             .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         LOGGER.info("report = {}", report);
     }

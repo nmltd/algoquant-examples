@@ -48,6 +48,23 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Demonstrates how to set up the simulator to simulate the tutorial strategy,
  * {@linkplain JanuaryEffectStrategy}.
+ *
+ * <p><b>Using this example.</b>
+ * Supplies market data, capital, timing context and measures to the JanuaryEffectStrategy
+ * example. The strategy trades one unit; initial capital is not an instruction to invest the
+ * whole account. Inspect the scheduled event dates together with the available price
+ * observations.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This is a calendar-rule illustration: schedule daily callbacks, open one unit near year-end
+ * and flatten after the configured new-year date. The code does not estimate a seasonal premium
+ * or implement a causal explanation of the January effect. It is not presented as a replication
+ * of a specific empirical publication.
+ * </p>
  */
 @Demo
 public class JanuaryEffectStrategyDemo {
@@ -77,6 +94,7 @@ public class JanuaryEffectStrategyDemo {
         SimpleSimulator simulator = newSimulator();
 
         // run the simulation to obtain the strategy's performance
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, INTERVAL);
 
         // print out performance report
@@ -87,12 +105,14 @@ public class JanuaryEffectStrategyDemo {
         double initialCapital = 1e6;
         return new SimpleSimulatorBuilder()
             .useExchangeRates(new SimpleExchangeRateTable(STOCK.currency()))
+            // Initial cash funds the account; order quantities are determined by the strategy.
             .withInitialCash(initialCapital)
             .useStrategyPlotter(
                 new SimpleStrategyPlotter(
                     "Simple January Effect Strategy on " + STOCK.symbol()
                 )
             )
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(measures())
             .build();
     }
@@ -101,11 +121,13 @@ public class JanuaryEffectStrategyDemo {
         return Arrays.asList(KeyedMeasure.measures(
             new ProfitLoss(), // P/L
             new ExecutionCount(), // no. of executions
+            // The period is a calendar return bucket; the constant benchmark is a return per bucket.
             new InformationRatioForPeriods( // information ratio
                 Period.ofYears(1), // return period
                 ReturnsCalculators.SIMPLE, // return type
                 0. // benchmark return
             ),
+            // The threshold is expressed as a return per selected period, not an annual cash rate.
             new OmegaForPeriods( // omega
                 Period.ofYears(1), // return period
                 ReturnsCalculators.SIMPLE, // return type

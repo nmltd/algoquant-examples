@@ -11,7 +11,16 @@ import tech.nmfin.algoquant.execution.datatype.product.Product;
 import tech.nmfin.algoquant.execution.performance.report.*;
 import tech.nmfin.algoquant.execution.performance.report.exporter.PerformanceReportCsvExporter;
 
-/** Export saved scalar results through the library's CSV writer without rerunning a simulation. */
+/**
+ * Export saved scalar results through the library's CSV writer without rerunning a simulation.
+ *
+ * <p><b>Using this example.</b>
+ * Reconstructs the saved account-level scalar measure view and passes it to
+ * PerformanceReportCsvExporter. This adapter exports registered statistics, not daily price or
+ * NAV history; daily rows are assembled separately for the workbook. The exporter logs some
+ * failures, so this wrapper verifies that a complete file was produced.
+ * </p>
+ */
 public final class PerformanceCsv {
     public static String export(List<AllPerformanceMeasures.Metric> metrics) throws IOException {
         if (metrics == null || metrics.isEmpty())

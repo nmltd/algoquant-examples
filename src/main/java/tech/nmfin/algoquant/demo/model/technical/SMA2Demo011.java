@@ -53,6 +53,22 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * The fast and slow lags count price observations (daily bars in this example).
  * Prices are synthetic by default; pass {@code --live} for Yahoo history and
  * {@code --charts} for a desktop chart. The report is written to the console.
+ *
+ * <p><b>Using this example.</b>
+ * Shows another explicit SMA2 simulator setup; compare its configured measures and currency
+ * assumptions with SMA2Demo010. The built-in strategy uses fixed unit positions, and lag
+ * lengths count observations rather than elapsed calendar days.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The signal compares a fast and a slow arithmetic mean of prices. A fast mean above or below
+ * the slow mean produces a directional target after the required history is available. Lag
+ * parameters count observations. SMA2DynamicDemo additionally recalibrates parameters on
+ * trailing windows; that procedure is separate from the crossover formula.
+ * </p>
  */
 @Demo
 public class SMA2Demo011 {
@@ -92,6 +108,7 @@ public class SMA2Demo011 {
 
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
             .useExchangeRates(rates)
             .useStrategyPlotter(
@@ -102,12 +119,15 @@ public class SMA2Demo011 {
                     )
                 )
             )
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(KeyedMeasure.measures(
                 new ProfitLoss(),
+                // This statistic samples completed trades, unlike calendar-period return statistics.
                 new InformationRatioForTrades(),
                 new OmegaForTrades()
             ))
             .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         // Check that simulation produced finite NAV values, then print its performance report.
         DemoSupport.verify(report);

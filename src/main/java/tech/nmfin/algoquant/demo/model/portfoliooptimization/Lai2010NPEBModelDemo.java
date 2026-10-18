@@ -63,6 +63,27 @@ import tech.nmfin.returns.moments.MomentsEstimatorLedoitWolf;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Exercises Lai portfolio optimization with Yahoo estimation data and writes performance and
+ * P/L CSV outputs under log. Resampling and optimization settings affect both runtime and the
+ * solution; inspect the estimation and evaluation intervals before interpreting the
+ * comparison.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Lai, Xing and Chen incorporate uncertainty in estimated moments into predictive portfolio risk
+ * and develop a nonparametric empirical-Bayes resampling rule. “2010” in the API is historical
+ * naming; the cited journal article appeared in 2011.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The active configuration uses Lai2010NPEBModel, a long-only MV optimizer, Ledoit–Wolf moments,
+ * an AR resampler, 100 bootstraps, lambda=1.4, a one-year calibration window and quarterly
+ * rebalancing. These choices adapt the framework; they do not reproduce all models or tables
+ * from the article. Follow the template’s data interval and rebalance strategy separately from
+ * the CSV exporters.
+ * </p>
+ * @see <a href="https://doi.org/10.1214/10-AOAS422">T. L. Lai, H. Xing and Z. Chen (2011), Mean–variance portfolio optimization when means and covariances are unknown, Annals of Applied Statistics 5(2A), 798–823</a>
  */
 @Demo
 public class Lai2010NPEBModelDemo {
@@ -167,6 +188,7 @@ public class Lai2010NPEBModelDemo {
                 return Arrays.asList(KeyedMeasure.measures(
                     new ProfitLoss(),
                     new Commission(commissionRate),
+                    // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                     new InformationRatioForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.LOG,

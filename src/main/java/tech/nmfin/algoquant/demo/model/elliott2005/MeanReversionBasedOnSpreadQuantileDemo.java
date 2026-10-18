@@ -56,7 +56,26 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Runs a Elliott mean reversion strategy, coded up using a template.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Chooses MeanReversionBasedOnSpreadQuantile as the customization of an Elliott2005Strategy
+ * inside a Yahoo simulation template. Quantile thresholds apply to the modeled spread, not
+ * each individual stock price. The report and chart reflect the template settings.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * This is an Elliott-style spread strategy with a quantile-based customization. Quantile entry
+ * and exit rules are application choices, not a claim to reproduce the publication’s full
+ * estimator.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * MeanReversionBasedOnSpreadQuantile chooses thresholds from the configured spread distribution
+ * and is passed into Elliott2005Strategy by a Yahoo template. Coefficients define the traded
+ * spread; calibration controls the distribution used for thresholds. Re-estimation and execution
+ * assumptions determine the resulting backtest.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1080/14697680500149370">R. J. Elliott, J. van der Hoek and W. P. Malcolm (2005), Pairs trading, Quantitative Finance 5(3), 271–276</a>
  */
 @Demo
 public class MeanReversionBasedOnSpreadQuantileDemo {
@@ -116,6 +135,7 @@ public class MeanReversionBasedOnSpreadQuantileDemo {
                         Period.ofYears(1),
                         0.
                     ),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.ABSOLUTE,

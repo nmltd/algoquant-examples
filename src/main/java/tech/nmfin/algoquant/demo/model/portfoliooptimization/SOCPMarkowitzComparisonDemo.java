@@ -57,6 +57,22 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * </pre></blockquote>
  *
  * We assume that the last index of w is in the black list.
+ *
+ * <p><b>Using this example.</b>
+ * Compares quadratic and second-order-cone formulations using the same inputs and constraints.
+ * Numerical solver tolerances can produce different weights; inspect the existing TODO about
+ * correlated inputs rather than assuming universal agreement.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Compares QP and SOCP representations under the configured constraints and data. Equality of
+ * mathematical formulations does not imply bit-identical numerical solutions; inspect the
+ * existing correlated-input TODO and solver tolerances.
+ * </p>
+ * @see <a href="https://doi.org/10.1111/j.1540-6261.1952.tb01525.x">H. Markowitz (1952), Portfolio Selection, Journal of Finance 7(1), 77–91</a>
  */
 // TODO (haksunli): why the two approaches only agree when the returns are independent normals?
 @Demo

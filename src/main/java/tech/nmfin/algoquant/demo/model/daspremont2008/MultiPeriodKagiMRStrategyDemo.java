@@ -33,6 +33,25 @@ import tech.nmfin.algoquant.model.meanreversion.daspremont2008.strategy.MRBasket
 import tech.nmfin.algoquant.model.meanreversion.daspremont2008.util.BasketAnalysisUtils;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Runs MultiPeriodKagiMRStrategySim using MRSimParamSP500 and inspects the resulting basket
+ * analysis and performance report. Basket construction and subsequent trading are separate
+ * stages; review their data windows before adapting the example.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Sparse mean-reverting portfolio construction motivates the basket search. The paper’s
+ * predictability criterion is not itself a trading return.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * MultiPeriodKagiMRStrategySim repeatedly combines selection and trading according to
+ * MRSimParamSP500, then exposes a PerformanceReport and basket diagnostics. Basket renewal, Kagi
+ * execution and the chosen universe are application settings; compare estimation windows with
+ * trade dates to avoid future information.
+ * </p>
+ * @see <a href="https://www.di.ens.fr/~aspremon/PDF/MeanRevVec.pdf">A. d’Aspremont (2008 preprint; published 2011), Identifying Small Mean Reverting Portfolios, Quantitative Finance 11(3), 351–364</a>
+ */
 @Demo
 public class MultiPeriodKagiMRStrategyDemo {
 

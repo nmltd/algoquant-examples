@@ -51,6 +51,26 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Analyzes the correlation between predicted returns and realized returns to
  * check if the prediction algorithm has any prediction power.
+ *
+ * <p><b>Using this example.</b>
+ * Compares predicted and realized returns for the Infantino model and writes correlation
+ * analysis to log/pca-corr.csv.zip. This is forecast analysis rather than a funded portfolio
+ * simulation; a prediction correlation is not an account return.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * PCA supplies a low-dimensional systematic-return representation for an accumulated-return
+ * regression. This example studies the forecasts on daily data, unlike the thesis’s intraday
+ * experiment.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * DynamicInfantino2010PCA receives T=500, k=2 and H=120 by default; N follows setupStocks().
+ * MovingWindowOfReturns creates realized log-return comparisons and Covariance accumulates
+ * prediction/realization diagnostics. The CSV is a forecast-diagnostic output, not simulated
+ * account NAV. Overlapping H-period observations can be serially dependent; correlation alone
+ * does not establish tradable performance.
+ * </p>
+ * @see <a href="https://dspace.mit.edu/handle/1721.1/59122">L. R. Infantino and S. Itzhaki (2010), Developing high-frequency equities trading models, MIT MBA thesis</a>
  */
 @Demo
 public class Infantino2010PredictionAnalysisDemo {

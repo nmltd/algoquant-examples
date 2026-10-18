@@ -6,7 +6,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.UUID;
 
-/** App-independent metadata and serialization over the immutable snapshot backend. */
+/**
+ * App-independent metadata and serialization over the immutable snapshot backend.
+ *
+ * <p><b>Using this example.</b>
+ * Persists and retrieves typed app reports over SnapshotStore. Use the app namespace with the
+ * saved identifier so different tools share storage without mixing report types; reports are
+ * snapshots of computed results rather than instructions to recompute with current prices.
+ * </p>
+ */
 public final class ReportStore {
     private static final Gson JSON = new Gson();
     private final SnapshotStore snapshots;

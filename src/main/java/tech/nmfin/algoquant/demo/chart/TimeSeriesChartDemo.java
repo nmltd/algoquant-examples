@@ -32,6 +32,13 @@ import java.io.IOException;
 import tech.nmfin.algoquant.execution.component.chart.ChartUtils;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Draws two generated GARCH series by wrapping observations in SimpleTimeSeries. The labels
+ * correspond to the model parameters and the PNG output is log/ts.png; this does not run a
+ * trading strategy.
+ * </p>
+ */
 @Demo
 public class TimeSeriesChartDemo {
 

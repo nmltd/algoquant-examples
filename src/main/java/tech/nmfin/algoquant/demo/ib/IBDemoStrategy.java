@@ -48,6 +48,13 @@ import tech.nmfin.algoquant.execution.strategy.resumable.ResumableStrategy;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Illustrates a resumable broker strategy: initialize state, handle events, submit limit
+ * orders and serialize state for restart. This class is used by IBStrategyServerDemo and can
+ * send broker orders when connected; configure a paper account and inspect the order logic
+ * before running.
+ * </p>
  * @author Ken Yiu
  */
 public class IBDemoStrategy implements ResumableStrategy {

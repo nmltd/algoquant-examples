@@ -26,7 +26,16 @@ import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-/** AlgoQuant SMA crossover signals and simulator with full-equity position sizing. */
+/**
+ * AlgoQuant SMA crossover signals and simulator with full-equity position sizing.
+ *
+ * <p><b>Using this example.</b>
+ * Uses the library crossover signal inside a custom full-equity Strategy, then runs
+ * independent funded accounts for underlying buy-and-hold and S&amp;P 500. This sizing differs
+ * from the fixed-unit library SMA2 demo. Read warm-up data, trade timing, quantity calculation
+ * and measure collection as separate stages before adapting the app.
+ * </p>
+ */
 public final class SMA2App {
     public static final double CAPITAL = 10000;
     public static final List<String> SYMBOLS =

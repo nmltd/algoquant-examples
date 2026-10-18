@@ -14,6 +14,12 @@ import java.util.concurrent.Semaphore;
 
 /**
  * Performance Analyzer routes, using the same immutable store and capacity gate as the other apps.
+ *
+ * <p><b>Using this example.</b>
+ * Adapts public-URL form requests to PerformanceAnalyzer, saves the completed result and
+ * serves its report and downloads. Use the shared capacity gate for computations and the
+ * immutable store for report retrieval; export requests should not download market data again.
+ * </p>
  */
 public final class PerformanceRoutes implements ToolRoutes {
     private static final Gson JSON = new Gson();

@@ -50,6 +50,14 @@ import tech.nmfin.algoquant.util.MapOfExceptions;
 import tech.nmfin.algoquant.util.ProgressListener;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Uses MCSimContext and MCSimulationTaskRunner to compare several stochastic return generators
+ * under one strategy template. Each task supplies generated market data; the template
+ * intentionally rejects ordinary historical-data use. SMA2 parameters count observations and
+ * do not imply portfolio weights.
+ * </p>
+ */
 @Demo
 public class MCSimulationTaskRunnerDemo {
 
@@ -99,6 +107,7 @@ public class MCSimulationTaskRunnerDemo {
             return Arrays.asList(
                 measures(
                     new ProfitLossRealized(),
+                    // This statistic samples completed trades, unlike calendar-period return statistics.
                     new InformationRatioForTrades()
                 )
             );

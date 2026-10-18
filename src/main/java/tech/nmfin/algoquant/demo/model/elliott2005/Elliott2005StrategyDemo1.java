@@ -55,6 +55,28 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Demonstrates how to use {@linkplain Elliott2005Strategy} and customize the
  * strategy.
+ *
+ * <p><b>Using this example.</b>
+ * Shows the explicit builder route: load two stock caches, choose a mean-reversion
+ * customization, construct Elliott2005Strategy and register report measures. The coefficient
+ * vector defines the spread and the calibration window counts observations. Yahoo data and a
+ * desktop plotter are required.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * The publication describes a latent mean-reverting Gaussian Markov spread observed with noise,
+ * allowing state estimation and comparison with the observed spread. Full-text access was
+ * unavailable in this audit; this explanation uses the publication abstract and the
+ * implementation, not a line-by-line paper verification.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The active customization uses fixed coefficients (1,-1), a long-term-mean reference and
+ * entry/exit settings 0.4/0.25 on XOM/CVX with 50 calibration observations. The posterior-state
+ * and cointegration variants are commented alternatives. Selecting different customization
+ * changes what “fair spread” means; the class name does not guarantee that the active rule
+ * reproduces the paper’s estimator.
+ * </p>
+ * @see <a href="https://doi.org/10.1080/14697680500149370">R. J. Elliott, J. van der Hoek and W. P. Malcolm (2005), Pairs trading, Quantitative Finance 5(3), 271–276</a>
  */
 @Demo
 public class Elliott2005StrategyDemo1 {
@@ -117,6 +139,7 @@ public class Elliott2005StrategyDemo1 {
         // set up a simulator to host the strategy
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches)
                 .useStrategyPlotter(
                     new SimpleStrategyPlotter(
@@ -125,12 +148,14 @@ public class Elliott2005StrategyDemo1 {
                         + stocks.get(1).symbol()
                     )
                 )
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(measures(
                     new ProfitLoss(),
                     new InformationRatioForZeroInvestment(
                         Period.ofYears(1),
                         0.
                     ),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.ABSOLUTE,
@@ -140,6 +165,7 @@ public class Elliott2005StrategyDemo1 {
                 .build();
 
         // run the strategy
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
 
         // execution summary

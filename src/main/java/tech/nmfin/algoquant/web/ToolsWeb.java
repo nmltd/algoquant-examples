@@ -14,7 +14,16 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.*;
 
-/** Shared same-origin host. Cloud Run supplies HTTPS and PORT; apps own only their routes. */
+/**
+ * Shared same-origin host. Cloud Run supplies HTTPS and PORT; apps own only their routes.
+ *
+ * <p><b>Using this example.</b>
+ * Entry point for the shared tools server: configure the license, create the report store and
+ * register app routes. The shared semaphore limits concurrent calculations; route handlers
+ * delegate financial work to the app services. See web/README.md for local and Cloud Run
+ * configuration.
+ * </p>
+ */
 public final class ToolsWeb {
     public static void main(String[] args) throws Exception {
         File license = new File(System.getenv().getOrDefault("NM_LICENSE_FILE", "license/nm.lic"));

@@ -8,7 +8,15 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/** Same-origin HTTP responses, form parsing and bounded request handling shared by all tools. */
+/**
+ * Same-origin HTTP responses, form parsing and bounded request handling shared by all tools.
+ *
+ * <p><b>Using this example.</b>
+ * Provides bounded form input and consistent resource, JSON and attachment responses for app
+ * routes. Financial calculations belong in the app services; this class only handles transport
+ * and response formatting.
+ * </p>
+ */
 public final class HttpSupport {
     private static final Gson JSON = new Gson();
 

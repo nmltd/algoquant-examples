@@ -68,7 +68,28 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * A demo on running a fundamental factor model trading strategy.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Builds a FactorStrategy using economic factors and a rolling data window, then schedules
+ * rebalancing and registers account measures. This example needs the configured
+ * Compustat/filesystem or SQL data source; public Yahoo prices alone do not supply its factor
+ * data. Keep calibration data earlier than the trade decisions when changing windows.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Fama–French is background for the market/size/value factor vocabulary. The linked author
+ * documentation defines SMB and HML; this application is not a reproduction of the original
+ * stock-and-bond empirical study.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * FactorExcessBenchmark, FactorSMB and FactorHML feed EconomicFactorModel, which estimates
+ * exposures/premia over the configured trailing window. FactorStrategy then uses a chosen
+ * optimizer and diversification layer to rebalance. Factor measurement, database construction
+ * and reporting dates must be consistent; financial statement availability dates matter. The
+ * code’s factor implementations, universe and optimizer choices define this experiment.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1016/0304-405X(93)90023-5">E. F. Fama and K. R. French (1993), Common risk factors in the returns on stocks and bonds, Journal of Financial Economics 33(1), 3–56</a>
  */
 @Demo
 public class EconomicModelStrategyDemo {
@@ -219,9 +240,12 @@ public class EconomicModelStrategyDemo {
             = newBenchmarkLookup(simParam.dataSource(), dataInterval);
         SimulatorBuilder builder0
             = new SimpleSimulatorBuilder()
+                // Initial cash funds the account; order quantities are determined by the strategy.
                 .withInitialCash(initialCapital)
                 .withTransactionFeeScheme(new PercentageTransactionFeeScheme(transactionFeeRate))
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches)
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(KeyedMeasure.measures(
                     new ProfitLoss(),
                     new TransactionFeeByPercentage(transactionFeeRate),
@@ -232,7 +256,9 @@ public class EconomicModelStrategyDemo {
                     new MaxDrawdownDuration(Duration.ofDays(1)),
                     new BetaCAPM(simInterval, Period.ofYears(1), benchmarkLookup, ReturnsCalculators.SIMPLE),
                     new AlphaCAPM(simInterval, Period.ofYears(1), benchmarkLookup, ReturnsCalculators.SIMPLE),
+                    // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                     new InformationRatioForPeriods(Period.ofYears(1), ReturnsCalculators.SIMPLE, 0.),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(Period.ofYears(1), ReturnsCalculators.SIMPLE, 0.),
                     new SortinoRatio(0., simInterval, Period.ofYears(1)),
                     new CalmarRatio(simInterval),
@@ -258,6 +284,7 @@ public class EconomicModelStrategyDemo {
         Simulator simulator = builder2.build();
 
         // run the strategy
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, dataInterval);
 
         Map<PeriodByPeriodMeasure, List<IntervalValue>> byPeriodMeasures

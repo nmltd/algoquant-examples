@@ -54,16 +54,37 @@ import tech.nmfin.returns.Returns;
  * on the volatility <i>&sigma;</i> and the expected return <i>R</i> of a given
  * optimized (but non-diversified) portfolio. This implementation generalizes
  * this framework as the following optimization problem: \[ \max_{w} D(w) \quad
- * \text{s.t.} \\ \begin{aligned} \sqrt{w' \Sigma w} & \le \sigma^* (1 + \Delta
- * \sigma) \\ R^* (1 - \Delta R) & \le w'r \\ w' 1 & = 1 \\ ... & \text{some
+ * \text{s.t.} \\ \begin{aligned} \sqrt{w' \Sigma w} &amp; \le \sigma^* (1 + \Delta
+ * \sigma) \\ R^* (1 - \Delta R) &amp; \le w'r \\ w' 1 &amp; = 1 \\ ... &amp; \text{some
  * extra constraints} \end{aligned} \] where \( ( \sigma^* , R^* ) = (
  * \sqrt{w^{*'} \Sigma w^*} , w^{*'} r ) \), \(w^*\) is the original optimal
  * weights, \(\Delta \sigma, \Delta R\) are the relaxation tolerance parameters,
  * and \(D(w)\) is a defined measure for portfolio diversification
  * ({@linkplain DiversificationMeasure}).
  *
+ *
+ * <p><b>Using this example.</b>
+ * Applies portfolio diversification with return and volatility relaxation around an optimized
+ * portfolio. The Yahoo sample supplies estimation data; tolerance parameters alter the
+ * feasible portfolio set. The reported weights are allocations, not share quantities or
+ * realized backtest returns.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Corvalán proposes two stages: find a mean–variance reference portfolio, then improve
+ * diversification while allowing a neighborhood of return/risk deviations. The paper discusses
+ * multiple diversification measures.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Corvalan2005 in this example exposes the relaxation settings and chosen diversification
+ * measure through library classes. Its documented constraints use relative return/volatility
+ * relaxations; check that parameterization rather than substituting a tolerance directly from
+ * the paper. Weights, estimated risk and forecast return are optimizer outputs, not a realized
+ * account-performance report.
+ * </p>
  * @see <a href="dialnet.unirioja.es/descarga/articulo/1364447.pdf">Well
  * Diversified Efficient Portfolios</a>S
+ * @see <a href="https://dialnet.unirioja.es/descarga/articulo/1364447.pdf">A. Corvalán (2005), Well Diversified Efficient Portfolios, Central Bank of Chile Working Paper 336</a>
  */
 @Demo
 public class Corvalan2005Demo {

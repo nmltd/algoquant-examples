@@ -69,6 +69,13 @@ import tech.nmfin.algoquant.execution.strategy.resumable.StrategyStateManagerByG
  * ibdemo'.)
  * </ol>
  *
+ *
+ * <p><b>Using this example.</b>
+ * Wires IBDemoStrategy into an Interactive Brokers executor and Spring control server, with
+ * Google Sheets state and monitoring adapters. This is a service integration example, not an
+ * offline backtest. The historical Docker instructions below require review for your
+ * environment; paths named demo/ now refer to this repository root.
+ * </p>
  * @author Ken Yiu
  */
 @SpringBootApplication

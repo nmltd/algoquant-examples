@@ -52,6 +52,12 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
 
 /**
  * Demonstrates how to use OTC broker to trade OTC bonds.
+ *
+ * <p><b>Using this example.</b>
+ * Combines Yahoo stock order books with scheduled events that expose a simulated OTC bond
+ * broker and trigger bond purchases. The nested strategy consumes those events through
+ * TraderContext; distinguish the simulated broker from an external trading connection.
+ * </p>
  */
 public class OtcBrokerSimDemo {
 
@@ -77,6 +83,7 @@ public class OtcBrokerSimDemo {
 
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(depthCaches)
                 .withNonOrderBookUpdates( // access OTC broker at start
                     OtcBrokerInit.scheduleOnce(

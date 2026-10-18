@@ -9,6 +9,10 @@ Runnable Java examples and web analysis applications built with [AlgoQuant](http
 
 The public repository contains the example and application source. The underlying library is supplied by the obfuscated combined Maven artifact `tech.nmfin:algoquant-dist:3.3.0-SNAPSHOT` and requires a valid NM license.
 
+## Learning the library
+
+Start with the [tutorial reading guide](docs/tutorials.md), then follow the class Javadoc and inline comments in each example. The [audit notes](docs/tutorial-audit.md) record known limitations without changing the existing algorithms.
+
 ## SMA2 web application
 
 Choose a supported US stock, an inclusive backtesting period, and fast/slow SMA periods in **trading days**, such as 10 days and 30 days. Each new backtest simulates three independently funded accounts, each starting with $10,000:

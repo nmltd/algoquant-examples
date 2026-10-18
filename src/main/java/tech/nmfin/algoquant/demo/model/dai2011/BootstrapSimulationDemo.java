@@ -58,6 +58,25 @@ import tech.nmfin.returns.ReturnsCalculators;
 
 /**
  * Demonstrates the bootstrap simulation of the Dai's trend following strategy.
+ *
+ * <p><b>Using this example.</b>
+ * Resamples log returns for the Dai trend-following strategy, reconstructs price paths and
+ * runs a fresh strategy on each path. The output file under log/demo contains scenario
+ * reports. Sampled paths are hypothetical and the chosen block lengths and randomization
+ * affect the distribution.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Filtered regime probabilities and trading boundaries are the conceptual basis of the Dai
+ * strategy. The bootstrap performed here is a separate experiment layered over that strategy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The main uses Dai2011LongShort and reconstructed paths obtained from sampled log returns. Each
+ * scenario has its own market cache, simulator and report. PattonPolitisWhite2009 estimates a
+ * block length for dependent resampling; neither a resampled path nor a bootstrap P/L quantile
+ * is a new historical observation or a reproduction of the paper’s market test.
+ * </p>
+ * @see <a href="https://doi.org/10.1137/090770552">M. Dai, Q. Zhang and Q. J. Zhu (2010), Trend Following Trading under a Regime Switching Model, SIAM Journal on Financial Mathematics 1, 780–810</a>
  */
 @Demo
 public class BootstrapSimulationDemo {
@@ -138,17 +157,21 @@ public class BootstrapSimulationDemo {
                         );
                     Simulator simulator
                         = new SimpleSimulatorBuilder()
+                            // Supply product-keyed, chronological price events to the simulator.
                             .withOrderBookUpdates(orderBookCaches)
+                            // Initial cash funds the account; order quantities are determined by the strategy.
                             .withInitialCash(capital)
                             .useExchangeRates(rates)
                             .useStrategyPlotter(new NoOpPlotter()) // no plotter
                             //.useStrategyPlotter(new SimpleStrategyPlotter("Dai's 2011 Optimal Trend Following: " + product.symbol()))
+                            // Explicit measures replace the default measure selection; keep these instances per run.
                             .withMeasures(measures(
                                 new ProfitLoss(),
                                 new InformationRatioForZeroInvestment(
                                     Period.ofYears(1),
                                     0.
                                 ),
+                                // The threshold is expressed as a return per selected period, not an annual cash rate.
                                 new OmegaForPeriods(
                                     Period.ofYears(1),
                                     ReturnsCalculators.ABSOLUTE,
@@ -156,6 +179,7 @@ public class BootstrapSimulationDemo {
                                 )
                             ))
                             .build(); // true price
+                    // run delivers events and applies the configured execution model; inspect fills as well as NAV.
                     PerformanceReport report = simulator.run(strategy, interval);
 
                     reports.add(report);

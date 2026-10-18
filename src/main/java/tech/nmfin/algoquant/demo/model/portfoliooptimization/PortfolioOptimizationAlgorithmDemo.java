@@ -46,7 +46,24 @@ import tech.nmfin.returns.moments.MomentsEstimatorLedoitWolf;
  * Shows how to compute the asset weights using a portfolio optimization
  * algorithm.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Calls getOptimalWeights on a returns matrix, then applies TopNOptimizationAlgorithm and
+ * associates the vector with products using PortfolioWeights. Rows are observations and
+ * columns are products. The zero initial vector and null optional arguments shown here belong
+ * to this optimizer configuration; check the concrete algorithm contract before reusing them.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Builds a composable Lai2010OptimizationAlgorithm with a long-only/shrunk-mean optimizer,
+ * Ledoit–Wolf moments and a resampler, then uses getOptimalWeights and a TopN transformation.
+ * The selected components and post-processing define an adaptation, not a paper replication.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1214/10-AOAS422">T. L. Lai, H. Xing and Z. Chen (2011), Mean–variance portfolio optimization when means and covariances are unknown, Annals of Applied Statistics 5(2A), 798–823</a>
  */
 public class PortfolioOptimizationAlgorithmDemo {
 
@@ -78,6 +95,7 @@ public class PortfolioOptimizationAlgorithmDemo {
                         riskParameter);
 
         Vector w0 = new DenseVector(nProducts);
+        // The returned vector follows the input asset-column order; these are weights, not orders.
         Vector w1 = model.getOptimalWeights(returns, w0, null, null);
         Vector w2 = TopNOptimizationAlgorithm.getTopN(w1, 5, 0.8);
 //        Vector w2 = w1;

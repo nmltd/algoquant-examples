@@ -66,6 +66,21 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * Prices are synthetic by default; use {@code --live} for Yahoo history and
  * {@code --charts} for a desktop indicator chart. The report goes to the console.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Uses an OHLCV indicator to choose a target position and submits the difference from the
+ * filled position. Quantity is in signed product units, not dollars. DemoSupport controls the
+ * default synthetic inputs and optional live data and charts.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Chaikin money flow compares accumulated money-flow volume with total volume over a rolling
+ * window. The demo combines indicator and price-change signs to choose unit targets. See the
+ * implemented rule above rather than assuming a textbook divergence interpretation.
+ * </p>
  * @see
  * <a href="http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:chaikin_money_flow">
  * Chaikin Money Flow</a>
@@ -100,6 +115,7 @@ public class ChaikinMoneyFlowDemo {
 
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
             // OHLCV events supply the high, low, close and volume required by the indicator.
             .withNonOrderBookUpdates(cacheEOD)
@@ -108,12 +124,15 @@ public class ChaikinMoneyFlowDemo {
                     String.format("Simple CMF Strategy on %s", stock)
                 )
             )
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(KeyedMeasure.measures(
                 new ProfitLoss(),
+                // This statistic samples completed trades, unlike calendar-period return statistics.
                 new InformationRatioForTrades(),
                 new OmegaForTrades()
             ))
             .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         // Check that simulation produced finite NAV values, then print its performance report.
         DemoSupport.verify(report);

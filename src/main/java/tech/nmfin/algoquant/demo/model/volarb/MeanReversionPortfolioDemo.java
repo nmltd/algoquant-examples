@@ -59,6 +59,26 @@ import tech.nmfin.meanreversion.volarb.MRModel;
 /**
  * Demonstrates how to create a {@link MeanReversionPortfolio} with different
  * grid sizes.
+ *
+ * <p><b>Using this example.</b>
+ * Combines mean-reversion components with different grid sizes on local GainCapital data.
+ * Follow each basket and scale into the combined portfolio; adding components changes total
+ * exposure and does not automatically normalize the allocation.
+ * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This composition combines components with different grid sizes. Read their individual scales
+ * before comparing the aggregate P/L with a single component.
+ * These are library-specific spread/grid trading policies. A basket converts product prices into
+ * a spread; the configured mean-reversion model maps its level or deviation into a desired
+ * state, and MeanReversionStrategy translates that state into product orders. Grid distance,
+ * periodic/ranged update behavior and scale are distinct controls. The folder name does not mean
+ * that option implied volatility is being traded. Mean reversion is an assumption to check, not
+ * a property guaranteed by this policy.
+ * </p>
  */
 @Demo
 public class MeanReversionPortfolioDemo {
@@ -108,18 +128,22 @@ public class MeanReversionPortfolioDemo {
 
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
             .useExchangeRates(rates)
             .useStrategyPlotter(
                 new SimpleStrategyPlotter("Fixed-Grid Mean Reversion on " + PRODUCT)
             ) // new NoOpPlotter()); // turn off plotting for faster performance
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(KeyedMeasure.measures(
                 new ExecutionCount(),
                 new ProfitLoss(),
+                // This statistic samples completed trades, unlike calendar-period return statistics.
                 new InformationRatioForTrades(),
                 new OmegaForTrades()
             ))
             .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, INTERVAL);
         List<Execution> executions = report.tradeBlotter().executions(PRODUCT);
 

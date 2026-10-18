@@ -62,6 +62,8 @@ if __name__=='__main__':
     actual={x['class'] for x in records}
     assert expected==actual,(expected-actual,actual-expected)
     assert len(records)==len(actual),'Duplicate execution records'
+    introductions=json.loads((ROOT/'docs/model-introductions.json').read_text())
+    assert {x['name'] for x in records} <= set(introductions),'Missing model introductions'
     counts=Counter(x['status'] for x in records)
     manifest={'run':RUN,'source_commit':SHA,'generated_utc':UTC,'counts':dict(counts),
               'runnable_count':len(expected),'support_classes':[x for x in inventory if not x['runnable']],
@@ -78,7 +80,9 @@ if __name__=='__main__':
     for item in sorted(records,key=lambda x:x['source']):
         slug='Model-'+item['name'];summary+='| ['+item['name']+']('+WIKI_URL+slug+') | '+item['status']+' | %.2f | '%item['seconds']+item['mode']+' |\n'
         page='# '+item['name']+' — execution tutorial\n\n'
-        page+='[All model results]('+WIKI_URL+'Model-demo-results) · [Pinned source]('+REPO+'/blob/'+SHA+'/'+item['source']+') · [Javadoc](https://nmltd.github.io/algoquant-examples/'+item['class'].replace('.','/')+'.html)\n\n'
+        page+='[All model results]('+WIKI_URL+'Home#model-demo-results) · [Pinned source]('+REPO+'/blob/'+SHA+'/'+item['source']+') · [Javadoc](https://nmltd.github.io/algoquant-examples/'+item['class'].replace('.','/')+'.html)\n\n'
+        intro=introductions[item['name']]
+        page+='<!-- MODEL_INTRO_START -->\n## '+intro['heading']+'\n\n'+intro['text'].strip()+'\n<!-- MODEL_INTRO_END -->\n\n'
         page+='## What this example teaches\n\n'+narrative(item['source'])+'\n\n'
         page+='## Verified execution record\n\n| Item | Value |\n| --- | --- |\n'
         for name,value in [('Status',item['status']),('Run',RUN),('UTC publication',UTC),('Source commit',SHA),('Data mode',item['mode']),('Exit code',str(item['exit_code'])),('Elapsed seconds',str(item['seconds'])),('Time limit seconds',str(item['limit_seconds'])),('Maximum Java heap',item['heap'])]:page+='| '+name+' | '+str(value)+' |\n'

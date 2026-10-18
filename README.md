@@ -18,7 +18,7 @@ Start with the [tutorial reading guide](docs/tutorials.md), then follow the clas
 
 ## Model demo results
 
-Browse the [model execution tutorials](https://github.com/nmltd/algoquant-examples/wiki/Model-demo-results) for measured output, exported charts, source links, reproduction commands and diagnostics for every runnable model demo. Raw output archives are versioned as [GitHub releases](https://github.com/nmltd/algoquant-examples/releases).
+Browse the [model execution tutorials](https://github.com/nmltd/algoquant-examples/wiki/Home#model-demo-results) for measured output, exported charts, source links, reproduction commands and diagnostics for every runnable model demo. Raw output archives are versioned as [GitHub releases](https://github.com/nmltd/algoquant-examples/releases).
 
 The manual **Run model demos and prepare tutorials** workflow compiles and runs demos without running the test suite. Technical examples use their documented synthetic `--quick` mode; other demos use their original defaults. Each page distinguishes completed calculations from failed, resource-limited or timed-out attempts. See [runner setup and limits](scripts/MODEL_DEMOS.md).
 

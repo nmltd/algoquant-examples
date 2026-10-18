@@ -43,3 +43,23 @@ python3 scripts/run-model-demos.py --only SMA2Demo010 --seconds 180
 Invoke `scripts/publish-model-tutorials.py` only after a full run; it deliberately
 rejects an incomplete inventory. Raw results live in release assets, not the
 source tree. The wiki explains verified outputs and specific prerequisites.
+
+## Paper introductions and the wiki front page
+
+`docs/model-introductions.json` contains reviewed paper/strategy introductions for all
+41 runnable model demos. Each entry links the publication, explains its main idea
+and separates that idea from this repository's implementation. Review limitations
+are explicit; a demo without an identified paper receives a strategy introduction.
+The tutorial generator includes these entries in newly generated pages.
+
+After copying generated model pages into an existing wiki checkout, merge the
+results table into Home and preserve the old index URL as a compatibility link:
+
+```bash
+python3 scripts/update-model-wiki.py --wiki /path/to/algoquant-examples.wiki
+```
+
+The updater preserves other Home content and the demo execution/output sections.
+It can be run again without duplicating introductions or the results index.
+Review and commit the wiki diff before pushing. No simulations or tests are needed
+when updating these explanatory sections.

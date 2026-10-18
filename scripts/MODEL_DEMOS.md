@@ -63,3 +63,31 @@ The updater preserves other Home content and the demo execution/output sections.
 It can be run again without duplicating introductions or the results index.
 Review and commit the wiki diff before pushing. No simulations or tests are needed
 when updating these explanatory sections.
+
+## Charts from recorded CSV and printed tables
+
+The tutorial workflow now runs `chart-model-results.py` after collecting all demo
+records. It converts recognized Product reports, CSV performance summaries,
+allocation vectors/histories, P/L series, executions and selected analytical/model
+diagnostics into PNG figures. No statistical model or simulation is rerun.
+
+```bash
+python3 -m pip install -r scripts/chart-requirements.txt
+python3 scripts/chart-model-results.py --results target/model-results
+```
+
+Every figure includes a plotted-data CSV and metadata identifying its original
+source file and SHA-256. Printed values retain the precision available in the log.
+Different measures use separate axes; undefined or malformed values are omitted,
+never replaced with zero. Failed/time-limited runs retain their status and have
+prominent incomplete-run captions. Logged calculation errors remain visible.
+Unrecognized or empty reports generate no invented data. For Infantino's parameter
+report, the parser separates the next H label from the preceding value using the
+exact sweep labels declared in the source.
+
+`publish-model-tutorials.py` embeds these figures with captions and data downloads.
+For a new publication based on an existing execution, set `GITHUB_RUN_ID` and
+`GITHUB_SHA` to the original execution ID/source commit, `CHART_GENERATOR_SHA` to
+the generator commit, and `TUTORIAL_RELEASE_TAG` to a new release tag. This preserves
+the original run provenance and its raw release. Merge the resulting wiki index
+into Home with `update-model-wiki.py` as described above.

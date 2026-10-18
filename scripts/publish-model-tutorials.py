@@ -17,7 +17,7 @@ WIKI=Path(os.environ.get('TUTORIAL_WIKI',str(ROOT/'target/model-wiki')))
 REPO='https://github.com/nmltd/algoquant-examples'
 RUN=os.environ['GITHUB_RUN_ID']
 SHA=os.environ['GITHUB_SHA']
-TAG='model-tutorials-run-'+RUN
+TAG=os.environ.get('TUTORIAL_RELEASE_TAG','model-tutorials-run-'+RUN)
 RELEASE=REPO+'/releases/tag/'+TAG
 WIKI_URL=REPO+'/wiki/'
 UTC=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
@@ -66,6 +66,7 @@ if __name__=='__main__':
     assert {x['name'] for x in records} <= set(introductions),'Missing model introductions'
     counts=Counter(x['status'] for x in records)
     manifest={'run':RUN,'source_commit':SHA,'generated_utc':UTC,'counts':dict(counts),
+              'chart_generator_commit':os.environ.get('CHART_GENERATOR_SHA'),
               'runnable_count':len(expected),'support_classes':[x for x in inventory if not x['runnable']],
               'results':records}
     (RESULTS/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
@@ -76,6 +77,8 @@ if __name__=='__main__':
     summary+='\nTechnical demos use documented synthetic `--quick` inputs. Other demos use their original main defaults. Each process uses a virtual display, a valid external starter license, a bounded heap and a time limit; no tests are run. Legacy MySQL access is blocked before authentication because no database account is configured.\n\n'
     summary+='A completed main is an execution observation, not proof of model validity or investment performance. Timeout/failed runs can contain partial outputs; these are labelled and must not be treated as completed backtests. Generated random inputs may be unseeded, and provider data/caches can change.\n\n'
     summary+='[Permanent raw outputs and charts]('+RELEASE+') · [Model literature guide]('+REPO+'/blob/'+SHA+'/docs/model-literature.md)\n\n'
+    if manifest['chart_generator_commit']:
+        summary+='Charts derived from recorded CSV/log data using generator commit `'+manifest['chart_generator_commit']+'`. Each derived figure includes a source file reference, source checksum and downloadable plotted data. No simulations were rerun to generate these figures.\n\n'
     summary+='| Demo tutorial | Status | Seconds | Data mode |\n| --- | --- | ---: | --- |\n'
     for item in sorted(records,key=lambda x:x['source']):
         slug='Model-'+item['name'];summary+='| ['+item['name']+']('+WIKI_URL+slug+') | '+item['status']+' | %.2f | '%item['seconds']+item['mode']+' |\n'
@@ -99,10 +102,15 @@ if __name__=='__main__':
             page+='**Execution caveat:** Main returned, but the log contains exceptions, failed operations or undefined values. This records process completion only; inspect the diagnostic below before treating any output as a valid backtest.\n\n'
         if (item['status']!='completed' or warnings) and (stdout+stderr).strip():page+='## Diagnostic and prerequisites\n\n```text\n'+diagnostic(stdout+'\n'+stderr)+'\n```\n\n'
         charts=[x for x in item['exports'] if x['path'].lower().endswith('.png')]
+        derived={x['image']:x for x in item.get('derived_charts',[])}
         if charts:
             page+='## Charts from this run\n\n'
             for i,chart in enumerate(charts,1):
                 asset=item['name']+'-chart-%02d.png'%i
+                meta=derived.get(chart['path'])
+                if meta:
+                    page+='### '+meta['title']+'\n\n'+meta['note']+'\n\n'
+                    page+='Derived from `'+meta['source']+'` using the precision available in that file. [Download plotted data]('+REPO+'/releases/download/'+TAG+'/'+item['name']+'-'+Path(meta['data']).name+'). Undefined or malformed cells are omitted, never replaced by zero.\n\n'
                 page+='![Chart '+str(i)+']('+REPO+'/releases/download/'+TAG+'/'+asset+')\n\n'
         page+='## Downloadable evidence\n\n[Download '+item['name']+'.zip]('+REPO+'/releases/download/'+TAG+'/'+item['name']+'.zip) contains stdout, stderr, the execution record, checksums and any exported CSV/chart files.\n\n'
         if item['exports']:
@@ -121,6 +129,8 @@ if __name__=='__main__':
         charts=[x for x in item['exports'] if x['path'].lower().endswith('.png')]
         for i,chart in enumerate(charts,1):
             shutil.copyfile(RESULTS/item['name']/chart['path'],release/(item['name']+'-chart-%02d.png'%i))
+        for meta in item.get('derived_charts',[]):
+            shutil.copyfile(RESULTS/item['name']/meta['data'],release/(item['name']+'-'+Path(meta['data']).name))
         with zipfile.ZipFile(release/(item['name']+'.zip'),'w',zipfile.ZIP_DEFLATED) as archive:
             for path in sorted((RESULTS/item['name']).rglob('*')):
                 if path.is_file():archive.write(path,path.relative_to(RESULTS/item['name']))

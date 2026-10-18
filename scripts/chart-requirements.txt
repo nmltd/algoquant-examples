@@ -1,0 +1,3 @@
+# Renderer for recorded demo outputs; no model calculations run here.
+matplotlib==3.10.8
+numpy==2.3.5

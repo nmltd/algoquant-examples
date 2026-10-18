@@ -35,6 +35,13 @@ import tech.nmfin.algoquant.model.meanreversion.daspremont2008.simulation.KagiMR
 import tech.nmfin.algoquant.model.meanreversion.daspremont2008.simulation.MRSimParam;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Creates mean-reverting baskets with SimpleMRBasketProvider and evaluates a basket through
+ * KagiMRBasketSimulation. MRSimParamSP500 supplies the data and interval conventions; the
+ * plotted P/L belongs to the selected basket and trading period.
+ * </p>
+ */
 @Demo
 public class KagiMRBasketSimulationDemo {
 

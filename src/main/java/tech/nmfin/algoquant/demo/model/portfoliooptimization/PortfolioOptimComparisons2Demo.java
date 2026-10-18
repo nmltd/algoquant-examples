@@ -74,6 +74,13 @@ import tech.nmfin.portfoliooptimization.lai2010.optimizer.MVOptimizerShrankMean;
  * Compares the different asset allocation algorithms. Prices are from
  * historical data.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Compares allocation algorithms on historical price data. Some branches reference local China
+ * datasets and an absolute Windows Compustat path; choose the intended branch and configure
+ * those inputs before running. Consistent asset ordering and common estimation periods are
+ * essential to the comparison.
+ * </p>
  * @author Ken Yiu
  * @param <P> a subtype of {@linkplain Product}
  */
@@ -395,7 +402,7 @@ public class PortfolioOptimComparisons2Demo<P extends Product> {
             .params();
 
         /**
-         * Data provider for S&P 500 index.
+         * Data provider for S&amp;P 500 index.
          */
         CompustatIndexDataProvider dataProvider
             = new CompustatIndexDataProvider(

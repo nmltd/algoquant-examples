@@ -8,7 +8,15 @@ import java.io.*;
 import java.time.*;
 import java.util.*;
 
-/** SMA2 sheet selection over the shared Excel writer. */
+/**
+ * SMA2 sheet selection over the shared Excel writer.
+ *
+ * <p><b>Using this example.</b>
+ * Selects SMA2, underlying buy-and-hold and S&amp;P 500 statistic tabs plus daily observations
+ * from one saved result. The daily benchmark join uses dates; absent index observations remain
+ * empty rather than being forward-filled.
+ * </p>
+ */
 final class PerformanceWorkbook {
     static final String MIME = SpreadsheetWorkbook.MIME;
 

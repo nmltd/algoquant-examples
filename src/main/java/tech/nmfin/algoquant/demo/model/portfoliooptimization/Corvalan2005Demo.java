@@ -54,14 +54,21 @@ import tech.nmfin.returns.Returns;
  * on the volatility <i>&sigma;</i> and the expected return <i>R</i> of a given
  * optimized (but non-diversified) portfolio. This implementation generalizes
  * this framework as the following optimization problem: \[ \max_{w} D(w) \quad
- * \text{s.t.} \\ \begin{aligned} \sqrt{w' \Sigma w} & \le \sigma^* (1 + \Delta
- * \sigma) \\ R^* (1 - \Delta R) & \le w'r \\ w' 1 & = 1 \\ ... & \text{some
+ * \text{s.t.} \\ \begin{aligned} \sqrt{w' \Sigma w} &amp; \le \sigma^* (1 + \Delta
+ * \sigma) \\ R^* (1 - \Delta R) &amp; \le w'r \\ w' 1 &amp; = 1 \\ ... &amp; \text{some
  * extra constraints} \end{aligned} \] where \( ( \sigma^* , R^* ) = (
  * \sqrt{w^{*'} \Sigma w^*} , w^{*'} r ) \), \(w^*\) is the original optimal
  * weights, \(\Delta \sigma, \Delta R\) are the relaxation tolerance parameters,
  * and \(D(w)\) is a defined measure for portfolio diversification
  * ({@linkplain DiversificationMeasure}).
  *
+ *
+ * <p><b>Using this example.</b>
+ * Applies portfolio diversification with return and volatility relaxation around an optimized
+ * portfolio. The Yahoo sample supplies estimation data; tolerance parameters alter the
+ * feasible portfolio set. The reported weights are allocations, not share quantities or
+ * realized backtest returns.
+ * </p>
  * @see <a href="dialnet.unirioja.es/descarga/articulo/1364447.pdf">Well
  * Diversified Efficient Portfolios</a>S
  */

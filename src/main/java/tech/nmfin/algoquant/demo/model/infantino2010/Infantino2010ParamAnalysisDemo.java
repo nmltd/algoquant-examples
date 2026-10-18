@@ -57,6 +57,14 @@ import tech.nmfin.algoquant.util.MapOfExceptions;
 import tech.nmfin.algoquant.util.ProgressListener.NoOpProgressListener;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Uses SensitivityAnalyzer to evaluate Infantino strategy parameter sets on Yahoo history. The
+ * stock universe is filtered for data availability before simulation. Model fitting windows,
+ * forecast horizons and retained components have separate roles; parameter-search results are
+ * in-sample comparisons unless you add a holdout period.
+ * </p>
+ */
 @Demo
 public class Infantino2010ParamAnalysisDemo {
 
@@ -149,9 +157,11 @@ public class Infantino2010ParamAnalysisDemo {
         this.caches = new OrderBookCaches(CACHE_FACTORY, stocks, interval);
         this.simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(caches)
                 .useExchangeRates(rates)
                 .synchronizeOrderBookUpdates()
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(newMeasures(interval))
                 .build();
     }

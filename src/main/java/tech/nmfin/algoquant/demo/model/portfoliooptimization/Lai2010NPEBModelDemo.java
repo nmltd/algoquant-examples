@@ -63,6 +63,13 @@ import tech.nmfin.returns.moments.MomentsEstimatorLedoitWolf;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Exercises Lai portfolio optimization with Yahoo estimation data and writes performance and
+ * P/L CSV outputs under log. Resampling and optimization settings affect both runtime and the
+ * solution; inspect the estimation and evaluation intervals before interpreting the
+ * comparison.
+ * </p>
  */
 @Demo
 public class Lai2010NPEBModelDemo {
@@ -167,6 +174,7 @@ public class Lai2010NPEBModelDemo {
                 return Arrays.asList(KeyedMeasure.measures(
                     new ProfitLoss(),
                     new Commission(commissionRate),
+                    // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                     new InformationRatioForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.LOG,

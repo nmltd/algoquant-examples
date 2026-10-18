@@ -51,6 +51,12 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Analyzes the correlation between predicted returns and realized returns to
  * check if the prediction algorithm has any prediction power.
+ *
+ * <p><b>Using this example.</b>
+ * Compares predicted and realized returns for the Infantino model and writes correlation
+ * analysis to log/pca-corr.csv.zip. This is forecast analysis rather than a funded portfolio
+ * simulation; a prediction correlation is not an account return.
+ * </p>
  */
 @Demo
 public class Infantino2010PredictionAnalysisDemo {

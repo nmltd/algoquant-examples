@@ -52,6 +52,13 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Demonstrates how to set up the simulator to simulate the tutorial strategy,
  * {@linkplain TutorialStrategy}.
+ *
+ * <p><b>Using this example.</b>
+ * End-to-end wiring for TutorialStrategy: Yahoo history is sampled monthly, wrapped in
+ * OrderBookCaches and passed to SimpleSimulatorBuilder. Initial capital is set to the first
+ * sampled price, while the strategy still targets one unit. Registered yearly measures use
+ * annual return periods even though the strategy receives monthly observations.
+ * </p>
  */
 @Demo
 public class TutorialStrategyDemo {
@@ -63,6 +70,12 @@ public class TutorialStrategyDemo {
         demo.run();
     }
 
+    /**
+     * Downloads and samples HSI history, runs one fresh strategy and logs its measures.
+     * Requires Yahoo access and a graphical environment for the configured plotter.
+     *
+     * @throws Exception if market-data loading or simulation fails
+     */
     public void run() throws Exception {
         // set up the product
         Stock stock = HSI.getInstance();
@@ -90,16 +103,22 @@ public class TutorialStrategyDemo {
         Strategy strategy = new TutorialStrategy(stock);
 
         // set up a simulator to host the strategy
+        // The example assumes a nonempty sampled cache. Validate this before first() /
+        // iterator().next() in your application, especially for unavailable Yahoo symbols.
         double initialCapital = data.iterator().next().data().mid();
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Initial cash funds the account; order quantities are determined by the strategy.
             .withInitialCash(initialCapital)
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(depthCaches)
             .useStrategyPlotter(
                 new SimpleStrategyPlotter("tutorial on " + stock.symbol())
             )
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(measures())
             .build();
         // here is where the actual simulation happens
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
 
         // print out the report
@@ -111,11 +130,13 @@ public class TutorialStrategyDemo {
         double lossThreshold = 0.0;
         return Arrays.asList(KeyedMeasure.measures(
             new ProfitLoss(), // pnl
+            // The period is a calendar return bucket; the constant benchmark is a return per bucket.
             new InformationRatioForPeriods( // information/Sharpe ratio
                 Period.ofYears(1),
                 ReturnsCalculators.SIMPLE,
                 benchmarkPeriodReturn
             ),
+            // The threshold is expressed as a return per selected period, not an annual cash rate.
             new OmegaForPeriods( // Omega
                 Period.ofYears(1),
                 ReturnsCalculators.SIMPLE,

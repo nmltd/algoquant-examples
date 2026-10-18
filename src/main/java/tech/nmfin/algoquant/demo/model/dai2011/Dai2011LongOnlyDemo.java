@@ -50,6 +50,12 @@ import tech.nmfin.returns.ReturnsCalculators;
 
 /**
  * Demonstrates the Dai's optimal trend following trading strategy.
+ *
+ * <p><b>Using this example.</b>
+ * Constructs Dai2011LongOnly, supplies Yahoo order books and initial capital, then runs the
+ * simulator and reads its PerformanceReport. The plotter opens a desktop chart. Inspect the
+ * model parameters and trade sizing independently of the initial cash balance.
+ * </p>
  */
 @Demo
 public class Dai2011LongOnlyDemo {
@@ -100,7 +106,9 @@ public class Dai2011LongOnlyDemo {
             );
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches) // true price
+                // Initial cash funds the account; order quantities are determined by the strategy.
                 .withInitialCash(capital0)
                 .useExchangeRates(rates)
                 .useStrategyPlotter(
@@ -111,14 +119,17 @@ public class Dai2011LongOnlyDemo {
                         )
                     )
                 )
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(measures(
                     new ProfitLoss(),
                     new MaxDrawdownPercentage(),
+                    // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                     new InformationRatioForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.SIMPLE,
                         0.
                     ),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.ABSOLUTE,
@@ -126,6 +137,7 @@ public class Dai2011LongOnlyDemo {
                     ))
                 )
                 .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
 
         LOGGER.info(report.toString());

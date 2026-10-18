@@ -37,6 +37,13 @@ import tech.nmfin.algoquant.model.signal.technical.ohlc.OHLCBars;
 import tech.nmfin.algoquant.model.util.frequency.Minute;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Generates ARIMA observations, aggregates them into one-minute OHLC bars and adapts those
+ * bars to a candlestick dataset. The chart is saved as log/candle.png; the generated
+ * observations are illustrative prices, not downloaded stock history.
+ * </p>
+ */
 @Demo
 public class CandleStickChartDemo {
 

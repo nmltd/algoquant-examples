@@ -62,6 +62,13 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * A demo on running a fundamental factor model trading strategy.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Builds a fundamental-factor portfolio using configured accounting, return and benchmark
+ * datasets. Relative and configured paths must resolve to compatible Compustat data; these
+ * inputs are distinct from public price downloads. Rebalance frequency and trailing estimation
+ * windows control when the model can trade.
+ * </p>
  * @author Haksun Li
  */
 @Demo
@@ -159,9 +166,12 @@ public class FundamentalModelStrategyDemo {
         BenchmarkLookup benchmarkLookup = FactorModelUtils.newBenchmark("^HSI", interval);
         SimulatorBuilder builder0
             = new SimpleSimulatorBuilder()
+                // Initial cash funds the account; order quantities are determined by the strategy.
                 .withInitialCash(initialCapital)
                 .withTransactionFeeScheme(new PercentageTransactionFeeScheme(transactionFeeRate))
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches)
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(KeyedMeasure.measures(
                     new ProfitLoss(),
                     new TransactionFeeByPercentage(transactionFeeRate),
@@ -172,7 +182,9 @@ public class FundamentalModelStrategyDemo {
                     new MaxDrawdownDuration(Duration.ofDays(1)),
                     new BetaCAPM(interval, Period.ofYears(1), benchmarkLookup, ReturnsCalculators.SIMPLE),
                     new AlphaCAPM(interval, Period.ofYears(1), benchmarkLookup, ReturnsCalculators.SIMPLE),
+                    // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                     new InformationRatioForPeriods(Period.ofYears(1), ReturnsCalculators.SIMPLE, 0.),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(Period.ofYears(1), ReturnsCalculators.SIMPLE, 0.),
                     new SortinoRatio(0., interval, Period.ofYears(1)),
                     new CalmarRatio(interval),
@@ -198,6 +210,7 @@ public class FundamentalModelStrategyDemo {
         Simulator simulator = builder2.build();
 
         // run the strategy
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
 
         Map<PeriodByPeriodMeasure, List<IntervalValue>> byPeriodMeasures

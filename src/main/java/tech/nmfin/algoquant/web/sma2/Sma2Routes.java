@@ -12,7 +12,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 
-/** SMA2 endpoints and historical aliases. Server lifecycle and shared assets belong to ToolsWeb. */
+/**
+ * SMA2 endpoints and historical aliases. Server lifecycle and shared assets belong to ToolsWeb.
+ *
+ * <p><b>Using this example.</b>
+ * Converts SMA2 form fields into a validated Request, runs SMA2App and persists its Result.
+ * Report URLs and downloads reuse that snapshot. The source link points to SMA2App so users
+ * can inspect the financial implementation independently of HTTP routing.
+ * </p>
+ */
 public final class Sma2Routes implements ToolRoutes {
     private static final Gson JSON = new Gson();
     private final SMA2App service;

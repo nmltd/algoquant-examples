@@ -54,6 +54,12 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Runs a fixed-grid mean-reversion basket using local SGX SiMSCI and NK tick caches. The two
+ * instruments and basket coefficient must be interpreted with their product and currency
+ * conventions; the result is not a normalized portfolio return.
+ * </p>
  * @author Chung Lee
  */
 @Demo
@@ -102,6 +108,7 @@ public class MRModelFixedGridOnSGXDataDemo {
 
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
             .useExchangeRates(rates)
             .useStrategyPlotter(
@@ -112,12 +119,15 @@ public class MRModelFixedGridOnSGXDataDemo {
                         NIKKEIFutures.symbol()
                     )
                 )) // new NoOpPlotter());// turn off plotting for faster performance
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(KeyedMeasure.measures(
                 new ProfitLoss(),
+                // This statistic samples completed trades, unlike calendar-period return statistics.
                 new InformationRatioForTrades(),
                 new OmegaForTrades()
             ))
             .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         LOGGER.info("report = {}", report);
     }

@@ -6,7 +6,15 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
 
-/** Analyzer worksheet selection over the shared Excel writer. */
+/**
+ * Analyzer worksheet selection over the shared Excel writer.
+ *
+ * <p><b>Using this example.</b>
+ * Selects the analyzer account-statistics and aligned daily-data worksheets, delegating OOXML
+ * construction to SpreadsheetWorkbook. It consumes a saved Result; it does not infer trades or
+ * rerun benchmarks during export.
+ * </p>
+ */
 public final class PerformanceWorkbook {
     public static byte[] export(PerformanceAnalyzer.Result report) throws IOException {
         List<String> names = new ArrayList<>(), sheets = new ArrayList<>();

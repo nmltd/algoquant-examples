@@ -38,6 +38,13 @@ import tech.nmfin.algoquant.execution.performance.measure.BenchmarkLookup;
 import tech.nmfin.algoquant.execution.performance.measure.byperiod.IntervalValue;
 import tech.nmfin.algoquant.execution.performance.measure.byperiod.PeriodByPeriodMeasure;
 
+/**
+ * <p><b>Using this example.</b>
+ * Supports factor-model demonstrations with benchmark and report utilities. Read the callers
+ * for the chosen currency and measurement period; a benchmark lookup is a comparison series,
+ * not an independently simulated strategy account.
+ * </p>
+ */
 public class FactorModelUtils {
 
     public static BenchmarkLookup newBenchmark(String symbol, LocalDateTimeInterval interval) {

@@ -33,6 +33,13 @@ import tech.nmfin.algoquant.execution.datatype.product.stock.usa.USDStock;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Supplies historical example stock sets for the Infantino demos, including explicit
+ * exclusions for insufficient data. These lists are not current or point-in-time S&amp;P 500
+ * membership. TEN_CHOOSEN_PLUS_NDX currently returns TEN_CHOOSEN.stocks(), so the created
+ * Nasdaq index addition is discarded; see the audit notes before using it.
+ * </p>
  * @author Ken Yiu
  */
 public enum TestData {
@@ -144,6 +151,8 @@ public enum TestData {
         public Set<Stock> stocks() {
             Set<Stock> set = new HashSet<>(TEN_CHOOSEN.stocks());
             set.add(USDStock.newInstance("^NDX", Exchange.NASDAQ));
+            // Existing limitation: this returns a fresh stock-only set instead of set,
+            // so the ^NDX addition above is not present in the returned collection.
             return TEN_CHOOSEN.stocks();
         }
     };

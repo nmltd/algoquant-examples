@@ -37,6 +37,13 @@ import tech.nmfin.algoquant.model.signal.technical.ohlc.OHLCBars;
 import tech.nmfin.algoquant.model.util.frequency.Minute;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Generates two ARIMA paths, accumulates each into minute OHLC bars and adds both adaptors to
+ * one chart dataset. The output is log/ohlc.png; bar aggregation and chart rendering are
+ * separate steps.
+ * </p>
+ */
 @Demo
 public class OHLCChartDemo {
 

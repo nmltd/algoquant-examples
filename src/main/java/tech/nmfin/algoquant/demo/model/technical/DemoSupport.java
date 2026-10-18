@@ -20,6 +20,13 @@ import tech.nmfin.algoquant.execution.performance.report.PerformanceReport;
  * Defaults are deterministic synthetic prices and no GUI. Synthetic prices demonstrate
  * execution mechanics and are not historical market observations or strategy evidence.
  * Configuration is process-wide, so each command-line demo initializes it once.
+ *
+ * <p><b>Using this example.</b>
+ * Centralizes technical-demo setup: initialize(args) selects the license and runtime options
+ * before any data or simulation calls. Generated bars are deterministic weekday fixtures
+ * shared across symbols, not a realistic multi-asset market. Use the verification helper to
+ * inspect NAV output without assuming that orders necessarily filled.
+ * </p>
  */
 public final class DemoSupport {
     private static boolean live;

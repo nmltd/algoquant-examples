@@ -9,7 +9,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.UUID;
 
-/** Immutable JSON snapshots. Cloud Run uses private GCS objects; local runs use a directory. */
+/**
+ * Immutable JSON snapshots. Cloud Run uses private GCS objects; local runs use a directory.
+ *
+ * <p><b>Using this example.</b>
+ * Stores JSON once under an immutable identifier, using a local directory or the configured
+ * private GCS bucket. Cloud credentials come from runtime identity. Storage and report
+ * serialization are separate from financial computation so reloading a report does not rerun a
+ * strategy.
+ * </p>
+ */
 public final class SnapshotStore {
     private static final Gson JSON = new Gson();
     private static final int MAX_BYTES = 20 * 1024 * 1024;

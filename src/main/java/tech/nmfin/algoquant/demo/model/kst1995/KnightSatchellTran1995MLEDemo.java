@@ -34,6 +34,12 @@ import tech.nmfin.trend.kst1995.KnightSatchellTran1995MLE;
 /**
  * Compares the fitted model with the real model.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Generates observations from a configured Knight-Satchell-Tran model and fits its parameters
+ * by maximum likelihood. Compare fitted and generating parameters to understand the estimator;
+ * finite samples and random draws affect the result.
+ * </p>
  * @author Haksun Li
  */
 @Demo

@@ -44,8 +44,14 @@ import tech.nmfin.trend.kst1995.KnightSatchellTran1995MLE;
 /**
  * Demonstrates Acar's framework of a trend following strategy. We first fit the
  * Acar's model with some real price data. Then we compute the properties of the
- * model, e.g., the expected P&L for playing the GMA(1, 2) strategy.
+ * model, e.g., the expected P&amp;L for playing the GMA(1, 2) strategy.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Loads Yahoo prices, fits a Knight-Satchell-Tran model and evaluates GMA(1,2) trend-following
+ * properties. The output describes the fitted model; it is not automatically the return of a
+ * fully invested trading account.
+ * </p>
  * @author Haksun Li
  */
 @Demo

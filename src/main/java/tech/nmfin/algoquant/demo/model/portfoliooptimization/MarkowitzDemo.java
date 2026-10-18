@@ -51,6 +51,12 @@ import tech.nmfin.returns.ReturnsCalculators;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Builds a Markowitz allocation from Yahoo history and the risk parameter in main. Asset
+ * ordering in the return matrix must match the products associated with the resulting weights.
+ * The optimizer computes weights; converting them to executable trades is a separate step.
+ * </p>
  * @author Chung Lee
  */
 @Demo
@@ -156,6 +162,7 @@ public class MarkowitzDemo {
                 return Arrays.asList(KeyedMeasure.measures(
                     new ProfitLoss(),
                     new Commission(commissionRate),
+                    // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                     new InformationRatioForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.LOG,

@@ -60,6 +60,13 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 /**
  * This example looks at the sensitivity of the {@linkplain SMA2} strategy to
  * changes in the lag numberOfProducts.
+ *
+ * <p><b>Using this example.</b>
+ * Perturbs the two SMA lag coordinates around a reference vector and evaluates the resulting
+ * realized P/L with SensitivityAnalyzer. NM vectors use one-based indexing; the lag values are
+ * converted to integer observation counts. Yahoo access and the histogram display are runtime
+ * dependencies.
+ * </p>
  */
 @Demo
 public class SensitivityAnalyzerDemo {
@@ -104,8 +111,10 @@ public class SensitivityAnalyzerDemo {
         KeyedMeasure pnl = KeyedMeasure.measure(new ProfitLossRealized());
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(depthCaches)
                 .useExchangeRates(rates)
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(pnl)
                 .build();
 

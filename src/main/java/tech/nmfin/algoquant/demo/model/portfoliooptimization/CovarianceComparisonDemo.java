@@ -43,6 +43,12 @@ import org.slf4j.Logger;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Compares covariance calculations for the data assembled in main. Keep the observations-by-
+ * assets orientation consistent across estimators; covariance estimates are inputs to
+ * portfolio optimization, not strategy performance measures.
+ * </p>
  * @author haksunli
  */
 public class CovarianceComparisonDemo {

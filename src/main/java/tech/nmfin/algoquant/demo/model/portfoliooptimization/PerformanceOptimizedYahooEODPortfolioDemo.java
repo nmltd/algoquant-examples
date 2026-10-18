@@ -52,6 +52,13 @@ import tech.nmfin.returns.ReturnsCalculators;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Weights several performance objectives in a PerformanceOptimizedYahooEODPortfolio template
+ * and runs the resulting strategy on Yahoo data. The coefficients normalize objectives with
+ * different units; their values are not portfolio allocation weights. Optimization and
+ * evaluation on shared history can overstate expected performance.
+ * </p>
  * @author Haksun Li
  */
 @Demo
@@ -85,6 +92,7 @@ public class PerformanceOptimizedYahooEODPortfolioDemo {
                 Map<KeyedMeasure, Double> measures = new HashMap<>();
                 measures.put(
                     measure(
+                        // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                         new InformationRatioForPeriods(
                             Period.ofYears(1),
                             ReturnsCalculators.SIMPLE,
@@ -121,12 +129,15 @@ public class PerformanceOptimizedYahooEODPortfolioDemo {
             = template.newOrderBookCachesFactory().newOrderBookCaches(interval);
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches)
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(
                     template.newPerformanceMeasures().keySet()
                 )
                 .build();
         Strategy strategy = optim.newStrategy(x);
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
 
         LOGGER.info(report.toString());

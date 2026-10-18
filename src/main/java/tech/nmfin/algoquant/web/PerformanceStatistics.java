@@ -4,7 +4,16 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-/** Shared headline conventions for simulated and imported NAV series. */
+/**
+ * Shared headline conventions for simulated and imported NAV series.
+ *
+ * <p><b>Using this example.</b>
+ * Computes the shared headline display values from chronological daily account levels and an
+ * explicit initial balance. These display conventions complement the AlgoQuant measure
+ * catalog; they should not silently replace a library statistic with a differently defined
+ * formula.
+ * </p>
+ */
 public final class PerformanceStatistics {
     public static class Values {
         public double finalNav, pnl, maxDrawdown;

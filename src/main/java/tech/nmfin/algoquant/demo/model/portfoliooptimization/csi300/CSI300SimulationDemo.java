@@ -53,6 +53,12 @@ import tech.nmfin.portfoliooptimization.corvalan2005.diversification.ProductOfWe
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Configures CSI 300 constituents and local adjusted-price files for a portfolio simulation.
+ * The constituent CSV and price directory are independent inputs and must cover compatible
+ * dates. Paths in main are examples to adapt to your own dataset.
+ * </p>
  * @author Ken Yiu
  */
 public class CSI300SimulationDemo {

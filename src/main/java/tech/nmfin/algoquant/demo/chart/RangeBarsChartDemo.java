@@ -37,6 +37,13 @@ import tech.nmfin.algoquant.execution.component.chart.RangeBarSeriesAdaptor;
 import tech.nmfin.algoquant.model.signal.technical.ohlc.RangeBars;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Aggregates generated observations into range bars using a price-range threshold of 30.0.
+ * Unlike minute bars, range bars close after a price movement rather than a fixed elapsed
+ * time; the result is saved as log/range.png.
+ * </p>
+ */
 @Demo
 public class RangeBarsChartDemo {
 

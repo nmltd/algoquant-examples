@@ -51,6 +51,12 @@ import tech.nmfin.meanreversion.volarb.MRModelRanged;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Builds an AUD/USD and NZD/USD pair basket with coefficient -1.5 and MRModelRanged threshold
+ * 0.0025. It uses local GainCapital tick files, a desktop plotter and trade-based measures.
+ * The scale and lot inputs are quantities, not percentages of initial capital.
+ * </p>
  */
 @Demo
 public class MRModelRanged2Demo {
@@ -96,17 +102,21 @@ public class MRModelRanged2Demo {
         // run simulation
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches)
                 .useStrategyPlotter(
                     new SimpleStrategyPlotter("Ranged Mean Reversion on " + basket)
                 )
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(KeyedMeasure.measures(
                     new ExecutionCount(),
                     new ProfitLoss(),
+                    // This statistic samples completed trades, unlike calendar-period return statistics.
                     new InformationRatioForTrades(),
                     new OmegaForTrades()
                 ))
                 .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         LOGGER.info(report.toString());
     }

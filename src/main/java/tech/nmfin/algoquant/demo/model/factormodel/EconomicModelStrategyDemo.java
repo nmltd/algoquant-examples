@@ -68,6 +68,13 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * A demo on running a fundamental factor model trading strategy.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Builds a FactorStrategy using economic factors and a rolling data window, then schedules
+ * rebalancing and registers account measures. This example needs the configured
+ * Compustat/filesystem or SQL data source; public Yahoo prices alone do not supply its factor
+ * data. Keep calibration data earlier than the trade decisions when changing windows.
+ * </p>
  * @author Haksun Li
  */
 @Demo
@@ -219,9 +226,12 @@ public class EconomicModelStrategyDemo {
             = newBenchmarkLookup(simParam.dataSource(), dataInterval);
         SimulatorBuilder builder0
             = new SimpleSimulatorBuilder()
+                // Initial cash funds the account; order quantities are determined by the strategy.
                 .withInitialCash(initialCapital)
                 .withTransactionFeeScheme(new PercentageTransactionFeeScheme(transactionFeeRate))
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches)
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(KeyedMeasure.measures(
                     new ProfitLoss(),
                     new TransactionFeeByPercentage(transactionFeeRate),
@@ -232,7 +242,9 @@ public class EconomicModelStrategyDemo {
                     new MaxDrawdownDuration(Duration.ofDays(1)),
                     new BetaCAPM(simInterval, Period.ofYears(1), benchmarkLookup, ReturnsCalculators.SIMPLE),
                     new AlphaCAPM(simInterval, Period.ofYears(1), benchmarkLookup, ReturnsCalculators.SIMPLE),
+                    // The period is a calendar return bucket; the constant benchmark is a return per bucket.
                     new InformationRatioForPeriods(Period.ofYears(1), ReturnsCalculators.SIMPLE, 0.),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(Period.ofYears(1), ReturnsCalculators.SIMPLE, 0.),
                     new SortinoRatio(0., simInterval, Period.ofYears(1)),
                     new CalmarRatio(simInterval),
@@ -258,6 +270,7 @@ public class EconomicModelStrategyDemo {
         Simulator simulator = builder2.build();
 
         // run the strategy
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, dataInterval);
 
         Map<PeriodByPeriodMeasure, List<IntervalValue>> byPeriodMeasures

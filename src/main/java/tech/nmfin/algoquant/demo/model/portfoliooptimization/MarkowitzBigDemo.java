@@ -37,6 +37,12 @@ import tech.nmfin.portfoliooptimization.PortfolioOptimizationAlgorithm;
  * This demo shows the performance/speed of running our implementation of
  * Markowitz algorithm on a large pool of assets, e.g., N = 10000.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Benchmarks Markowitz optimization on a large generated asset universe. Increase the asset
+ * count only after checking memory and solver runtime; this demonstrates numerical scaling,
+ * not historical investment performance.
+ * </p>
  * @author Haksun Li
  */
 @Demo
@@ -67,6 +73,7 @@ public class MarkowitzBigDemo {
         PortfolioOptimizationAlgorithm model
             = getMarkowitz(RISK_ADVERSE);
         long start = System.nanoTime();
+        // The returned vector follows the input asset-column order; these are weights, not orders.
         Vector w1 = model.getOptimalWeights(returns, w0, null, null);
         long end = System.nanoTime();
         long elapsed1 = end - start;

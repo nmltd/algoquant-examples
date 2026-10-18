@@ -55,6 +55,13 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Demonstrates how to use {@linkplain Elliott2005Strategy} and customize the
  * strategy.
+ *
+ * <p><b>Using this example.</b>
+ * Shows the explicit builder route: load two stock caches, choose a mean-reversion
+ * customization, construct Elliott2005Strategy and register report measures. The coefficient
+ * vector defines the spread and the calibration window counts observations. Yahoo data and a
+ * desktop plotter are required.
+ * </p>
  */
 @Demo
 public class Elliott2005StrategyDemo1 {
@@ -117,6 +124,7 @@ public class Elliott2005StrategyDemo1 {
         // set up a simulator to host the strategy
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches)
                 .useStrategyPlotter(
                     new SimpleStrategyPlotter(
@@ -125,12 +133,14 @@ public class Elliott2005StrategyDemo1 {
                         + stocks.get(1).symbol()
                     )
                 )
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(measures(
                     new ProfitLoss(),
                     new InformationRatioForZeroInvestment(
                         Period.ofYears(1),
                         0.
                     ),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.ABSOLUTE,
@@ -140,6 +150,7 @@ public class Elliott2005StrategyDemo1 {
                 .build();
 
         // run the strategy
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
 
         // execution summary

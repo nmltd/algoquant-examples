@@ -66,6 +66,13 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  *
  * Prices are synthetic by default; {@code --live} downloads Yahoo history.
  * Pass {@code --charts} to plot the ADL; performance measures appear in the console.
+ *
+ * <p><b>Using this example.</b>
+ * Adapts OHLCV bars to an indicator-driven strategy and sends only the change from current
+ * position to the target. Order quantities are signed product units; this fixed-unit example
+ * does not invest all account cash. DemoSupport controls licensing, synthetic data and
+ * optional live downloads.
+ * </p>
  */
 @Demo
 public class AccumulationDistributionLineDemo {
@@ -98,6 +105,7 @@ public class AccumulationDistributionLineDemo {
 
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
             // OHLCV events supply the high, low, close and volume required by the indicator.
             .withNonOrderBookUpdates(cacheEOD)
@@ -105,12 +113,15 @@ public class AccumulationDistributionLineDemo {
                 DemoSupport.plotter(
                     String.format("Simple ADL Strategy on %s", stock))
             )
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(KeyedMeasure.measures(
                 new ProfitLoss(),
+                // This statistic samples completed trades, unlike calendar-period return statistics.
                 new InformationRatioForTrades(),
                 new OmegaForTrades()
             ))
             .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         // Check that simulation produced finite NAV values, then print its performance report.
         DemoSupport.verify(report);

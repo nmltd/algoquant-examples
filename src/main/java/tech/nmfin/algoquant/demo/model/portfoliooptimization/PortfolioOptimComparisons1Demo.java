@@ -64,6 +64,13 @@ import tech.nmfin.returns.moments.ReturnsMoments;
  * regular smart beta algorithms don't exhibit usual behaviors when uncorrelated
  * normal distributions are assumed.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Feeds the same generated return matrix to several optimizer implementations to compare their
+ * weights. Rows are observations and columns are assets; keep this order when wrapping a
+ * result in PortfolioWeights. This is a numerical comparison without a transaction-cost or
+ * execution simulation.
+ * </p>
  * @author Haksun Li
  */
 @Demo
@@ -85,14 +92,14 @@ public class PortfolioOptimComparisons1Demo {
         final Vector w0 = new DenseVector(returns.nCols());
 
         /**
-         * This is the most popular portfolio optimizer based of Prof.
-         * Markowitz's 1952 paper on modern portfolio theory (MPT). 1000+ papers
-         * and 60 years experience demonstrate that this theory has numerious
-         * problems. It has no practical value and should not be used for real
-         * world asset allocation.
+         * Markowitz mean-variance optimization uses estimated returns and covariance.
+         * Compare the resulting concentration with the alternatives below. Estimates,
+         * constraints and risk aversion affect stability; this synthetic comparison
+         * does not establish how any method performs on unseen market data.
          */
         PortfolioOptimizationAlgorithm model
             = getMarkowitz(RISK_AVERSE);
+        // The returned vector follows the input asset-column order; these are weights, not orders.
         Vector w1 = model.getOptimalWeights(returns, w0, null, null);
         LOGGER.info("Markowitz model weights: {}", w1.toString());
 

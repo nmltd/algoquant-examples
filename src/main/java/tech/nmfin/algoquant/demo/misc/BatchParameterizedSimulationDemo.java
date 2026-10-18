@@ -58,6 +58,13 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
  * Demonstrates how to use {@linkplain BatchParameterizedSimulation}.
+ *
+ * <p><b>Using this example.</b>
+ * Builds an SMA lag grid and gives BatchParameterizedSimulation a factory that constructs a
+ * fresh SMA2 for each parameter set. Yahoo history is loaded through order-book caches;
+ * SimulationResultsExporter writes the parameter results and measure CSV. Lags count
+ * observations and built-in SMA2 uses fixed unit positions, not all available cash.
+ * </p>
  */
 @Demo
 public class BatchParameterizedSimulationDemo {
@@ -84,8 +91,10 @@ public class BatchParameterizedSimulationDemo {
         OrderBookCaches depthCaches = getDepthCaches();
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(depthCaches)
                 .useExchangeRates(rates)
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(getPerformanceMeasures())
                 .build();
 
@@ -151,6 +160,7 @@ public class BatchParameterizedSimulationDemo {
     private List<KeyedMeasure> getPerformanceMeasures() {
         return Arrays.asList(measures(
             new ProfitLoss(),
+            // This statistic samples completed trades, unlike calendar-period return statistics.
             new InformationRatioForTrades(),
             new OmegaForTrades()
         ));

@@ -46,6 +46,13 @@ import tech.nmfin.returns.moments.MomentsEstimatorLedoitWolf;
  * Shows how to compute the asset weights using a portfolio optimization
  * algorithm.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Calls getOptimalWeights on a returns matrix, then applies TopNOptimizationAlgorithm and
+ * associates the vector with products using PortfolioWeights. Rows are observations and
+ * columns are products. The zero initial vector and null optional arguments shown here belong
+ * to this optimizer configuration; check the concrete algorithm contract before reusing them.
+ * </p>
  * @author Haksun Li
  */
 public class PortfolioOptimizationAlgorithmDemo {
@@ -78,6 +85,7 @@ public class PortfolioOptimizationAlgorithmDemo {
                         riskParameter);
 
         Vector w0 = new DenseVector(nProducts);
+        // The returned vector follows the input asset-column order; these are weights, not orders.
         Vector w1 = model.getOptimalWeights(returns, w0, null, null);
         Vector w2 = TopNOptimizationAlgorithm.getTopN(w1, 5, 0.8);
 //        Vector w2 = w1;

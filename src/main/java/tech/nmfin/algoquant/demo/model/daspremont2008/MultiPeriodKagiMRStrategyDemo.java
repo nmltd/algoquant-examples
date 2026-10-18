@@ -33,6 +33,13 @@ import tech.nmfin.algoquant.model.meanreversion.daspremont2008.strategy.MRBasket
 import tech.nmfin.algoquant.model.meanreversion.daspremont2008.util.BasketAnalysisUtils;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Runs MultiPeriodKagiMRStrategySim using MRSimParamSP500 and inspects the resulting basket
+ * analysis and performance report. Basket construction and subsequent trading are separate
+ * stages; review their data windows before adapting the example.
+ * </p>
+ */
 @Demo
 public class MultiPeriodKagiMRStrategyDemo {
 

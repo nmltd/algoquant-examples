@@ -56,6 +56,13 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * prices that share similar statistical properties as the original price
  * series. Each run gives one particular P/L for that hypothetical price series.
  * Together, they give a distribution of the P/L.
+ *
+ * <p><b>Using this example.</b>
+ * Resamples an observed Yahoo price cache with BootstrapSingleCacheFactory and runs
+ * independent SMA2 instances on the resamples. The resulting reports describe a hypothetical
+ * P/L distribution, not multiple observations of the original realized backtest. SMA lags
+ * count observations and position sizing remains fixed units.
+ * </p>
  */
 @Demo
 public class BootstrapSimulationSMA2Demo {
@@ -99,8 +106,10 @@ public class BootstrapSimulationSMA2Demo {
             @Override
             public Simulator newSimulator(OrderBookCaches depthCaches) {
                 Simulator simulator = new SimpleSimulatorBuilder()
+                    // Supply product-keyed, chronological price events to the simulator.
                     .withOrderBookUpdates(depthCaches)
                     .useExchangeRates(rates)
+                    // Explicit measures replace the default measure selection; keep these instances per run.
                     .withMeasures(measures)
                     .build();
 

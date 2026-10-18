@@ -48,6 +48,12 @@ import tech.nmfin.algoquant.model.portfoliooptimization.simulation.PortfolioOpti
 /**
  * Compares the different asset allocation algorithms.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Loads the local crypto-markets CSV ZIP through JesseventCoinDataUtils and compares
+ * allocation algorithms. The dataset path is test-data/coin/crypto-markets.csv.zip; its
+ * historical coverage and constituent selection constrain the comparison.
+ * </p>
  * @author Ken Yiu
  */
 public class CoinBacktestDemo {

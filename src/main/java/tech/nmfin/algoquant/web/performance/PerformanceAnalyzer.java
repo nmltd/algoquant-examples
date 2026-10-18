@@ -33,8 +33,15 @@ import java.util.TreeSet;
  * Analyzes daily NAV or price levels from a public CSV using AlgoQuant.
  *
  * <p>Each series is rebased to the same initial value on dates observed in every column. An
- * existing S&P 500 column is reused; otherwise the shared benchmark service downloads it. Input
+ * existing S&amp;P 500 column is reused; otherwise the shared benchmark service downloads it. Input
  * levels are preserved: this class does not infer trades or remove deposits and withdrawals.
+ *
+ * <p><b>Using this example.</b>
+ * The tutorial path is analyze input, align observations, normalize each account and delegate
+ * NAV measures to shared analysis. Missing S&amp;P 500 data is supplied through
+ * BuyAndHoldBenchmark. Imported account levels carry no execution history, so trade-dependent
+ * statistics cannot be reconstructed from them.
+ * </p>
  */
 public final class PerformanceAnalyzer {
     /** Common starting NAV used to compare series expressed in different currencies or units. */
@@ -315,7 +322,7 @@ public final class PerformanceAnalyzer {
         return result;
     }
 
-    /** Recognizes common S&P 500 labels independently of capitalization and punctuation. */
+    /** Recognizes common S&amp;P 500 labels independently of capitalization and punctuation. */
     public static boolean isBenchmark(String name) {
         String n = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
         return Arrays.asList("sp500", "sandp500", "gspc", "spx", "sp500close", "sp500nav")

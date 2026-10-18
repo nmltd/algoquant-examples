@@ -53,6 +53,12 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Builds a mean-reversion grid on local GainCapital FX history. The grid threshold is a
+ * price/spread distance, not a number of days. Basket coefficients, strategy scale and lot
+ * settings determine product exposure; inspect those before interpreting P/L.
+ * </p>
  */
 @Demo
 public class MRModelFixedGridDemo {
@@ -101,17 +107,21 @@ public class MRModelFixedGridDemo {
 
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
             .useExchangeRates(rates)
             .useStrategyPlotter(
                 new SimpleStrategyPlotter("Fixed-Grid Mean Reversion on " + fxProduct)
             ) // new NoOpPlotter() // turn off plotting for faster performance
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(KeyedMeasure.measures(
                 new ProfitLoss(),
+                // This statistic samples completed trades, unlike calendar-period return statistics.
                 new InformationRatioForTrades(),
                 new OmegaForTrades()
             ))
             .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         LOGGER.info("report = {}", report);
     }

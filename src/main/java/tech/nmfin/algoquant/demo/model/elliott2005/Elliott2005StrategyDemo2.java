@@ -57,6 +57,13 @@ import tech.nmfin.returns.ReturnsCalculators;
 /**
  * Demonstrates another (simpler) way of coding
  * {@linkplain Elliott2005StrategyDemo1} using a template.
+ *
+ * <p><b>Using this example.</b>
+ * Expresses the Elliott example as a SimTemplateYahooEOD specification instead of assembling
+ * the simulator directly. SimTemplateUtils.run consumes the overridden strategy, products,
+ * measures and plotter. Compare this with Elliott2005StrategyDemo1 to learn the two setup
+ * styles.
+ * </p>
  */
 @Demo
 public class Elliott2005StrategyDemo2 {
@@ -135,6 +142,7 @@ public class Elliott2005StrategyDemo2 {
                         Period.ofYears(1),
                         0.
                     ),
+                    // The threshold is expressed as a return per selected period, not an annual cash rate.
                     new OmegaForPeriods(
                         Period.ofYears(1),
                         ReturnsCalculators.ABSOLUTE,

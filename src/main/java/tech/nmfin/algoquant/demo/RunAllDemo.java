@@ -34,6 +34,13 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * Runs all demo programs.
  * 
  * This is used to check whether or not any of the demo programs fails to run.
+ *
+ * <p><b>Using this example.</b>
+ * Discovers annotated demos with Reflections and invokes their entry points. This is a mixed
+ * integration runner: it may download data, open charts or start service-dependent examples.
+ * Run one selected main class while learning instead of treating this as an offline test
+ * suite.
+ * </p>
  */
 public class RunAllDemo {
 

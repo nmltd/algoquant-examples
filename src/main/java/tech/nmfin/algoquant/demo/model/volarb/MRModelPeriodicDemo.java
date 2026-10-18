@@ -52,6 +52,12 @@ import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Applies a periodic mean-reversion model to local GainCapital data. Separate the model period
+ * from the timestamps delivered by the cache, and distinguish the model signal from the
+ * strategy scale used to translate it into orders.
+ * </p>
  */
 @Demo
 public class MRModelPeriodicDemo {
@@ -100,16 +106,20 @@ public class MRModelPeriodicDemo {
 
         // run simulation
         Simulator simulator = new SimpleSimulatorBuilder()
+            // Supply product-keyed, chronological price events to the simulator.
             .withOrderBookUpdates(orderBookCaches)
             .useStrategyPlotter(
                 new SimpleStrategyPlotter("Periodic Mean Reversion on " + fxProduct)
             ) // new NoOpPlotter()); // turn off plotting for faster performance
+            // Explicit measures replace the default measure selection; keep these instances per run.
             .withMeasures(KeyedMeasure.measures(
                 new ProfitLoss(),
+                // This statistic samples completed trades, unlike calendar-period return statistics.
                 new InformationRatioForTrades(),
                 new OmegaForTrades()
             ))
             .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         LOGGER.info(report.toString());
     }

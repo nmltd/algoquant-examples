@@ -35,6 +35,13 @@ import tech.nmfin.algoquant.model.meanreversion.daspremont2008.simulation.MRSimP
 import tech.nmfin.algoquant.model.util.price.PriceMatrixFactory;
 import tech.nmfin.algoquant.model.util.price.PriceMatrixFactoryYahooEOD;
 
+/**
+ * <p><b>Using this example.</b>
+ * Provides shared S&amp;P 500 simulation settings for the Kagi basket examples, including the
+ * Yahoo price-matrix factory. Treat the embedded universe and dates as historical example
+ * settings, not a point-in-time constituent database.
+ * </p>
+ */
 public class MRSimParamSP500 implements MRSimParam {
 
     @Override

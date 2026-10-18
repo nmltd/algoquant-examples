@@ -52,6 +52,12 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * The data override keeps this example offline by default despite its Yahoo template.
  * Pass {@code --live} to request Yahoo data. Results are printed to the console.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Use this after SMA2Demo010 to see the same setup expressed through template overrides.
+ * SimTemplateUtils.run creates the simulation from the specification. The built-in SMA2
+ * remains fixed-unit sized even when the template supplies a large initial cash balance.
+ * </p>
  * @author Haksun Li
  */
 @Demo

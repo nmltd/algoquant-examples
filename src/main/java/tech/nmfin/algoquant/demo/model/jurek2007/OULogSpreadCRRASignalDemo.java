@@ -37,9 +37,16 @@ import tech.nmfin.algoquant.model.meanreversion.jurek2007.OUSpreadCRRASignal.All
 import tech.nmfin.algoquant.util.annotation.Demo;
 
 /**
- * This demonstrates the P&L when applying the optimal mean reversion trading
+ * This demonstrates the P&amp;L when applying the optimal mean reversion trading
  * strategy to an OU asset.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Illustrates the OU log-spread trading signal and its P/L calculation using the parameters in
+ * main. Follow the modeled spread and risk-aversion inputs separately from any market-data
+ * assumptions; the theoretical model does not establish that a real pair follows an OU
+ * process.
+ * </p>
  * @author Kevin Sun
  * @see
  * <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.217.6021">Kim,

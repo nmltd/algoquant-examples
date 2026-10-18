@@ -44,6 +44,13 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
  *
  * We use this to exploit the January effect, which is the well-known
  * observation that stock prices tend to increase in early January.
+ *
+ * <p><b>Using this example.</b>
+ * Demonstrates timer-driven trading across a year boundary. initialize subscribes to the
+ * product and schedules a timer; each timer schedules the next day, buys one unit after
+ * buyTime and closes that unit after sellTime. A calendar timer is not itself a tradable
+ * market observation, and sendOrder does not guarantee a fill.
+ * </p>
  */
 public class JanuaryEffectStrategy implements Strategy {
 
@@ -78,6 +85,7 @@ public class JanuaryEffectStrategy implements Strategy {
     @Override
     public void initialize(TraderContext ctx) {
         LOGGER.info("initialize at {}", ctx.now());
+        // Register a timer explicitly: price updates alone do not create TimerEvents.
         ctx.scheduler().schedule("my-timer", ctx.now());
 
         ctx.subscribePrice(product);
@@ -98,6 +106,7 @@ public class JanuaryEffectStrategy implements Strategy {
                 sell(ctx.tradeBlotter(), ctx.broker());
             }
 
+            // Timers are one-shot; reschedule to continue receiving daily callbacks.
             ctx.scheduler().schedule("my-timer", ctx.now().plusDays(1));
         }
     }

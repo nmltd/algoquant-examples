@@ -57,6 +57,12 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * </pre></blockquote>
  *
  * We assume that the last index of w is in the black list.
+ *
+ * <p><b>Using this example.</b>
+ * Compares quadratic and second-order-cone formulations using the same inputs and constraints.
+ * Numerical solver tolerances can produce different weights; inspect the existing TODO about
+ * correlated inputs rather than assuming universal agreement.
+ * </p>
  */
 // TODO (haksunli): why the two approaches only agree when the returns are independent normals?
 @Demo

@@ -39,6 +39,13 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
  * tutorial</a> to show how a strategy is coded up in AlgoQuant. This strategy
  * buys on a up-tick and sells on a down-tick.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Minimal Strategy implementation: onEvent filters order-book events, reads the updated market
+ * context and computes target minus current filled position. Equal prices choose the long
+ * target because the comparison is >=. It targets +1 or -1 unit, with no automatic cash-based
+ * sizing; create a new instance for each run because previousPrice is mutable state.
+ * </p>
  */
 public class TutorialStrategy implements Strategy {
 
@@ -46,6 +53,11 @@ public class TutorialStrategy implements Strategy {
     private final Product product;
     private Double previousPrice = null;
 
+    /**
+     * Creates a fresh fixed-unit strategy for a single product.
+     *
+     * @param product instrument whose updates and filled position are read from the context
+     */
     public TutorialStrategy(Product product) {
         this.product = product;
     }
@@ -58,6 +70,8 @@ public class TutorialStrategy implements Strategy {
     }
 
     private void onOrderBookUpdate(TraderContext ctx) {
+        // The context already contains this event's market update. This example assumes
+        // its feed contains the configured product; filter by product for a multi-product feed.
         double currentPrice = ctx.marketCondition().orderBook(product).mid();
         if (previousPrice != null) {
             Collection<Order> orders
@@ -74,6 +88,8 @@ public class TutorialStrategy implements Strategy {
         double currentPrice,
         double position
     ) {
+        // Convert a desired holding to an incremental order. Moving from -1 to +1
+        // requires buying 2 units; sending +1 repeatedly would accumulate exposure.
         double qty = 0.;
         if (currentPrice >= previousPrice) {
             qty = scale - position;
@@ -85,6 +101,8 @@ public class TutorialStrategy implements Strategy {
             return Collections.emptySet();
         }
 
+        // Positive quantity buys, negative quantity sells. Submission is not a fill;
+        // the simulator's execution model updates the blotter when execution occurs.
         return singletonList(newMarketOrder(product, qty));
     }
 }

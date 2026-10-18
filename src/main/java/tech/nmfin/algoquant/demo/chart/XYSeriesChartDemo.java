@@ -28,6 +28,12 @@ import java.io.IOException;
 import tech.nmfin.algoquant.execution.component.chart.ChartUtils;
 import tech.nmfin.algoquant.util.annotation.Demo;
 
+/**
+ * <p><b>Using this example.</b>
+ * Maps the embedded coordinate arrays to named XY series and writes log/xy.png. Use this small
+ * example to learn the chart dataset shape before supplying simulation outputs.
+ * </p>
+ */
 @Demo
 public class XYSeriesChartDemo {
 

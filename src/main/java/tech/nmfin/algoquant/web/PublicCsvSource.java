@@ -1,6 +1,15 @@
 package tech.nmfin.algoquant.web;
 import java.io.*;import java.net.*;import java.nio.charset.StandardCharsets;import java.util.*;
-/** Anonymous, bounded HTTPS CSV loading; redirects and destinations are checked before each request. */
+/**
+ * Anonymous, bounded HTTPS CSV loading; redirects and destinations are checked before each request.
+ *
+ * <p><b>Using this example.</b>
+ * Converts supported public Google Sheets links to CSV and checks every HTTPS destination and
+ * redirect before loading. Callers receive text to parse, not validated financial
+ * observations. Download bounds and network validation belong here so both apps can share one
+ * input boundary.
+ * </p>
+ */
 public final class PublicCsvSource {
  public static String canonical(String input) {
   try{

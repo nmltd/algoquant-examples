@@ -48,6 +48,12 @@ import tech.nmfin.portfoliooptimization.PortfolioOptimizationAlgorithm;
  * Backtests a particular optimizer to see its performance over time using
  * historical data.
  *
+ *
+ * <p><b>Using this example.</b>
+ * Evaluates a portfolio optimizer over historical windows rather than computing one static
+ * allocation. Read the configured estimation, rebalancing and simulation periods together.
+ * Training inputs must be available before the corresponding rebalance decision.
+ * </p>
  */
 public class PortfolioOptimizationBacktestDemo {
 

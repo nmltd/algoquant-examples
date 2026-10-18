@@ -53,6 +53,12 @@ import tech.nmfin.meanreversion.volarb.MRModelRanged;
 
 /**
  *
+ *
+ * <p><b>Using this example.</b>
+ * Runs a ranged mean-reversion model on local GainCapital FX prices. A range parameter is
+ * expressed in spread/price units; the basket coefficients and lot scale control the traded
+ * quantities.
+ * </p>
  */
 @Demo
 public class MRModelRanged1Demo {
@@ -93,18 +99,22 @@ public class MRModelRanged1Demo {
         // run simulation
         Simulator simulator
             = new SimpleSimulatorBuilder()
+                // Supply product-keyed, chronological price events to the simulator.
                 .withOrderBookUpdates(orderBookCaches)
                 .useExchangeRates(rates)
                 .useStrategyPlotter(
                     new SimpleStrategyPlotter("Ranged Mean Reversion on " + fxProduct)
                 ) // new NoOpPlotter()); // turn off plotting for faster performance
+                // Explicit measures replace the default measure selection; keep these instances per run.
                 .withMeasures(KeyedMeasure.measures(
                     new ExecutionCount(),
                     new ProfitLoss(),
+                    // This statistic samples completed trades, unlike calendar-period return statistics.
                     new InformationRatioForTrades(),
                     new OmegaForTrades()
                 ))
                 .build();
+        // run delivers events and applies the configured execution model; inspect fills as well as NAV.
         PerformanceReport report = simulator.run(strategy, interval);
         LOGGER.info(report.toString());
     }

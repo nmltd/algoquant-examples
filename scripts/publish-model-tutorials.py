@@ -71,8 +71,8 @@ if __name__=='__main__':
               'results':records}
     (RESULTS/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     summary='# AlgoQuant example execution records\n\n'
-    summary+='Run ['+RUN+']('+REPO+'/actions/runs/'+RUN+'), generated '+UTC+'. Source: `'+SHA+'`.\n\n'
-    summary+='This run attempted **%d runnable demos**; **%d support classes** have no main entry point.\n\n'%(len(records),len(manifest['support_classes']))
+    summary+='Evidence collection published '+UTC+'. Collection source: `'+SHA+'`. Individual records below identify the actual execution run, tutorial source and repaired library commits. Older records are retained rather than presented as reruns.\n\n'
+    summary+='This collection covers **%d runnable demos**; **%d support classes** have no main entry point.\n\n'%(len(records),len(manifest['support_classes']))
     summary+='| Outcome | Count |\n| --- | ---: |\n'+''.join('| '+status+' | '+str(count)+' |\n' for status,count in sorted(counts.items()))
     summary+='\nTechnical demos use documented synthetic `--quick` inputs. Other demos use their original main defaults. Each process uses a virtual display, a valid external starter license, a bounded heap and a time limit; no tests are run. Legacy MySQL access is blocked before authentication because no database account is configured.\n\n'
     summary+='A completed main is an execution observation, not proof of model validity or investment performance. Timeout/failed runs can contain partial outputs; these are labelled and must not be treated as completed backtests. Generated random inputs may be unseeded, and provider data/caches can change.\n\n'
@@ -81,14 +81,21 @@ if __name__=='__main__':
         summary+='Charts derived from recorded CSV/log data using generator commit `'+manifest['chart_generator_commit']+'`. Each derived figure includes a source file reference, source checksum and downloadable plotted data. No simulations were rerun to generate these figures.\n\n'
     summary+='| Demo tutorial | Status | Seconds | Data mode |\n| --- | --- | ---: | --- |\n'
     for item in sorted(records,key=lambda x:x['source']):
+        source_sha = item.get('source_commit', SHA)
+        run_id = str(item.get('run', RUN))
+        run_url = item.get('run_url', REPO+'/actions/runs/'+run_id)
         slug='Model-'+item['name'];summary+='| ['+item['name']+']('+WIKI_URL+slug+') | '+item['status']+' | %.2f | '%item['seconds']+item['mode']+' |\n'
         page='# '+item['name']+' — AlgoQuant example\n\n'
-        page+='[Tutorials and quantitative model references]('+WIKI_URL+'Home) · [Pinned source]('+REPO+'/blob/'+SHA+'/'+item['source']+') · [Javadoc](https://nmltd.github.io/algoquant-examples/'+item['class'].replace('.','/')+'.html)\n\n'
+        page+='[Tutorials and quantitative model references]('+WIKI_URL+'Home) · [Pinned source]('+REPO+'/blob/'+source_sha+'/'+item['source']+') · [Javadoc](https://nmltd.github.io/algoquant-examples/'+item['class'].replace('.','/')+'.html)\n\n'
         intro=introductions[item['name']]
         page+='<!-- MODEL_INTRO_START -->\n## '+intro['heading']+'\n\n'+intro['text'].strip()+'\n<!-- MODEL_INTRO_END -->\n\n'
         page+='## What this example teaches\n\n'+narrative(item['source'])+'\n\n'
         page+='## Verified execution record\n\n| Item | Value |\n| --- | --- |\n'
-        for name,value in [('Status',item['status']),('Run',RUN),('UTC publication',UTC),('Source commit',SHA),('Data mode',item['mode']),('Exit code',str(item['exit_code'])),('Elapsed seconds',str(item['seconds'])),('Time limit seconds',str(item['limit_seconds'])),('Maximum Java heap',item['heap'])]:page+='| '+name+' | '+str(value)+' |\n'
+        for name,value in [('Status',item['status']),('Run','['+run_id+']('+run_url+')'),('UTC publication',UTC),('Source commit',source_sha),('Data mode',item['mode']),('Exit code',str(item['exit_code'])),('Elapsed seconds',str(item['seconds'])),('Time limit seconds',str(item['limit_seconds'])),('Maximum Java heap',item['heap'])]:page+='| '+name+' | '+str(value)+' |\n'
+        for library, commit in item.get('library_commits', {}).items():
+            page+='| '+library+' source commit | `'+commit+'` |\n'
+        if item.get('runtime_sha256'):
+            page+='| Combined runtime SHA-256 | `'+item['runtime_sha256']+'` |\n'
         page+='\n'+item['explanation']+'\n\n'
         page+='## Reproduce the calculation\n\nFollow the repository setup for JDK 8, Maven credentials and an external NM license. From the repository root:\n\n```bash\nmvn -U -Dmaven.test.skip=true clean package\nmvn exec:java -Dexec.mainClass='+item['class']+(' -Dexec.args="--quick"' if item['arguments'] else '')+'\n```\n\n'
         page+='The automated run uses `scripts/ModelDemoRunner.java` to initialize the external license before the unchanged main, save JFreeChart windows as PNGs, and exit after main returns. It uses an isolated working directory with the repository datasets/configuration linked in. Running directly may leave desktop windows open.\n\n'

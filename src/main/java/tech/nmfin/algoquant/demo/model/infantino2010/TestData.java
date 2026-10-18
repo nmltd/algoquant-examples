@@ -40,7 +40,19 @@ import tech.nmfin.algoquant.execution.datatype.product.stock.usa.USDStock;
  * membership. TEN_CHOOSEN_PLUS_NDX currently returns TEN_CHOOSEN.stocks(), so the created
  * Nasdaq index addition is discarded; see the audit notes before using it.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * This enum is example input selection for the PCA demonstrations, not a model described in the
+ * thesis.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * stocks() supplies each example’s universe. Availability exclusions are historical hand-
+ * maintained choices, and the chosen names and sample frequency differ from the thesis. Retain a
+ * point-in-time universe when doing a historical study; do not equate this enum with the paper’s
+ * 50-stock sample.
+ * </p>
  * @author Ken Yiu
+ * @see <a href="https://dspace.mit.edu/handle/1721.1/59122">L. R. Infantino and S. Itzhaki (2010), Developing high-frequency equities trading models, MIT MBA thesis</a>
  */
 public enum TestData {
 

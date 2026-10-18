@@ -46,6 +46,15 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
  * target because the comparison is >=. It targets +1 or -1 unit, with no automatic cash-based
  * sizing; create a new instance for each run because previousPrice is mutable state.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This is an event-handling lesson rather than a published econometric model. Price direction
+ * selects a fixed signed-unit target and the existing position determines the incremental order.
+ * See TutorialStrategy for equal-price behavior and the companion demo for monthly sampling.
+ * </p>
  */
 public class TutorialStrategy implements Strategy {
 

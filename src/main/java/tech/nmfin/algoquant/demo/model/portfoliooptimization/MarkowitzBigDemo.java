@@ -43,7 +43,17 @@ import tech.nmfin.portfoliooptimization.PortfolioOptimizationAlgorithm;
  * count only after checking memory and solver runtime; this demonstrates numerical scaling,
  * not historical investment performance.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Benchmarks the optimizer on generated high-dimensional inputs. Its asset count exercises
+ * numerical scaling; no historical strategy is simulated, and runtime or feasibility says
+ * nothing about out-of-sample returns.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1111/j.1540-6261.1952.tb01525.x">H. Markowitz (1952), Portfolio Selection, Journal of Finance 7(1), 77–91</a>
  */
 @Demo
 public class MarkowitzBigDemo {

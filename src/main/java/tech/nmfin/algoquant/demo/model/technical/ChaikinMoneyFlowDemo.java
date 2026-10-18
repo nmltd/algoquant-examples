@@ -72,6 +72,15 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * filled position. Quantity is in signed product units, not dollars. DemoSupport controls the
  * default synthetic inputs and optional live data and charts.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Chaikin money flow compares accumulated money-flow volume with total volume over a rolling
+ * window. The demo combines indicator and price-change signs to choose unit targets. See the
+ * implemented rule above rather than assuming a textbook divergence interpretation.
+ * </p>
  * @see
  * <a href="http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:chaikin_money_flow">
  * Chaikin Money Flow</a>

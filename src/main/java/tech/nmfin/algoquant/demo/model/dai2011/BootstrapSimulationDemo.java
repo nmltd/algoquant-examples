@@ -65,6 +65,18 @@ import tech.nmfin.returns.ReturnsCalculators;
  * reports. Sampled paths are hypothetical and the chosen block lengths and randomization
  * affect the distribution.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Filtered regime probabilities and trading boundaries are the conceptual basis of the Dai
+ * strategy. The bootstrap performed here is a separate experiment layered over that strategy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The main uses Dai2011LongShort and reconstructed paths obtained from sampled log returns. Each
+ * scenario has its own market cache, simulator and report. PattonPolitisWhite2009 estimates a
+ * block length for dependent resampling; neither a resampled path nor a bootstrap P/L quantile
+ * is a new historical observation or a reproduction of the paper’s market test.
+ * </p>
+ * @see <a href="https://doi.org/10.1137/090770552">M. Dai, Q. Zhang and Q. J. Zhu (2010), Trend Following Trading under a Regime Switching Model, SIAM Journal on Financial Mathematics 1, 780–810</a>
  */
 @Demo
 public class BootstrapSimulationDemo {

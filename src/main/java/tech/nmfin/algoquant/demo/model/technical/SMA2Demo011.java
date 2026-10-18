@@ -59,6 +59,16 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * assumptions with SMA2Demo010. The built-in strategy uses fixed unit positions, and lag
  * lengths count observations rather than elapsed calendar days.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The signal compares a fast and a slow arithmetic mean of prices. A fast mean above or below
+ * the slow mean produces a directional target after the required history is available. Lag
+ * parameters count observations. SMA2DynamicDemo additionally recalibrates parameters on
+ * trailing windows; that procedure is separate from the crossover formula.
+ * </p>
  */
 @Demo
 public class SMA2Demo011 {

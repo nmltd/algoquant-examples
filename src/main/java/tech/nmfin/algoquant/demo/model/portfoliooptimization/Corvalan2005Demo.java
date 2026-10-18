@@ -69,8 +69,22 @@ import tech.nmfin.returns.Returns;
  * feasible portfolio set. The reported weights are allocations, not share quantities or
  * realized backtest returns.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Corvalán proposes two stages: find a mean–variance reference portfolio, then improve
+ * diversification while allowing a neighborhood of return/risk deviations. The paper discusses
+ * multiple diversification measures.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Corvalan2005 in this example exposes the relaxation settings and chosen diversification
+ * measure through library classes. Its documented constraints use relative return/volatility
+ * relaxations; check that parameterization rather than substituting a tolerance directly from
+ * the paper. Weights, estimated risk and forecast return are optimizer outputs, not a realized
+ * account-performance report.
+ * </p>
  * @see <a href="dialnet.unirioja.es/descarga/articulo/1364447.pdf">Well
  * Diversified Efficient Portfolios</a>S
+ * @see <a href="https://dialnet.unirioja.es/descarga/articulo/1364447.pdf">A. Corvalán (2005), Well Diversified Efficient Portfolios, Central Bank of Chile Working Paper 336</a>
  */
 @Demo
 public class Corvalan2005Demo {

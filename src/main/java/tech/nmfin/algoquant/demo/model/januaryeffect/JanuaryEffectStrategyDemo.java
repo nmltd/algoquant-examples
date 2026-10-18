@@ -55,6 +55,16 @@ import tech.nmfin.returns.ReturnsCalculators;
  * whole account. Inspect the scheduled event dates together with the available price
  * observations.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This is a calendar-rule illustration: schedule daily callbacks, open one unit near year-end
+ * and flatten after the configured new-year date. The code does not estimate a seasonal premium
+ * or implement a causal explanation of the January effect. It is not presented as a replication
+ * of a specific empirical publication.
+ * </p>
  */
 @Demo
 public class JanuaryEffectStrategyDemo {

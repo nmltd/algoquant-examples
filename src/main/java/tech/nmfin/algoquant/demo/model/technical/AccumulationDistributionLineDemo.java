@@ -73,6 +73,16 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * does not invest all account cash. DemoSupport controls licensing, synthetic data and
  * optional live downloads.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Accumulation/distribution aggregates volume signed by the close’s location within its high-low
+ * range. The demo combines that indicator with smoothed price changes. Its actual target rule,
+ * documented above, is an example policy and is not evidence that a divergence signal has
+ * positive expected return.
+ * </p>
  */
 @Demo
 public class AccumulationDistributionLineDemo {

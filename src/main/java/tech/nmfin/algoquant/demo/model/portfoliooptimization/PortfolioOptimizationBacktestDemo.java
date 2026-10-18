@@ -54,6 +54,16 @@ import tech.nmfin.portfoliooptimization.PortfolioOptimizationAlgorithm;
  * allocation. Read the configured estimation, rebalancing and simulation periods together.
  * Training inputs must be available before the corresponding rebalance decision.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * A rolling backtest separates estimated weights from realized returns after rebalancing. Follow
+ * the data-window and rebalance callbacks to see when each estimate is available. Transaction
+ * and turnover conventions belong to the simulation, not the static mean–variance equations.
+ * </p>
+ * @see <a href="https://doi.org/10.1111/j.1540-6261.1952.tb01525.x">H. Markowitz (1952), Portfolio Selection, Journal of Finance 7(1), 77–91</a>
  */
 public class PortfolioOptimizationBacktestDemo {
 

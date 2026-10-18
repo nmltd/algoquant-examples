@@ -41,6 +41,20 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * KagiMRBasketSimulation. MRSimParamSP500 supplies the data and interval conventions; the
  * plotted P/L belongs to the selected basket and trading period.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * The paper searches for sparse portfolios with low autoregressive predictability, using
+ * generalized eigenvalue formulations and sparse approximations. Basket selection and profitable
+ * execution are separate questions.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * SimpleMRBasketProvider uses the configured price matrix, covariance penalty, clustering and
+ * basket-selection windows. The demo selects the first basket and passes it to
+ * KagiMRBasketSimulation for a trading interval. The Kagi simulation and S&amp;P 500 settings are
+ * implementation choices; the example does not demonstrate every greedy/semidefinite method in
+ * the paper.
+ * </p>
+ * @see <a href="https://www.di.ens.fr/~aspremon/PDF/MeanRevVec.pdf">A. d’Aspremont (2008 preprint; published 2011), Identifying Small Mean Reverting Portfolios, Quantitative Finance 11(3), 351–364</a>
  */
 @Demo
 public class KagiMRBasketSimulationDemo {

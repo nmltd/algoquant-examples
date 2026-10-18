@@ -59,7 +59,18 @@ import tech.nmfin.portfoliooptimization.corvalan2005.diversification.ProductOfWe
  * The constituent CSV and price directory are independent inputs and must cover compatible
  * dates. Paths in main are examples to adapt to your own dataset.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Reuses rolling portfolio optimization with configured CSI 300 constituents and adjusted
+ * prices. A constituent list needs time-consistent membership, and a price history needs
+ * coverage for calibration as well as trading. These dataset choices are separate from the
+ * underlying optimization theory.
+ * </p>
  * @author Ken Yiu
+ * @see <a href="https://doi.org/10.1111/j.1540-6261.1952.tb01525.x">H. Markowitz (1952), Portfolio Selection, Journal of Finance 7(1), 77–91</a>
  */
 public class CSI300SimulationDemo {
 

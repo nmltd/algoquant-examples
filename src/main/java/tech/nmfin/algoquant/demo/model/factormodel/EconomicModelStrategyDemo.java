@@ -75,7 +75,21 @@ import tech.nmfin.returns.ReturnsCalculators;
  * Compustat/filesystem or SQL data source; public Yahoo prices alone do not supply its factor
  * data. Keep calibration data earlier than the trade decisions when changing windows.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Fama–French is background for the market/size/value factor vocabulary. The linked author
+ * documentation defines SMB and HML; this application is not a reproduction of the original
+ * stock-and-bond empirical study.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * FactorExcessBenchmark, FactorSMB and FactorHML feed EconomicFactorModel, which estimates
+ * exposures/premia over the configured trailing window. FactorStrategy then uses a chosen
+ * optimizer and diversification layer to rebalance. Factor measurement, database construction
+ * and reporting dates must be consistent; financial statement availability dates matter. The
+ * code’s factor implementations, universe and optimizer choices define this experiment.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1016/0304-405X(93)90023-5">E. F. Fama and K. R. French (1993), Common risk factors in the returns on stocks and bonds, Journal of Financial Economics 33(1), 3–56</a>
  */
 @Demo
 public class EconomicModelStrategyDemo {

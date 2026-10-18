@@ -57,6 +57,20 @@ import tech.nmfin.meanreversion.volarb.MRModelRanged;
  * 0.0025. It uses local GainCapital tick files, a desktop plotter and trade-based measures.
  * The scale and lot inputs are quantities, not percentages of initial capital.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Here the pair coefficient is -1.5 and MRModelRanged receives 0.0025; these values specify a
+ * spread and a range, not an allocation percentage.
+ * These are library-specific spread/grid trading policies. A basket converts product prices into
+ * a spread; the configured mean-reversion model maps its level or deviation into a desired
+ * state, and MeanReversionStrategy translates that state into product orders. Grid distance,
+ * periodic/ranged update behavior and scale are distinct controls. The folder name does not mean
+ * that option implied volatility is being traded. Mean reversion is an assumption to check, not
+ * a property guaranteed by this policy.
+ * </p>
  */
 @Demo
 public class MRModelRanged2Demo {

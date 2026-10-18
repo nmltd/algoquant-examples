@@ -27,6 +27,14 @@ import tech.nmfin.algoquant.execution.performance.report.PerformanceReport;
  * shared across symbols, not a realistic multi-asset market. Use the verification helper to
  * inspect NAV output without assuming that orders necessarily filled.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This class prepares licensed data, charting and result checks for the technical lessons. It is
+ * infrastructure, not a separate statistical model.
+ * </p>
  */
 public final class DemoSupport {
     private static boolean live;

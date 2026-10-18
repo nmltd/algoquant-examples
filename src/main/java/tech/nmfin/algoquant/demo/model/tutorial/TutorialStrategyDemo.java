@@ -59,6 +59,15 @@ import tech.nmfin.returns.ReturnsCalculators;
  * sampled price, while the strategy still targets one unit. Registered yearly measures use
  * annual return periods even though the strategy receives monthly observations.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This is an event-handling lesson rather than a published econometric model. Price direction
+ * selects a fixed signed-unit target and the existing position determines the incremental order.
+ * See TutorialStrategy for equal-price behavior and the companion demo for monthly sampling.
+ * </p>
  */
 @Demo
 public class TutorialStrategyDemo {

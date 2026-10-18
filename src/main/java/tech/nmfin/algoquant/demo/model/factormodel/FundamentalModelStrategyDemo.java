@@ -69,7 +69,21 @@ import tech.nmfin.returns.ReturnsCalculators;
  * inputs are distinct from public price downloads. Rebalance frequency and trailing estimation
  * windows control when the model can trade.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Factor models separate asset characteristics/exposures from returns attributable to common
+ * drivers. Fama–French is related factor literature, not the source of every characteristic or
+ * estimation choice used here.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The active FundamentalFactorModel uses FactorSize and FactorGrowth with SIMPLE returns. This
+ * differs from EconomicModelStrategyDemo’s market/SMB/HML factor-return specification.
+ * FactorStrategyParam supplies rebalance, risk and data-window settings, while the configured
+ * accounting dataset supplies characteristics; avoid treating a publication date or revised
+ * statement as information available earlier.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1016/0304-405X(93)90023-5">E. F. Fama and K. R. French (1993), Common risk factors in the returns on stocks and bonds, Journal of Financial Economics 33(1), 3–56</a>
  */
 @Demo
 public class FundamentalModelStrategyDemo {

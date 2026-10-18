@@ -43,6 +43,16 @@ import dev.nm.stat.random.rng.univariate.normal.NormalRNG;
  * current implementation accesses seeds[1] even after its single-seed branch; this limitation
  * is recorded in the audit notes.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This utility supplies artificial return observations rather than an economic model from a
+ * specific publication. A Cholesky factor introduces cross-asset dependence. The marginal
+ * generator and sample length remain explicit inputs, and the resulting matrix is not a
+ * historical performance series.
+ * </p>
  * @author Haksun Li
  */
 public class RandomReturns implements Seedable {

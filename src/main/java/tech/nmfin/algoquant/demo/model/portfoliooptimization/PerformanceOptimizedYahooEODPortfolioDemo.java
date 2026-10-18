@@ -59,6 +59,16 @@ import tech.nmfin.returns.ReturnsCalculators;
  * different units; their values are not portfolio allocation weights. Optimization and
  * evaluation on shared history can overstate expected performance.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This is an application-level search over weighted performance objectives, not a named single-
+ * publication model. The template combines information ratio, profit and drawdown with
+ * normalization coefficients. Those objective coefficients are not asset allocation weights, and
+ * optimizing a backtest statistic can overfit its sample.
+ * </p>
  * @author Haksun Li
  */
 @Demo

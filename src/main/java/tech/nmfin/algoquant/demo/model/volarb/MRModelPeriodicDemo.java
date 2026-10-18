@@ -58,6 +58,21 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * from the timestamps delivered by the cache, and distinguish the model signal from the
  * strategy scale used to translate it into orders.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The periodic variant updates its continuous deviation state after the configured duration
+ * has elapsed; its mean estimator still receives each tick. The strategy rounds the target
+ * into tradable quantities.
+ * These are library-specific spread/grid trading policies. A basket converts product prices into
+ * a spread; the configured mean-reversion model maps its level or deviation into a desired
+ * state, and MeanReversionStrategy translates that state into product orders. Grid distance,
+ * periodic/ranged update behavior and scale are distinct controls. The folder name does not mean
+ * that option implied volatility is being traded. Mean reversion is an assumption to check, not
+ * a property guaranteed by this policy.
+ * </p>
  */
 @Demo
 public class MRModelPeriodicDemo {

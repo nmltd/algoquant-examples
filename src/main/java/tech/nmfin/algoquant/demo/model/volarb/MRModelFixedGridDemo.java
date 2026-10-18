@@ -59,6 +59,20 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * price/spread distance, not a number of days. Basket coefficients, strategy scale and lot
  * settings determine product exposure; inspect those before interpreting P/L.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The fixed-grid variant uses an estimated mean and a grid distance to update a discrete
+ * exposure state as the spread diverges or reverts.
+ * These are library-specific spread/grid trading policies. A basket converts product prices into
+ * a spread; the configured mean-reversion model maps its level or deviation into a desired
+ * state, and MeanReversionStrategy translates that state into product orders. Grid distance,
+ * periodic/ranged update behavior and scale are distinct controls. The folder name does not mean
+ * that option implied volatility is being traded. Mean reversion is an assumption to check, not
+ * a property guaranteed by this policy.
+ * </p>
  */
 @Demo
 public class MRModelFixedGridDemo {

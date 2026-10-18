@@ -51,6 +51,16 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
  * buyTime and closes that unit after sellTime. A calendar timer is not itself a tradable
  * market observation, and sendOrder does not guarantee a fill.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This is a calendar-rule illustration: schedule daily callbacks, open one unit near year-end
+ * and flatten after the configured new-year date. The code does not estimate a seasonal premium
+ * or implement a causal explanation of the January effect. It is not presented as a replication
+ * of a specific empirical publication.
+ * </p>
  */
 public class JanuaryEffectStrategy implements Strategy {
 

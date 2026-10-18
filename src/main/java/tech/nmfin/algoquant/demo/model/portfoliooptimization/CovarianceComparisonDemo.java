@@ -49,6 +49,16 @@ import org.slf4j.Logger;
  * assets orientation consistent across estimators; covariance estimates are inputs to
  * portfolio optimization, not strategy performance measures.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * This example compares estimators; it does not define a stand-alone trading model. Covariance
+ * summarizes joint variability of returns, so data frequency, demeaning, sample size and asset
+ * ordering affect the optimizer input. Inspect each estimator invoked before interpreting a
+ * numerical difference.
+ * </p>
  * @author haksunli
  */
 public class CovarianceComparisonDemo {

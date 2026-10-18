@@ -4,6 +4,8 @@ Read a class's Javadoc before running its `main` method. It explains the inputs,
 important library calls, outputs and assumptions. Run commands from the repository
 root so `config/`, `test-data/` and `log/` paths resolve correctly.
 
+For research-based models, see the [model literature guide](model-literature.md) for original publications, access limits and implementation differences.
+
 ## Suggested reading order
 
 1. [SMA2Demo010](../src/main/java/tech/nmfin/algoquant/demo/model/technical/SMA2Demo010.java):

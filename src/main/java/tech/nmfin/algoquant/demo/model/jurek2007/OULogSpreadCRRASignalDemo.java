@@ -47,10 +47,26 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * assumptions; the theoretical model does not establish that a real pair follows an OU
  * process.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * The cited working paper studies finite-horizon allocation to a mean-reverting arbitrage
+ * opportunity under investor preferences. Its public abstract was verified, but full text was
+ * unavailable; the exact allocation implementation must be read in the library rather than
+ * assumed from this citation.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The demo generates an OU path, fits it with OUFittingMLE and calls
+ * OUSpreadCRRASignal.getOptimalAllocation(price, W, tau). gamma is risk aversion, tau is
+ * remaining horizon and r*delta is the rate passed to the signal. W stays fixed while W_new
+ * records cumulative wealth, so this is not compounding allocation. Fitting and evaluation use
+ * the same generated path. The older Kim/Primbs/Boyd reference is related background, not the
+ * provenance of the Jurek-named class.
+ * </p>
  * @author Kevin Sun
  * @see
  * <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.217.6021">Kim,
  * S. J., Primbs, J., Boyd, S., Dynamic Spread Trading, 2008</a>
+ * @see <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=882536">J. W. Jurek and H. Yang (2007), Dynamic Portfolio Selection in Arbitrage, working paper, SSRN 882536</a>
  */
 @Demo
 public class OULogSpreadCRRASignalDemo {

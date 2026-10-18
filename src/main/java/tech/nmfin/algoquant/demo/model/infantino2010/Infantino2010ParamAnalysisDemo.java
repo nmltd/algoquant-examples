@@ -64,6 +64,24 @@ import tech.nmfin.algoquant.util.annotation.Demo;
  * forecast horizons and retained components have separate roles; parameter-search results are
  * in-sample comparisons unless you add a holdout period.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * The thesis combines PCA dimension reduction with regressions of future accumulated log returns
+ * on past accumulated principal-component returns; a separate regime decision can change how
+ * deviations are traded. This is a daily-bar adaptation, not a reproduction of its one-second
+ * quote experiment.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Here T=500 is the rolling log-return sample length, k=2 is the retained dimension, N is the
+ * filtered IT-stock count, and H=1,21,...,201 is an accumulation/forecast horizon in
+ * observations. Regime switching is disabled. SensitivityAnalyzer creates an
+ * Infantino2010Strategy per parameter set; synchronized order books supply aligned prices.
+ * Infantino2010LongShortConstantValue reads signal.dReturns(), uses fixed per-stock notional and
+ * does not automatically invest simulator cash. The configured Commission measure records a
+ * statistic; it does not by itself install a broker fee scheme. Search results on the same
+ * interval are not holdout validation.
+ * </p>
+ * @see <a href="https://dspace.mit.edu/handle/1721.1/59122">L. R. Infantino and S. Itzhaki (2010), Developing high-frequency equities trading models, MIT MBA thesis</a>
  */
 @Demo
 public class Infantino2010ParamAnalysisDemo {
@@ -116,13 +134,21 @@ public class Infantino2010ParamAnalysisDemo {
         }
     }
 
+    /**
+     * Builds the horizon grid for one daily-data experiment. T and k stay fixed;
+     * each H changes both the accumulation horizon and the prediction problem.
+     * The grid is a sensitivity study, not an out-of-sample model-selection protocol.
+     */
     private static List<Param> newParamList(List<Stock> stocks) {
         List<Param> params = new ArrayList<>();
 
         /*
          * fixed parameters
          */
+        // T counts observed log-return rows. With daily Yahoo bars these are sessions,
+        // whereas the thesis's one-second quotes gave T a very different time scale.
         int T = 500;
+        // Retain k principal-component directions; this is not the number of stocks.
         int k = 2;
 
         int step = 20;
@@ -133,7 +159,8 @@ public class Infantino2010ParamAnalysisDemo {
                     T,
                     H,
                     k,
-                    false,
+                    false, // Do not use the optional momentum/mean-reversion regime switch.
+                    // This order policy fixes per-stock notional; it is not full-equity sizing.
                     new Infantino2010LongShortConstantValue(stocks)
                 )
             );
@@ -147,6 +174,13 @@ public class Infantino2010ParamAnalysisDemo {
     private final OrderBookCaches caches;
     private final Simulator simulator;
 
+    /**
+     * Loads the chosen products and builds a simulator for the horizon comparisons.
+     *
+     * @param stocks products in a stable order shared by PCA columns and order sizing
+     * @param interval daily-history interval, including data needed for model warm-up
+     * @param rates currency-conversion table used to express performance consistently
+     */
     public Infantino2010ParamAnalysisDemo(
         List<Stock> stocks,
         LocalDateTimeInterval interval,
@@ -177,6 +211,14 @@ public class Infantino2010ParamAnalysisDemo {
         ));
     }
 
+    /**
+     * Runs and plots each supplied model configuration on this instance's market data.
+     * A fresh strategy is constructed by the analyzer's factory for each configuration.
+     *
+     * @param params configurations to compare; changing H changes the forecast horizon
+     * @return report mapping each configuration to its simulated performance
+     * @throws MapOfExceptions if one or more parameter simulations fail
+     */
     public SensitivityAnalysisReport<Param> run(
         List<Param> params
     ) throws MapOfExceptions {
@@ -202,6 +244,11 @@ public class Infantino2010ParamAnalysisDemo {
         return report;
     }
 
+    /**
+     * Prints every configuration and its account-level performance report.
+     *
+     * @param report completed sensitivity results; values are not automatically ranked
+     */
     public static void printReport(SensitivityAnalysisReport<Param> report) {
         for (Param param : report.values()) {
             System.out.printf(

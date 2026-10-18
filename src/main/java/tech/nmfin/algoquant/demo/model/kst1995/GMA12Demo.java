@@ -52,7 +52,21 @@ import tech.nmfin.trend.kst1995.KnightSatchellTran1995MLE;
  * properties. The output describes the fitted model; it is not automatically the return of a
  * fully invested trading account.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Knight–Satchell–Tran is the fitted return-model reference. Acar–Satchell is related moving-
+ * average analysis, not a claim that its switching-Gaussian derivation is identical to this
+ * GMA12 implementation; both originals were unavailable in full during this audit.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Convert Yahoo adjusted closes to log returns, call KnightSatchellTran1995MLE.fitModel, then
+ * construct GMA12. PrHoldingTime(1) and ERRLong() are model-derived quantities, not realized
+ * Sharpe ratios or total portfolio returns. Fitting an asymmetric return law does not by itself
+ * establish stable out-of-sample trend profitability.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1080/13504869500000009">J. L. Knight, S. E. Satchell and K. C. Tran (1995), Statistical modelling of asymmetric risk in asset returns, Applied Mathematical Finance 2(3), 155–172</a>
+ * @see <a href="https://doi.org/10.1080/135048697334791">E. Acar and S. Satchell (1997), A theoretical analysis of trading rules: an application to the moving average case with Markovian returns, Applied Mathematical Finance 4(3), 165–180</a>
  */
 @Demo
 public class GMA12Demo {

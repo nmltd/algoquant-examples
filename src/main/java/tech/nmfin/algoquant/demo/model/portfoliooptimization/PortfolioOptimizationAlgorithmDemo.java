@@ -53,7 +53,17 @@ import tech.nmfin.returns.moments.MomentsEstimatorLedoitWolf;
  * columns are products. The zero initial vector and null optional arguments shown here belong
  * to this optimizer configuration; check the concrete algorithm contract before reusing them.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * Related theory and the scope of this example are distinguished below.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * Builds a composable Lai2010OptimizationAlgorithm with a long-only/shrunk-mean optimizer,
+ * Ledoit–Wolf moments and a resampler, then uses getOptimalWeights and a TopN transformation.
+ * The selected components and post-processing define an adaptation, not a paper replication.
+ * </p>
  * @author Haksun Li
+ * @see <a href="https://doi.org/10.1214/10-AOAS422">T. L. Lai, H. Xing and Z. Chen (2011), Mean–variance portfolio optimization when means and covariances are unknown, Annals of Applied Statistics 5(2A), 798–823</a>
  */
 public class PortfolioOptimizationAlgorithmDemo {
 

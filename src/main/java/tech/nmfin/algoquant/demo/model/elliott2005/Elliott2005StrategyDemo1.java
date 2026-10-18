@@ -62,6 +62,21 @@ import tech.nmfin.returns.ReturnsCalculators;
  * vector defines the spread and the calibration window counts observations. Yahoo data and a
  * desktop plotter are required.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * The publication describes a latent mean-reverting Gaussian Markov spread observed with noise,
+ * allowing state estimation and comparison with the observed spread. Full-text access was
+ * unavailable in this audit; this explanation uses the publication abstract and the
+ * implementation, not a line-by-line paper verification.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The active customization uses fixed coefficients (1,-1), a long-term-mean reference and
+ * entry/exit settings 0.4/0.25 on XOM/CVX with 50 calibration observations. The posterior-state
+ * and cointegration variants are commented alternatives. Selecting different customization
+ * changes what “fair spread” means; the class name does not guarantee that the active rule
+ * reproduces the paper’s estimator.
+ * </p>
+ * @see <a href="https://doi.org/10.1080/14697680500149370">R. J. Elliott, J. van der Hoek and W. P. Malcolm (2005), Pairs trading, Quantitative Finance 5(3), 271–276</a>
  */
 @Demo
 public class Elliott2005StrategyDemo1 {

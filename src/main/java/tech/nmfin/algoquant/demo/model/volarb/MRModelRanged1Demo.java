@@ -59,6 +59,20 @@ import tech.nmfin.meanreversion.volarb.MRModelRanged;
  * expressed in spread/price units; the basket coefficients and lot scale control the traded
  * quantities.
  * </p>
+ *
+ * <p><b>Model and publication.</b>
+ * No single original research publication is claimed for this library/example policy.
+ * </p>
+ * <p><b>Implementation in this tutorial.</b>
+ * The ranged variant is demonstrated on the configured basket in main; read the basket
+ * coefficient and model range together to interpret spread units.
+ * These are library-specific spread/grid trading policies. A basket converts product prices into
+ * a spread; the configured mean-reversion model maps its level or deviation into a desired
+ * state, and MeanReversionStrategy translates that state into product orders. Grid distance,
+ * periodic/ranged update behavior and scale are distinct controls. The folder name does not mean
+ * that option implied volatility is being traded. Mean reversion is an assumption to check, not
+ * a property guaranteed by this policy.
+ * </p>
  */
 @Demo
 public class MRModelRanged1Demo {

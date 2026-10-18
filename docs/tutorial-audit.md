@@ -50,3 +50,9 @@ Paths in the table's `model/`, `misc/` and `ib/` rows are relative to
 - Checked repository-relative links in the tutorial guide and whitespace errors.
 - Full tests, external downloads, databases, broker integrations and deployment
   were not run in this documentation-only audit.
+
+## Research model documentation
+
+The follow-up [model literature guide](model-literature.md) records publication
+provenance, access limitations and paper-versus-implementation differences for
+all 48 files under `demo/model`. These comments are included in the same review PR.

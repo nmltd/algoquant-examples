@@ -1,6 +1,6 @@
 # AlgoQuant examples
 
-Runnable Java examples and web analysis applications built with [AlgoQuant](https://nmfin.tech/products/algoquant).
+[AlgoQuant](https://nmfin.tech/products/algoquant) is a framework and host/hub for studying, simulating, researching and applying quantitative strategies. This repository provides usage tutorials, quantitative model references and web analysis applications.
 
 - **[Open the SMA2 strategy lab](https://tools.nmfin.tech/sma2/)** — compare an SMA crossover strategy with buy-and-hold of the selected stock and the S&P 500.
 - **[Performance Analyzer](https://tools.nmfin.tech/performance/)** — import a public Google Sheet or CSV of daily NAV/price levels and compare accounts with an input or downloaded S&P 500 benchmark.
@@ -16,9 +16,9 @@ Browse the [examples and tutorials Javadoc](https://nmltd.github.io/algoquant-ex
 
 Start with the [tutorial reading guide](docs/tutorials.md), then follow the class Javadoc and inline comments in each example. The [audit notes](docs/tutorial-audit.md) record known limitations without changing the existing algorithms.
 
-## Quantitative model demo results
+## Tutorials and quantitative model references
 
-Browse the [quantitative model tutorials](https://github.com/nmltd/algoquant-examples/wiki/Home#model-demo-results) for measured output, exported charts, source links, reproduction commands and diagnostics for every runnable model demo. Raw output archives are versioned as [GitHub releases](https://github.com/nmltd/algoquant-examples/releases).
+Browse the [tutorial-first wiki](https://github.com/nmltd/algoquant-examples/wiki) to learn how to use AlgoQuant, then explore quantitative model implementations for reference, study, further research and actual application. Tutorial results are incidental and irrelevant to their teaching purpose. [Execution records](https://github.com/nmltd/algoquant-examples/wiki/Execution-records) retain measured outputs, charts and diagnostics. Raw output archives are versioned as [GitHub releases](https://github.com/nmltd/algoquant-examples/releases).
 
 The manual **Run model demos and prepare tutorials** workflow compiles and runs demos without running the test suite. Technical examples use their documented synthetic `--quick` mode; other demos use their original defaults. Each page distinguishes completed calculations from failed, resource-limited or timed-out attempts. See [runner setup and limits](scripts/MODEL_DEMOS.md).
 

@@ -33,6 +33,8 @@ import tech.nmfin.algoquant.data.cache.SequentialCacheFactory;
 import tech.nmfin.algoquant.execution.datatype.StockEOD;
 import tech.nmfin.algoquant.execution.datatype.product.ListedProduct;
 import tech.nmfin.algoquant.execution.datatype.product.stock.SimpleStock;
+import tech.nmfin.algoquant.execution.datatype.product.stock.Stock;
+import tech.nmfin.algoquant.model.strategy.rebalance.RebalancePortfolio.ProductChooser;
 import tech.nmfin.algoquant.execution.datatype.product.stock.Exchange;
 import tech.nmfin.algoquant.data.historicaldata.china.index.EastmoneyIndexEODWebDownloader;
 import tech.nmfin.algoquant.data.historicaldata.china.index.SinaIndexEODWebDownloader;
@@ -163,7 +165,7 @@ public class CSI300SimulationDemo {
 
         Collection<SequentialCache<Double>> set = profitCurves.values();
         for (SequentialCache<Double> cache : set) {
-            LOGGER.info(print(cache, true));
+            LOGGER.info("Profit curve contains {} observations", SequentialCache.size(cache));
         }
 
         plotCurves(profitCurves);
@@ -211,10 +213,7 @@ public class CSI300SimulationDemo {
                 interval,
                 new NamedParam(param)
                     .set("algorithm", "buy-and-hold"),
-                new IndexAwareOptimizer(
-                    (returns, r, s, i) -> new DenseVector(returns.nCols()), // put 0% capital in stocks
-                    (a, b, c) -> 1. // put 100% capital in the index
-                )
+                (returns, weights, symbols, dates) -> new DenseVector(new double[]{1.0})
             )
         );
 
@@ -508,10 +507,23 @@ public class CSI300SimulationDemo {
         PortfolioOptimizationAlgorithm algorithm
     ) {
         try {
+            String algoName = param.value("algorithm");
+            boolean indexOnly = "buy-and-hold".equals(algoName);
+            Collection<? extends Stock> products = indexOnly
+                ? Collections.singleton(INDEX) : dataProvider.allProducts(interval);
+            ProductChooser<Stock> chooser = indexOnly
+                ? new ProductChooser<Stock>() {
+                    @Override public Set<Stock> allProducts(LocalDateTimeInterval dates) {
+                        return Collections.singleton(INDEX);
+                    }
+                    @Override public List<Stock> chooseProducts(LocalDateTime time) {
+                        return Collections.singletonList(INDEX);
+                    }
+                } : dataProvider;
             OptimizationAlgorithmComparisonSimulation sim
                 = new OptimizationAlgorithmComparisonSimulation(
-                    dataProvider.allProducts(interval),
-                    dataProvider,
+                    products,
+                    chooser,
                     dataProvider,
                     param.value("rebalance"),
                     param.value("window"),
@@ -522,7 +534,6 @@ public class CSI300SimulationDemo {
             sim.setBenchmarkLookupFactory("CSI300", ignored -> this::indexValueAt);
             // Explicit tutorial assumption: zero risk-free rate (not a downloaded US bill yield).
             sim.setRiskFreeRateLookup(time -> 0.0);
-            String algoName = param.value("algorithm");
             sim.addAlgorithm(algoName, algorithm);
             LOGGER.info("simulating {} for interval {}...", algoName, interval);
             return Collections.singletonMap(

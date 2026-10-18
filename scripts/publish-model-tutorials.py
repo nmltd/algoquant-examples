@@ -34,7 +34,7 @@ def narrative(source):
     body=re.sub(r'<b>(.*?)</b>',r'**\1**',body,flags=re.S)
     body=re.sub(r'</?p>|<br\s*/?>','\n\n',body)
     body=re.sub(r'<[^>]+>','',body)
-    return html.unescape(body).strip()
+    return re.sub(r'\n{3,}', '\n\n', html.unescape(body)).strip()
 
 
 def output_excerpt(stdout):
@@ -90,7 +90,10 @@ if __name__=='__main__':
         stdout=(RESULTS/item['name']/'stdout.log').read_text()
         page+='```text\n'+output_excerpt(stdout)+'\n```\n\n'
         stderr=(RESULTS/item['name']/'stderr.log').read_text()
-        if item['status']!='completed' and (stdout+stderr).strip():page+='## Diagnostic and prerequisites\n\n```text\n'+diagnostic(stdout+'\n'+stderr)+'\n```\n\n'
+        warnings=item['status']=='completed' and re.search(r'Exception|\bWARN\b.*(?:fail|error)|\bNaN\b',stdout+'\n'+stderr,re.I)
+        if warnings:
+            page+='**Execution caveat:** Main returned, but the log contains exceptions, failed operations or undefined values. This records process completion only; inspect the diagnostic below before treating any output as a valid backtest.\n\n'
+        if (item['status']!='completed' or warnings) and (stdout+stderr).strip():page+='## Diagnostic and prerequisites\n\n```text\n'+diagnostic(stdout+'\n'+stderr)+'\n```\n\n'
         charts=[x for x in item['exports'] if x['path'].lower().endswith('.png')]
         if charts:
             page+='## Charts from this run\n\n'

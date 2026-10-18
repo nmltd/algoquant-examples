@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import zipfile
 
@@ -38,7 +39,7 @@ def narrative(source):
 
 def output_excerpt(stdout):
     lines=stdout.splitlines()
-    lines=[line for line in lines if not line.startswith('DEMO_RUNNER_')]
+    lines=[line for line in lines if not line.startswith('DEMO_RUNNER_') and '|-' not in line]
     if len(lines)>110:
         lines=lines[:30]+['... excerpt shortened; complete stdout is in the release archive ...']+lines[-80:]
     text='\n'.join(lines)
@@ -89,7 +90,13 @@ if __name__=='__main__':
         stdout=(RESULTS/item['name']/'stdout.log').read_text()
         page+='```text\n'+output_excerpt(stdout)+'\n```\n\n'
         stderr=(RESULTS/item['name']/'stderr.log').read_text()
-        if item['status']!='completed' and stderr.strip():page+='## Diagnostic and prerequisites\n\n```text\n'+diagnostic(stderr)+'\n```\n\n'
+        if item['status']!='completed' and (stdout+stderr).strip():page+='## Diagnostic and prerequisites\n\n```text\n'+diagnostic(stdout+'\n'+stderr)+'\n```\n\n'
+        charts=[x for x in item['exports'] if x['path'].lower().endswith('.png')]
+        if charts:
+            page+='## Charts from this run\n\n'
+            for i,chart in enumerate(charts,1):
+                asset=item['name']+'-chart-%02d.png'%i
+                page+='![Chart '+str(i)+']('+REPO+'/releases/download/'+TAG+'/'+asset+')\n\n'
         page+='## Downloadable evidence\n\n[Download '+item['name']+'.zip]('+REPO+'/releases/download/'+TAG+'/'+item['name']+'.zip) contains stdout, stderr, the execution record, checksums and any exported CSV/chart files.\n\n'
         if item['exports']:
             page+='| Export | Bytes |\n| --- | ---: |\n'+''.join('| `'+x['path']+'` | '+str(x['bytes'])+' |\n' for x in item['exports'])+'\n'
@@ -104,6 +111,9 @@ if __name__=='__main__':
     (WIKI/'Model-demo-results.md').write_text(summary)
     release=ROOT/'target/model-release';release.mkdir(exist_ok=True)
     for item in records:
+        charts=[x for x in item['exports'] if x['path'].lower().endswith('.png')]
+        for i,chart in enumerate(charts,1):
+            shutil.copyfile(RESULTS/item['name']/chart['path'],release/(item['name']+'-chart-%02d.png'%i))
         with zipfile.ZipFile(release/(item['name']+'.zip'),'w',zipfile.ZIP_DEFLATED) as archive:
             for path in sorted((RESULTS/item['name']).rglob('*')):
                 if path.is_file():archive.write(path,path.relative_to(RESULTS/item['name']))

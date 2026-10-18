@@ -1,0 +1,99 @@
+name: Run model demos and prepare tutorials
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pinned Maven
+        run: |
+          curl -fsSL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.tar.gz -o "$RUNNER_TEMP/maven.tar.gz"
+          echo "a555254d6b53d267965a3404ecb14e53c3827c09c3b94b5678835887ab404556bfaf78dcfe03ba76fa2508649dca8531c74bca4d5846513522404d48e8c4ac8b  $RUNNER_TEMP/maven.tar.gz" | sha512sum --check
+          tar -xzf "$RUNNER_TEMP/maven.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.9.9/bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+          server-id: github-nm-packages
+      - name: Package examples without tests and compile isolated launcher
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mvn -B -ntp -U -Dmaven.test.skip=true clean package
+          mkdir -p target/model-runner
+          javac -cp 'target/classes:target/lib/*' -d target/model-runner scripts/ModelDemoRunner.java
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model-demo-runtime
+          path: |
+            target/classes/
+            target/lib/
+            target/model-runner/
+          if-no-files-found: error
+  demos:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - uses: actions/download-artifact@v4
+        with:
+          name: model-demo-runtime
+          path: target
+      - name: Prepare external license and display
+        run: |
+          mkdir -p license
+          curl -fsSL https://raw.githubusercontent.com/nmltd/new-algoquant-project/main/license/nm.lic -o license/nm.lic
+          command -v xvfb-run
+      - name: Execute each assigned demo and record actual results
+        env:
+          NM_LICENSE_FILE: ${{ github.workspace }}/license/nm.lic
+        run: python3 scripts/run-model-demos.py --shard ${{ matrix.shard }} --shards 6 --workers 2 --seconds 180 --heap 1200m
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-results-${{ matrix.shard }}
+          path: target/model-results/
+          if-no-files-found: error
+  tutorials:
+    needs: demos
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: model-results-*
+          path: target/model-results
+          merge-multiple: true
+      - name: Generate pages only after verifying the complete execution inventory
+        run: python3 scripts/publish-model-tutorials.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model-tutorial-publication
+          path: |
+            target/model-wiki/
+            target/model-release/
+            target/model-release-notes.md
+          if-no-files-found: error

@@ -63,34 +63,13 @@ public enum TestData {
              * the followings do not have enough data for the test period
              */
             Set<Stock> stocksWithInsufficientData = new HashSet<>();
-            stocksWithInsufficientData.add(sp500("ABBV"));
-            stocksWithInsufficientData.add(sp500("AMP"));
-            stocksWithInsufficientData.add(sp500("BF-B"));
-            stocksWithInsufficientData.add(sp500("BWA"));
-            stocksWithInsufficientData.add(sp500("CBS"));
-            stocksWithInsufficientData.add(sp500("CF"));
-            stocksWithInsufficientData.add(sp500("CMG"));
-            stocksWithInsufficientData.add(sp500("DFS"));
-            stocksWithInsufficientData.add(sp500("DISCA"));
-            stocksWithInsufficientData.add(sp500("DPS"));
-            stocksWithInsufficientData.add(sp500("EXPE"));
-            stocksWithInsufficientData.add(sp500("ICE"));
-            stocksWithInsufficientData.add(sp500("XYL"));
-            stocksWithInsufficientData.add(sp500("KMI"));
-            stocksWithInsufficientData.add(sp500("MPC"));
-            stocksWithInsufficientData.add(sp500("MA"));
-            stocksWithInsufficientData.add(sp500("MNK"));
-            stocksWithInsufficientData.add(sp500("NAVI"));
-            stocksWithInsufficientData.add(sp500("PM"));
-            stocksWithInsufficientData.add(sp500("PEG"));
-            stocksWithInsufficientData.add(sp500("PSX"));
-            stocksWithInsufficientData.add(sp500("SNI"));
-            stocksWithInsufficientData.add(sp500("TEL"));
-            stocksWithInsufficientData.add(sp500("TRIP"));
-            stocksWithInsufficientData.add(sp500("VIAB"));
-            stocksWithInsufficientData.add(sp500("V"));
-            stocksWithInsufficientData.add(sp500("WU"));
-            stocksWithInsufficientData.add(sp500("WYN"));
+            // Match exclusions against available constituents; retired symbols are already absent.
+            java.util.Set<String> excluded = new java.util.HashSet<>(java.util.Arrays.asList(
+                "ABBV", "AMP", "BF-B", "BWA", "CBS", "CF", "CMG", "DFS", "DISCA", "DPS", "EXPE", "ICE", "XYL", "KMI", "MPC", "MA", "MNK", "NAVI", "PM", "PEG", "PSX", "SNI", "TEL", "TRIP", "VIAB", "V", "WU", "WYN"
+            ));
+            for (Stock stock : sp500()) {
+                if (excluded.contains(stock.symbol())) stocksWithInsufficientData.add(stock);
+            }
 
             LOGGER.info(
                 "{} stocks have insufficient data",

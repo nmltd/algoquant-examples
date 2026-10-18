@@ -126,12 +126,11 @@ public class MarkowitzDemo {
 
             @Override
             public Strategy newStrategy() {
-                QPConstraint constraints
-                    = new QPMinWeights(stocks.size(), -0.1);
+                // Missing-data filtering can change the optimizer universe at each rebalance.
                 // QPConstraint constraints = new NoConstraint();
                 // QPConstraint constraints = new NoShortSelling(products.length);
                 Markowitz1952 markowitz1952
-                    = new Markowitz1952(0.5, constraints);
+                    = Markowitz1952.withConstraints(0.5, n -> new QPMinWeights(n, -0.1));
 
                 RebalancePortfolio<Stock> strategy
                     = new RebalancePortfolioTechnical<>(

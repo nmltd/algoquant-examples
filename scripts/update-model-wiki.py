@@ -72,7 +72,7 @@ def apply(wiki, introductions):
         text=path.read_text()
         text=text.replace('# AlgoQuant model tutorials','# AlgoQuant quantitative model tutorials')
         text=text.replace('Explore the models,','Explore quantitative models,')
-        text=text.replace('## Model demo results','<a id="model-demo-results"></a>\\n## Quantitative model demo results')
+        text=text.replace('## Model demo results','<a id="model-demo-results"></a>\n## Quantitative model demo results')
         text=text.replace('# Model demo results','# Quantitative model demo results')
         text=text.replace('[Model demo results]','[Quantitative model demo results]')
         text=text.replace('[All model results]','[All quantitative model results]')

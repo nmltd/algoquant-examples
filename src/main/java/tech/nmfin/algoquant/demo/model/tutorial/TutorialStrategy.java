@@ -43,7 +43,7 @@ import tech.nmfin.algoquant.execution.strategy.Strategy;
  * <p><b>Using this example.</b>
  * Minimal Strategy implementation: onEvent filters order-book events, reads the updated market
  * context and computes target minus current filled position. Equal prices choose the long
- * target because the comparison is >=. It targets +1 or -1 unit, with no automatic cash-based
+ * target because the comparison is {@code >=}. It targets +1 or -1 unit, with no automatic cash-based
  * sizing; create a new instance for each run because previousPrice is mutable state.
  * </p>
  *

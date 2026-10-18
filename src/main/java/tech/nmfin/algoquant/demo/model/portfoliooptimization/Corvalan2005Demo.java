@@ -82,8 +82,8 @@ import tech.nmfin.returns.Returns;
  * the paper. Weights, estimated risk and forecast return are optimizer outputs, not a realized
  * account-performance report.
  * </p>
- * @see <a href="dialnet.unirioja.es/descarga/articulo/1364447.pdf">Well
- * Diversified Efficient Portfolios</a>S
+ * @see <a href="https://dialnet.unirioja.es/descarga/articulo/1364447.pdf">Well
+ * Diversified Efficient Portfolios</a>
  * @see <a href="https://dialnet.unirioja.es/descarga/articulo/1364447.pdf">A. Corvalán (2005), Well Diversified Efficient Portfolios, Central Bank of Chile Working Paper 336</a>
  */
 @Demo

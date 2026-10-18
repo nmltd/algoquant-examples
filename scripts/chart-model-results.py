@@ -191,6 +191,15 @@ class Charts:
         if covariance_panels:
             self.save('Covariance eigenvalue estimation errors',covariance_panels,source,
                 note='Euclidean distance between covariance eigenvalue vectors. Scenario order follows main; dimensions, distributions and scales differ. These errors are not investment returns and do not establish a universal estimator ranking.')
+        if self.record['name']=='Infantino2010PredictionAnalysisDemo':
+            prices=re.findall(r'\[\d+\]\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?):\s+\[([^\]]+)\]',text)
+            if prices:
+                width=len(prices[0][1].split(','))
+                if all(len(row[1].split(','))==width for row in prices):
+                    self.save('Loaded historical prices (input inspection)',
+                        [('Asset column '+str(i+1),[row[0] for row in prices],
+                          [row[1].split(',')[i] for row in prices]) for i in range(width)],
+                        source,kind='line',note='These are input prices printed by the demo, not fitted forecasts or strategy returns. Asset-column indices follow source ordering.')
         dated=re.findall(r'^([0-9]{4}-[0-9]{2}-[0-9]{2}):\s*('+NUMBER+r')\s*$',text,re.M)
         if dated:self.save('Printed daily account series',[('Value as printed',[r[0] for r in dated],[r[1] for r in dated])],source,kind='line',note='Uses only the values actually printed; a flat zero series remains flat and is not evidence of profitable trading.')
         # OU diagnostic paths reset their time index for each demonstration path.

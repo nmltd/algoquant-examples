@@ -78,10 +78,9 @@ public class CovarianceComparisonDemo {
     }
 
     /**
-     * Expected returns in terms of estimation error are:
-     *
-     * sample covariance > linear shrunk covariance > non linear shrunk
-     * covariance
+     * Compares covariance eigenvalue estimation errors on generated scenarios.
+     * Shrinkage need not improve every finite-sample realization; these cases
+     * illustrate estimator calls and do not establish a universal ranking.
      */
     private void run() {
         double[] distance = compare(10, 10, new NormalRNG(0., 30.)); // normal distribution

@@ -150,7 +150,7 @@ The script uses `target/lib/`, disables desktop charts and bounds each run to fi
 | [Shared web resources](src/main/resources/web/) | Tools-directory page and styles |
 | [Web tests](src/test/java/tech/nmfin/algoquant/web/) | Shared benchmark and SMA2 tests |
 | [Web operations](web/) | Setup/deployment scripts, Dockerfile and browser/API checks |
-| [Demo results and Wiki sources](docs/) | Recorded example outputs and explanations |
+| [Tutorial documentation](docs/) | Guides, publication references and validation notes; generated results live in Wiki/Releases |
 
 New applications should have their own package and resource directory under `web/<app>`; reusable simulation/reporting code belongs directly under the shared `web` package.
 
@@ -192,3 +192,15 @@ database access, custom file paths or a configured broker. Read each class befor
 running it; do not run `RunAllDemo` as an offline smoke test.
 
 See [the migration record](docs/demo-migration.md) for provenance and validation.
+
+## Demonstration execution records
+
+The maintained [Wiki execution collection](https://github.com/nmltd/algoquant-examples/wiki/Execution-records) records 40 completed examples and one missing-data prerequisite for CSI300. Twelve repaired demos were rerun; older successful records retain their original provenance. See [repair details and validation limits](docs/demo-repair-validation.md). Results are incidental to teaching AlgoQuant, rather than evidence for choosing an investment strategy.
+
+Batch historical runs use the documented resource profile:
+
+```bash
+python3 scripts/run-model-demos.py --workers 1 --historical-resources
+```
+
+Prepare `target/model-runner`, `target/classes`, `target/lib`, an external license and a virtual display as shown in the [manual demonstration workflow](.github/workflows/model-tutorials.yml). The historical profile allows a 6 GB heap and 30 minutes for larger examples. Per-run outcomes, including caught calculation errors and missing inputs, remain in `result.json`.

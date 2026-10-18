@@ -41,8 +41,6 @@ def redact(text):
 def classify(code, timed_out, text):
     if timed_out:
         return 'timeout', 'The original main exceeded the configured execution limit; partial outputs are not a completed result.'
-    if code == 0 and 'DEMO_RUNNER_MAIN_RETURNED' in text:
-        return 'completed', 'The original main returned successfully. Read the output and model assumptions before interpreting it.'
     patterns = [
         (r'External database access is not configured', 'blocked-data', 'Requires an explicitly configured database; legacy MySQL access was blocked before authentication.'),
         (r'(?i)(license|licence).*(expired|invalid|not found|not valid|error)', 'blocked-license', 'The external license was not accepted for this calculation.'),
@@ -54,6 +52,10 @@ def classify(code, timed_out, text):
     for pattern, status, explanation in patterns:
         if re.search(pattern, text):
             return status, explanation
+    if code == 0 and 'DEMO_RUNNER_MAIN_RETURNED' in text:
+        if re.search(r'(?:^|\\n)(?:.*\\bERROR\\b.*|[\\w.$]+Exception:.*|\\s+at [\\w.$]+\\([^\\n]*\\.java:\\d+\\))', text):
+            return 'completed-with-errors', 'The main returned but logged a calculation error or stack trace; this is not a verified numerical result.'
+        return 'completed', 'The original main returned successfully without a detected calculation error. Read its assumptions before interpreting it.'
     return 'failed', 'The demo raised an exception or did not return normally. This is not a verified numerical result.'
 
 

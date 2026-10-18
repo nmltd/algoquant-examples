@@ -11,6 +11,9 @@ The public repository contains the example and application source. The underlyin
 
 ## Learning the library
 
+Browse the [examples and tutorials Javadoc](https://nmltd.github.io/algoquant-examples/) alongside the [AlgoQuant library API](https://nmltd.github.io/algoquant/). Regenerate and publish the examples documentation with the manual **Publish examples Javadoc without tests** workflow; it compiles source and validates documentation without running the test suite.
+
+
 Start with the [tutorial reading guide](docs/tutorials.md), then follow the class Javadoc and inline comments in each example. The [audit notes](docs/tutorial-audit.md) record known limitations without changing the existing algorithms.
 
 ## SMA2 web application

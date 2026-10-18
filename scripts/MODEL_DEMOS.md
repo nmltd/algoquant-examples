@@ -91,3 +91,19 @@ For a new publication based on an existing execution, set `GITHUB_RUN_ID` and
 the generator commit, and `TUTORIAL_RELEASE_TAG` to a new release tag. This preserves
 the original run provenance and its raw release. Merge the resulting wiki index
 into Home with `update-model-wiki.py` as described above.
+
+## Wiki navigation and example roles
+
+The wiki starts with usage tutorials, emphasizing API learning rather than their
+numerical results. The six technical demos lead the learning path. Dataset,
+resampling, analytical-call and portfolio-workflow examples are also tutorials,
+including CoinBacktestDemo, CSI300SimulationDemo, GMA12Demo and
+BootstrapSimulationDemo. Quantitative model references follow in research families.
+AlgoQuant is the framework/host/hub for studying, simulating, researching and
+applying these models or user-defined strategies.
+
+`update-model-wiki.py` preserves stable demo URLs and their captured output. It
+builds Home, Tutorials, Quantitative-models and Execution-records; execution status
+and performance numbers live in the evidence pages, rather than the front-page
+learning directory. The current taxonomy covers 19 tutorials and 22 model
+references. Update its classification when adding a new runnable example.

@@ -15,7 +15,10 @@ public final class ModelDemoRunner {
     private static final AtomicInteger CHARTS = new AtomicInteger();
 
     public static void main(String[] args) throws Exception {
-        License.setLicenseFile(new File(System.getProperty("nm.license")));
+        // Technical demos already initialize the license in DemoSupport.initialize.
+        // Loading it twice is rejected by the library even when the file is valid.
+        if (!args[0].startsWith("tech.nmfin.algoquant.demo.model.technical."))
+            License.setLicenseFile(new File(System.getProperty("nm.license")));
         // These public tutorial runs have no configured database account. Reject the
         // legacy MySQL connection before the client can send embedded credentials.
         System.setSecurityManager(new SecurityManager() {

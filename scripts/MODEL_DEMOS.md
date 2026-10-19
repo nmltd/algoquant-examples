@@ -35,7 +35,7 @@ and a valid external license):
 
 ```bash
 mkdir -p target/model-runner
-javac -cp 'target/classes:target/lib/*' -d target/model-runner scripts/ModelDemoRunner.java
+javac -cp 'target/classes:target/lib/nmdev-dist-1.2.7.jar:target/lib/*' -d target/model-runner scripts/ModelDemoRunner.java
 export NM_LICENSE_FILE=/absolute/path/nm.lic
 python3 scripts/run-model-demos.py --only SMA2Demo010 --seconds 180
 ```

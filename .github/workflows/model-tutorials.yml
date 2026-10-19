@@ -29,7 +29,7 @@ jobs:
         run: |
           mvn -B -ntp -U -Dmaven.test.skip=true clean package
           mkdir -p target/model-runner
-          javac -cp 'target/classes:target/lib/*' -d target/model-runner scripts/ModelDemoRunner.java
+          javac -cp 'target/classes:target/lib/nmdev-dist-1.2.7.jar:target/lib/*' -d target/model-runner scripts/ModelDemoRunner.java
       - uses: actions/upload-artifact@v4
         with:
           name: model-demo-runtime

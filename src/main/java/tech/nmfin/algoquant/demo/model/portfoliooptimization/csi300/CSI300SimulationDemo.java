@@ -36,7 +36,10 @@ import tech.nmfin.algoquant.execution.datatype.product.stock.SimpleStock;
 import tech.nmfin.algoquant.execution.datatype.product.stock.Stock;
 import tech.nmfin.algoquant.model.strategy.rebalance.RebalancePortfolio.ProductChooser;
 import tech.nmfin.algoquant.execution.datatype.product.stock.Exchange;
-import tech.nmfin.algoquant.data.historicaldata.china.index.ChinaIndexEODCacheFactory;
+import tech.nmfin.algoquant.data.historicaldata.AbstractEODWebDownloader;
+import tech.nmfin.algoquant.data.historicaldata.DiskCachedEODFactory;
+import tech.nmfin.algoquant.data.historicaldata.china.EastmoneyEODWebDownloader;
+import tech.nmfin.algoquant.data.historicaldata.china.SinaEODWebDownloader;
 import tech.nmfin.algoquant.data.historicaldata.china.zqf.stock.csi300.CSI300DataProvider;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -115,8 +118,12 @@ public class CSI300SimulationDemo {
 
     private static SequentialCacheFactory<ListedProduct, StockEOD> selectIndexSource() {
         String sourceName = System.getProperty("csi300.indexSource", "eastmoney");
-        SequentialCacheFactory<ListedProduct, StockEOD> source = new ChinaIndexEODCacheFactory(
-            System.getProperty("csi300.indexCache", "./cache/china-index"), sourceName);
+        AbstractEODWebDownloader downloader;
+        if ("eastmoney".equalsIgnoreCase(sourceName)) downloader = new EastmoneyEODWebDownloader();
+        else if ("sina".equalsIgnoreCase(sourceName)) downloader = new SinaEODWebDownloader();
+        else throw new IllegalArgumentException("csi300.indexSource must be eastmoney or sina");
+        SequentialCacheFactory<ListedProduct, StockEOD> source = new DiskCachedEODFactory(
+            System.getProperty("csi300.indexCache", "./cache/china-index"), downloader);
         LOGGER.info("CSI300 index source: {}; report risk-free rate assumed zero", sourceName);
         return source;
     }

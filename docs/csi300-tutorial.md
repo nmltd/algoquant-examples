@@ -4,7 +4,7 @@ This tutorial demonstrates AlgoQuant's historical-universe and simulation APIs. 
 
 ## Index sources and verified coverage
 
-The demo uses `EastmoneyIndexEODWebDownloader` by default. Select `SinaIndexEODWebDownloader` with `-Dcsi300.indexSource=sina`. Both are Java HTTPS clients provided by the matching AlgoQuant library change. There is no Yahoo index dependency, Python process, cookie or API token in this path.
+The demo uses `EastmoneyEODWebDownloader` by default. Select `SinaEODWebDownloader` with `-Dcsi300.indexSource=sina`. Both are Java HTTPS clients provided by the matching AlgoQuant library change. There is no Yahoo index dependency, Python process, cookie or API token in this path.
 
 Before implementation, live requests returned **1,944** CSI300 sessions from **2010-01-04** through **2017-12-29** from each provider, with identical date sets and at most **0.005** index-point close difference. The 2008–2017 Eastmoney response contained 2,434 observations for pre-simulation calibration. Evidence: https://github.com/nmltd/algoquant/actions/runs/39127258230 . The library diagnostic workflow additionally checks the actual Java HTTP clients.
 
@@ -32,4 +32,4 @@ This branch targets the new `tech.nmfin:algoquant-dist:3.3.2-SNAPSHOT` library d
 
 ### Reusing index downloads
 
-The demo uses `ChinaIndexEODCacheFactory` for both providers. Completed index histories are stored in `./cache/china-index/eastmoney` or `./cache/china-index/sina` and reused across runs for the same or contained date range. Override the root with `-Dcsi300.indexCache=/path/to/cache`. Wider requests fetch a new history; invalid cache files trigger a download. Empty/failed responses and unfinished current-day histories are not saved. Delete the provider cache directory when you want to pick up historical vendor revisions. The raw `*WebDownloader` classes remain network-only, just like Yahoo's web downloader; Yahoo's disk-first behavior is in its cache factory.
+The demo wraps either `EastmoneyEODWebDownloader` or `SinaEODWebDownloader` in the shared `DiskCachedEODFactory`. Completed index histories are stored in `./cache/china-index/eastmoney-unadjusted` or `./cache/china-index/sina-unadjusted` and reused across runs for the same or contained date range. Override the root with `-Dcsi300.indexCache=/path/to/cache`. Wider requests fetch a new history; invalid cache files trigger a download. Empty/failed responses and unfinished current-day histories are not saved. Delete the provider cache directory when you want to pick up historical vendor revisions. The raw `*WebDownloader` classes remain network-only, just like Yahoo's web downloader; Yahoo's disk-first behavior is in its cache factory.

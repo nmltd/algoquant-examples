@@ -1,0 +1,100 @@
+name: Publish 3.3.2 wiki and example Pages without tests
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wiki:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Update the current wiki without rerunning demos
+        env:
+          WIKI_TOKEN: ${{ secrets.NM_REPOSITORIES_TOKEN || github.token }}
+        run: |
+          cat > "$RUNNER_TEMP/wiki-askpass" <<'SH'
+          #!/bin/sh
+          case "$1" in
+            *Username*) printf '%s\n' x-access-token ;;
+            *) printf '%s\n' "$WIKI_TOKEN" ;;
+          esac
+          SH
+          chmod 700 "$RUNNER_TEMP/wiki-askpass"
+          export GIT_ASKPASS="$RUNNER_TEMP/wiki-askpass" GIT_TERMINAL_PROMPT=0
+          git clone https://github.com/nmltd/algoquant-examples.wiki.git .wiki
+          python3 scripts/publish-release-332-wiki.py .wiki
+          git -C .wiki config user.name 'github-actions[bot]'
+          git -C .wiki config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C .wiki add Home.md Tutorials.md Execution-records.md _Sidebar.md Model-CSI300SimulationDemo.md Historical-data-downloaders.md Compatibility-3.3.2.md Release-3.3.2.md
+          if ! git -C .wiki diff --cached --quiet; then
+            git -C .wiki commit -m 'Document AlgoQuant 3.3.2 downloaders, caching and validated demo outcomes'
+            git -C .wiki push origin HEAD
+          fi
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up pinned Maven 3.9.9
+        run: |
+          curl --fail --silent --show-error --location https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.tar.gz --output "$RUNNER_TEMP/maven.tar.gz"
+          echo "a555254d6b53d267965a3404ecb14e53c3827c09c3b94b5678835887ab404556bfaf78dcfe03ba76fa2508649dca8531c74bca4d5846513522404d48e8c4ac8b  $RUNNER_TEMP/maven.tar.gz" | sha512sum --check
+          tar -xzf "$RUNNER_TEMP/maven.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.9.9/bin" >> "$GITHUB_PATH"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+          server-id: github-nm-packages
+      - name: Compile and generate tutorial documentation without tests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: mvn -B -ntp -U -Dmaven.test.skip=true clean compile javadoc:jar
+      - name: Bundle local mathematics renderer and stage website
+        shell: bash
+        run: |
+          set -euo pipefail
+          doc_dir=target/reports/apidocs
+          if [ ! -s "$doc_dir/index.html" ]; then doc_dir=target/site/apidocs; fi
+          jars=(target/*-javadoc.jar)
+          test "${#jars[@]}" -eq 1
+          python3 scripts/render-javadoc-math.py "$doc_dir" "${jars[0]}"
+          cp -R "$doc_dir" target/javadoc
+          touch target/javadoc/.nojekyll
+      - name: Verify rendered equations without network access
+        run: python3 scripts/check-javadoc-math.py target/javadoc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: algoquant-examples-javadoc-jar
+          path: target/*-javadoc.jar
+          if-no-files-found: error
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/javadoc
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs: generate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/configure-pages@v5
+      - uses: actions/deploy-pages@v4
+        id: deployment

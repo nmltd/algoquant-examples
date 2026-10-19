@@ -7,7 +7,13 @@
 - **[Tools directory](https://tools.nmfin.tech/)** — the front page for this and future applications.
 - **[Web application setup and deployment](web/README.md)** — local execution, saved reports, exports, shared components and Cloud Run.
 
-The public repository contains the example and application source. The underlying library is supplied by the obfuscated combined Maven artifact `tech.nmfin:algoquant-dist:3.3.0-SNAPSHOT` and requires a valid NM license.
+The public repository contains the example and application source. The underlying library is supplied by the obfuscated combined Maven artifact `tech.nmfin:algoquant-dist:3.3.2` and requires a valid NM license.
+
+## AlgoQuant 3.3.2 historical-data tutorial
+
+Use the [CSI300 tutorial](docs/csi300-tutorial.md) to learn constituent loading, benchmark history, simulation and exports. Eastmoney is the default index source; select Sina with `-Dcsi300.indexSource=sina`. Both use the shared CSV ZIP disk cache. Yahoo, Sina and Eastmoney also accept individual stocks; see [the downloader and cache guide](https://github.com/nmltd/algoquant-examples/wiki/Historical-data-downloaders).
+
+[Release downloads](https://github.com/nmltd/algoquant/releases/tag/v3.3.2) · [Execution coverage and known limitations](https://github.com/nmltd/algoquant-examples/wiki/Compatibility-3.3.2). CSI300 completed both default baselines, but skipped some unavailable constituent histories and reported NaN correlation measures. The opt-in optimizer grid was not run.
 
 ## Learning the library
 

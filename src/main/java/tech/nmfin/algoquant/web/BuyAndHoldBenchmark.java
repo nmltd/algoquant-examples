@@ -5,7 +5,6 @@ import static tech.nmfin.algoquant.execution.datatype.order.OrderUtils.newMarket
 import dev.nm.misc.datastructure.time.LocalDateTimeInterval;
 
 import tech.nmfin.algoquant.data.cache.*;
-import tech.nmfin.algoquant.data.historicaldata.yahoo.YahooEODWebDownloader;
 import tech.nmfin.algoquant.execution.component.context.TraderContext;
 import tech.nmfin.algoquant.execution.component.simulator.*;
 import tech.nmfin.algoquant.execution.component.simulator.event.Event;
@@ -44,18 +43,7 @@ public final class BuyAndHoldBenchmark {
     private final PriceSource source;
 
     public BuyAndHoldBenchmark() {
-        this(
-                (stock, start, end) -> {
-                    List<TimedEntry<StockEOD>> bars = new ArrayList<>();
-                    for (TimedEntry<StockEOD> bar :
-                            new YahooEODWebDownloader()
-                                    .newInstance(
-                                            stock,
-                                            LocalDateTimeInterval.of(
-                                                    start.atStartOfDay(), end.atTime(23, 59))))
-                        bars.add(bar);
-                    return bars;
-                });
+        this(YahooPriceSource.shared());
     }
 
     /**

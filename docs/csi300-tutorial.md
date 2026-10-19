@@ -30,10 +30,6 @@ The two-argument Java constructor accepts a caller-supplied `SequentialCacheFact
 
 This branch targets the new `tech.nmfin:algoquant-dist:3.3.2-SNAPSHOT` library development version. The new downloaders are introduced by https://github.com/nmltd/algoquant/pull/7 and are not present in 3.3.1. Publish that library build before merging this consumer change. Local verification compiles against the changed library classes plus the existing combined runtime; it does not claim that this new development artifact is already published.
 
-## Replay validation
+### Reusing index downloads
 
-Both final downloaders compiled with Java 8 and the changed library classes against the released 3.3.1 combined runtime. Fourteen offline parser/provider tests passed. The live Java HTTP clients verified the entire 2010–2017 calendar range, including a successful empty holiday-only range, in https://github.com/nmltd/algoquant/actions/runs/39128421735 .
-
-The full demo's original 2010-01-01 to 2017-01-01 interval completed both baselines using the captured genuine Eastmoney response and the repository's historical constituent membership/adjusted-price files. It exported the measures, executions and trades CSV ZIPs and a headless PNG; both aggregate portfolio P/L and CSI300-correlation values were finite. A separate 2010-01-01 to 2011-01-01 Sina replay also completed both baselines and exports. These are authentic-response replay checks, separate from the live Java transport checks. The 990-optimizer research grid was not run.
-
-The index-only baseline now replays only index events, rather than every constituent event. Full equal-weight historical replay and its per-product reporting remain substantial work (the complete seven-year replay took roughly nine minutes in this test environment).
+The demo uses `ChinaIndexEODCacheFactory` for both providers. Completed index histories are stored in `./cache/china-index/eastmoney` or `./cache/china-index/sina` and reused across runs for the same or contained date range. Override the root with `-Dcsi300.indexCache=/path/to/cache`. Wider requests fetch a new history; invalid cache files trigger a download. Empty/failed responses and unfinished current-day histories are not saved. Delete the provider cache directory when you want to pick up historical vendor revisions. The raw `*WebDownloader` classes remain network-only, just like Yahoo's web downloader; Yahoo's disk-first behavior is in its cache factory.

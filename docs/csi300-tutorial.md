@@ -28,7 +28,7 @@ The two-argument Java constructor accepts a caller-supplied `SequentialCacheFact
 
 ## Dependency
 
-This branch targets the new `tech.nmfin:algoquant-dist:3.3.2-SNAPSHOT` library development version. The new downloaders are introduced by https://github.com/nmltd/algoquant/pull/7 and are not present in 3.3.1. Publish that library build before merging this consumer change. Local verification compiles against the changed library classes plus the existing combined runtime; it does not claim that this new development artifact is already published.
+This tutorial uses `tech.nmfin:algoquant-dist:3.3.2`. The Sina/Eastmoney downloaders and shared disk cache are introduced in AlgoQuant 3.3.2 and are not present in 3.3.1. Publish the 3.3.2 library release before merging this consumer update. See the library release notes and `docs/eod-examples-compatibility.md` in the library repository for validation results and known demo limitations.
 
 ### Reusing index downloads
 

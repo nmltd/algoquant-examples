@@ -200,7 +200,7 @@ The [verification workflow](../.github/workflows/verify.yml) also runs Chrome in
 
 Current service: **`sma2-web`**, project **`servers-227017`**, region **`us-central1`**. The public application is [https://tools.nmfin.tech/sma2/](https://tools.nmfin.tech/sma2/); `optim.nmfin.tech` is retired.
 
-The manual [Deploy SMA2 web to Cloud Run](../.github/workflows/sma2-cloud-run.yml) workflow builds/tests the app, pushes its image to Artifact Registry and deploys the service. Authentication uses GitHub OIDC Workload Identity Federation. The runtime license is mounted from Secret Manager at `/secrets/nm.lic`, never copied into the container or committed to source.
+The manual [Deploy AlgoQuant tools to Cloud Run](../.github/workflows/tools-cloud-run.yaml) workflow builds/tests the app, pushes its image to Artifact Registry and deploys the service. Authentication uses GitHub OIDC Workload Identity Federation. The runtime license is mounted from Secret Manager at `/secrets/nm.lic`, never copied into the container or committed to source.
 
 ### One-time setup
 
@@ -231,8 +231,8 @@ The storage script creates the private `<project>-sma2-reports` bucket and grant
 For an already configured installation, run the workflow on `main`:
 
 ```bash
-gh workflow run sma2-cloud-run.yml --ref main --repo nmltd/algoquant-examples
-gh run list --workflow sma2-cloud-run.yml --repo nmltd/algoquant-examples
+gh workflow run tools-cloud-run.yaml --ref main --repo nmltd/algoquant-examples
+gh run list --workflow tools-cloud-run.yaml --repo nmltd/algoquant-examples
 ```
 
 Defaults are one CPU, 1 GiB memory, zero minimum/two maximum instances, one concurrent request per instance and a 180-second timeout. The service is publicly invokable and can cold-start. Report storage, registry, secrets and compute incur normal Google Cloud usage costs.
@@ -294,3 +294,17 @@ Cloud Run's local filesystem is instance-local and temporary. These archives are
 uploaded to Cloud Storage, shared between instances, or exposed through a download endpoint.
 A writable persistent mounted directory can be configured separately; saved-report bucket
 settings do not persist market-data archives.
+
+## One-time authentication update after workflow rename
+
+The deployment workflow is now `tools-cloud-run.yaml`. An existing Google Cloud
+Workload Identity provider may still restrict authentication to the old filename.
+Before running the renamed workflow, run in authenticated Cloud Shell:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nmltd/algoquant-examples/main/web/update-workflow-identity.sh -o /tmp/update-tools-workflow-identity.sh
+bash /tmp/update-tools-workflow-identity.sh
+```
+
+The script preserves the existing condition and changes only the exact workflow reference.
+It does not require a license upload or rerunning the full bootstrap.

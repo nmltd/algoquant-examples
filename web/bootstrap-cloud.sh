@@ -31,11 +31,15 @@ if ! gcloud iam workload-identity-pools providers describe github --workload-ide
   gcloud iam workload-identity-pools providers create-oidc github --workload-identity-pool=sma2-github --location=global --project="$GCP_PROJECT_ID" \
     --issuer-uri=https://token.actions.githubusercontent.com \
     --attribute-mapping='google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id' \
-    --attribute-condition="assertion.repository_id == '$repo_id' && assertion.repository_owner_id == '$owner_id' && assertion.ref == 'refs/heads/main' && assertion.workflow_ref == '$repo/.github/workflows/sma2-cloud-run.yml@refs/heads/main'"
+    --attribute-condition="assertion.repository_id == '$repo_id' && assertion.repository_owner_id == '$owner_id' && assertion.ref == 'refs/heads/main' && assertion.workflow_ref == '$repo/.github/workflows/tools-cloud-run.yaml@refs/heads/main'"
+else
+  # Existing providers must follow the renamed workflow as well.
+  gcloud iam workload-identity-pools providers update-oidc github --workload-identity-pool=sma2-github --location=global --project="$GCP_PROJECT_ID" \
+    --attribute-condition="assertion.repository_id == '$repo_id' && assertion.repository_owner_id == '$owner_id' && assertion.ref == 'refs/heads/main' && assertion.workflow_ref == '$repo/.github/workflows/tools-cloud-run.yaml@refs/heads/main'"
 fi
 gcloud iam service-accounts add-iam-policy-binding "$deployer" --role=roles/iam.workloadIdentityUser --member="principalSet://iam.googleapis.com/projects/$number/locations/global/workloadIdentityPools/sma2-github/attribute.repository_id/$repo_id" --project="$GCP_PROJECT_ID" >/dev/null
 gh variable set GCP_PROJECT_ID --repo "$repo" --body "$GCP_PROJECT_ID"
 gh variable set GCP_RUNTIME_SERVICE_ACCOUNT --repo "$repo" --body "$runtime"
 gh variable set GCP_DEPLOY_SERVICE_ACCOUNT --repo "$repo" --body "$deployer"
 gh variable set GCP_WIF_PROVIDER --repo "$repo" --body "$provider"
-echo 'Cloud access configured. Run the Deploy SMA2 web to Cloud Run workflow on main.'
+echo 'Cloud access configured. Run the Deploy AlgoQuant tools to Cloud Run workflow on main.'

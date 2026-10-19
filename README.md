@@ -7,7 +7,9 @@
 - **[Tools directory](https://tools.nmfin.tech/)** — the front page for this and future applications.
 - **[Web application setup and deployment](web/README.md)** — local execution, saved reports, exports, shared components and Cloud Run.
 
-The public repository contains the example and application source. The underlying library is supplied by the obfuscated combined Maven artifact `tech.nmfin:algoquant-dist:3.3.2` and requires a valid NM license.
+The public repository contains the example and application source. The underlying library is supplied by the obfuscated combined Maven artifact `tech.nmfin:algoquant-dist:3.3.2` and requires a valid NM license. The examples explicitly use `dev.nm:nmdev-dist:1.2.7` from the same public Maven repository.
+
+NM Dev is declared before AlgoQuant in Maven and placed before `target/lib/*` in Java launch commands and the container classpath. This ensures NM Dev 1.2.7 takes precedence over the older classes embedded in AlgoQuant 3.3.2. Preserve this ordering in custom launch configurations; a wildcard alone has unspecified JAR order.
 
 ## AlgoQuant 3.3.2 historical-data tutorial
 
@@ -88,7 +90,7 @@ From the repository root:
 ```bash
 mvn -U clean verify
 java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml \
-  -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.ToolsWeb
+  -cp 'target/classes:target/lib/nmdev-dist-1.2.7.jar:target/lib/*' tech.nmfin.algoquant.web.ToolsWeb
 ```
 
 Open [http://localhost:8080/sma2/](http://localhost:8080/sma2/) for SMA2, or [http://localhost:8080/](http://localhost:8080/) for the tools directory. The command above uses Unix classpath separators; use `;` instead of `:` on Windows.
@@ -188,7 +190,7 @@ mvn -B -ntp -Dmaven.test.skip=true clean package
 Run a selected class from the repository root with your NM license on the classpath:
 
 ```bash
-java -cp 'license:target/classes:target/lib/*' tech.nmfin.algoquant.demo.model.tutorial.TutorialStrategyDemo
+java -cp 'license:target/classes:target/lib/nmdev-dist-1.2.7.jar:target/lib/*' tech.nmfin.algoquant.demo.model.tutorial.TutorialStrategyDemo
 ```
 
 The imported demos cover charts, historical data, IB execution, simulation,

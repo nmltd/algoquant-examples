@@ -69,7 +69,7 @@ def execute(item, output, seconds, heap):
         if (ROOT / name).exists(): (work / name).symlink_to(ROOT / name, target_is_directory=True)
     (work / 'log').mkdir(exist_ok=True)
     (work / 'log/demo').mkdir(exist_ok=True)
-    cp = os.pathsep.join([str(ROOT/'target/model-runner'), str(ROOT/'target/classes'), str(ROOT/'target/lib/*')])
+    cp = os.pathsep.join([str(ROOT/'target/model-runner'), str(ROOT/'target/classes'), str(ROOT/'target/lib/nmdev-dist-1.2.7.jar'), str(ROOT/'target/lib/*')])
     command = ['xvfb-run', '-a', 'java', '-Xmx' + heap, '-Djava.awt.headless=false',
                '-Dlogback.configurationFile=' + str(ROOT/'config/model-demo-logback.xml'),
                '-Dsun.net.client.defaultConnectTimeout=20000', '-Dsun.net.client.defaultReadTimeout=30000',

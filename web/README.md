@@ -23,7 +23,7 @@ Configure Maven authentication and an external NM license as described in the [r
 ```bash
 mvn -U clean verify
 java -Djava.awt.headless=true -Dlogback.configurationFile=web/logback.xml \
-  -cp 'target/classes:target/lib/*' tech.nmfin.algoquant.web.ToolsWeb
+  -cp 'target/classes:target/lib/nmdev-dist-1.2.7.jar:target/lib/*' tech.nmfin.algoquant.web.ToolsWeb
 ```
 
 Open [http://localhost:8080/](http://localhost:8080/) for the tools directory or [http://localhost:8080/sma2/](http://localhost:8080/sma2/) for the app. On Windows, replace the classpath separator `:` with `;`.

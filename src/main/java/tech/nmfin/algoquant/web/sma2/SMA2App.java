@@ -5,7 +5,7 @@ import static tech.nmfin.algoquant.execution.datatype.order.OrderUtils.newMarket
 import dev.nm.misc.datastructure.time.LocalDateTimeInterval;
 
 import tech.nmfin.algoquant.data.cache.*;
-import tech.nmfin.algoquant.data.historicaldata.yahoo.YahooEODWebDownloader;
+import tech.nmfin.algoquant.web.YahooPriceSource;
 import tech.nmfin.algoquant.execution.component.context.TraderContext;
 import tech.nmfin.algoquant.execution.component.simulator.*;
 import tech.nmfin.algoquant.execution.component.simulator.event.Event;
@@ -363,7 +363,12 @@ public final class SMA2App {
     private List<TimedEntry<StockEOD>> prices(Stock stock, LocalDate from, LocalDate end) {
         String key = stock.symbol() + ":" + from + ":" + end;
         synchronized (cache) {
-            if (cache.containsKey(key)) return cache.get(key);
+            if (cache.containsKey(key)) {
+                org.slf4j.LoggerFactory.getLogger(SMA2App.class).info(
+                        "EOD source=memory product={} start={} end={} status=success rows={}",
+                        stock, from, end, cache.get(key).size());
+                return cache.get(key);
+            }
         }
         List<TimedEntry<StockEOD>> result = new ArrayList<>();
         if (synthetic) {
@@ -379,14 +384,7 @@ public final class SMA2App {
                                 d.atTime(16, 0), new StockEOD(p, p + 1, p - 1, p, 1000000, p)));
             }
         } else {
-            SequentialCache<StockEOD> downloaded =
-                    new YahooEODWebDownloader()
-                            .newInstance(
-                                    stock,
-                                    LocalDateTimeInterval.of(
-                                            from.atStartOfDay(), end.atTime(23, 59)));
-            for (TimedEntry<StockEOD> b : downloaded)
-                if (!b.time().toLocalDate().isAfter(end)) result.add(b);
+            result.addAll(YahooPriceSource.shared().load(stock, from, end));
         }
         result.sort(Comparator.comparing(TimedEntry::time));
         synchronized (cache) {

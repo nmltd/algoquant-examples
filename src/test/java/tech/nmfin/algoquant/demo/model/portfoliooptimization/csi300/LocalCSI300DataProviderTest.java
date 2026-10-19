@@ -12,6 +12,11 @@ import tech.nmfin.algoquant.execution.datatype.product.stock.Exchange;
 import tech.nmfin.algoquant.execution.datatype.product.stock.SimpleStock;
 
 public class LocalCSI300DataProviderTest {
+    @org.junit.BeforeClass public static void initializeLibraryLicense() {
+        // This class may run before the web tests. Initialize the process-wide
+        // library license before constructing a provider or loading its logger.
+        tech.nmfin.algoquant.web.TestLicense.load();
+    }
     private Path csv(String value) throws IOException {
         Path p = Files.createTempFile("csi-index-test", ".csv");
         Files.write(p, value.getBytes(StandardCharsets.UTF_8));

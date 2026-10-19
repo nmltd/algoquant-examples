@@ -74,7 +74,7 @@ Library calendar-period sampling differs from trading-session sampling. Partial 
 
 Undefined, infinite and unavailable outputs keep their status and explanation. JSON numeric fields are finite or absent, and display fields retain N/A or infinity. Individual undefined statistics do not discard a completed simulation, and missing values are not replaced with zero. Differences are SMA2 minus the comparison account; a positive difference does not automatically mean better performance.
 
-Yahoo availability and revisions affect results. Market-data cache entries are bounded to 32 intervals per app process and disappear on restart. This cache is separate from saved-report storage. Simulations are educational and do not establish executable fills or statistically significant performance.
+Yahoo availability and revisions affect results. SMA2's in-memory cache is bounded to 32 intervals per app process. Yahoo loads in all apps use the shared `YahooPriceSource`, backed by `YahooEODCacheFactory`: validated local CSV ZIP coverage is reused before web downloads. This cache is separate from saved-report storage. Simulations are educational and do not establish executable fills or statistically significant performance.
 
 ## Webpage controls
 
@@ -270,3 +270,27 @@ New apps should reuse these modules, register a `ToolRoutes` implementation in `
 and include a direct link to their implementation source.
 
 Cloud configuration retains the existing `SMA2_*` environment variable names for compatibility.
+
+## Shared Yahoo cache and operational logs
+
+All current and future web apps should use `YahooPriceSource.shared().load(stock, start, end)`
+instead of constructing `YahooEODWebDownloader`. The default `BuyAndHoldBenchmark` uses this
+source, so Performance Analyzer's downloaded S&P 500 benchmark and SMA2 share the same factory.
+Explicit synthetic fixtures and supplied benchmark columns keep their existing behavior.
+
+Set `ALGOQUANT_DATA_CACHE_DIRECTORY` to a writable directory. The default is
+`${java.io.tmpdir}/algoquant-market-data` (normally `/tmp/algoquant-market-data`).
+The factory saves completed, nonempty historical downloads under its `yahoo/` subdirectory,
+with readable symbol/range/download-time CSV ZIP names and coverage metadata. Its Yahoo
+compatibility writer also exports legacy `<symbol>.csv.zip` files at the root.
+The shared factory coordinates requests within this process.
+
+`web/logback.xml` enables INFO for `tech.nmfin.algoquant.data.historicaldata` and
+`tech.nmfin.algoquant.web`, retaining WARN for other packages. Cloud Run captures stdout:
+open **algoquant-tools → Logs** to see download URLs, file/web selection, outcomes,
+archive paths and SMA2 memory hits. INFO must also be enabled in custom launch configurations.
+
+Cloud Run's local filesystem is instance-local and temporary. These archives are not yet
+uploaded to Cloud Storage, shared between instances, or exposed through a download endpoint.
+A writable persistent mounted directory can be configured separately; saved-report bucket
+settings do not persist market-data archives.

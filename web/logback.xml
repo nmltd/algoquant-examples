@@ -1,1 +1,9 @@
-<configuration><appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender"><encoder><pattern>%date %-5level %logger{36} - %msg%n</pattern></encoder></appender><root level="WARN"><appender-ref ref="STDOUT"/></root></configuration>
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder><pattern>%date %-5level %logger{36} - %msg%n</pattern></encoder>
+  </appender>
+  <!-- Download URLs, file/web selection, archive paths and download/save outcomes. -->
+  <logger name="tech.nmfin.algoquant.data.historicaldata" level="INFO"/>
+  <logger name="tech.nmfin.algoquant.web" level="INFO"/>
+  <root level="WARN"><appender-ref ref="STDOUT"/></root>
+</configuration>

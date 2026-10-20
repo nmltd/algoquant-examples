@@ -14,7 +14,7 @@ Date,My portfolio,S&P 500
 2020-01-03,101.50,"3,234.85"
 ```
 
-Google Sheets edit links are converted to CSV exports using their tab `gid`. The sheet must be anonymously readable. The form starts empty so users can supply their own source URL. Requests are limited to 2 MB, 10 input series, 10,000 rows, bounded redirects and download timeouts. Private, loopback and metadata-network destinations, HTTP, nonstandard ports and embedded credentials are rejected.
+Google Sheets edit links are converted to CSV exports using their tab `gid`. The sheet must be anonymously readable. The form is prefilled with the [example Google Sheet](https://docs.google.com/spreadsheets/d/1pODA-aiWNfXLEGmscO8MB6zkKSrjmnXq0dAtJITXrDs/edit?usp=drivesdk), so users can click **Analyze performance** immediately. The URL remains editable for users' own public sheets or CSV files. Requests are limited to 2 MB, 10 input series, 10,000 rows, bounded redirects and download timeouts. Private, loopback and metadata-network destinations, HTTP, nonstandard ports and embedded credentials are rejected.
 
 Optional start/end dates filter the input. Only completed dates before today in New York are accepted. Observations are sorted. Repeated date rows are merged when their values agree; conflicting duplicates are rejected. Comparisons use the intersection of dates observed for every account. Missing values are **not** forward-filled. The report states how many input dates were omitted.
 
